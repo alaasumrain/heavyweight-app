@@ -109,21 +109,20 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                 : _isKeyboardVisible))
               Container(
                 width: double.infinity,
-                height: 95.0,
+                height: 60.0,
                 decoration: const BoxDecoration(
-                  color: Color(0xFF1E1E1E),
-                  boxShadow: [
-                    BoxShadow(
-                      blurRadius: 26.0,
-                      color: Color(0x14959595),
-                      offset: Offset(0.0, -4.0),
-                      spreadRadius: 0.0,
-                    )
-                  ],
+                  color: Color(0xFF111111),
+                  border: Border(
+                    top: BorderSide(
+                      color: Color(0xFF333333),
+                      width: 1.0,
+                    ),
+                  ),
                 ),
                 alignment: const AlignmentDirectional(0.0, 0.0),
                 child: Row(
                   mainAxisSize: MainAxisSize.max,
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                   children: [
                     Expanded(
                       child: InkWell(
@@ -142,124 +141,34 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                           );
                         },
                         child: Container(
-                          width: 59.0,
-                          decoration: const BoxDecoration(
-                            color: Colors.transparent,
-                          ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.max,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Padding(
-                                padding: const EdgeInsetsDirectional.fromSTEB(
-                                    0.0, 4.0, 0.0, 0.0),
-                                child: Stack(
-                                  children: [
-                                    if (FFAppState().selectPageIndex == 0)
-                                      Align(
-                                        alignment:
-                                            const AlignmentDirectional(0.0, -1.0),
-                                        child: Padding(
-                                          padding:
-                                              const EdgeInsetsDirectional.fromSTEB(
-                                                  0.0, 0.0, 0.0, 7.0),
-                                          child: Container(
-                                            width: 59.0,
-                                            height: 32.0,
-                                            decoration: BoxDecoration(
-                                              color: const Color(0xFF313926),
-                                              borderRadius:
-                                                  BorderRadius.circular(170.0),
-                                            ),
-                                            child: Visibility(
-                                              visible: FFAppState()
-                                                      .selectPageIndex ==
-                                                  0,
-                                              child: Padding(
-                                                padding: const EdgeInsetsDirectional
-                                                    .fromSTEB(
-                                                        17.0, 4.0, 17.0, 4.0),
-                                                child: ClipRRect(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          0.0),
-                                                  child: Image.asset(
-                                                    'assets/images/home-2.png',
-                                                    width: 24.0,
-                                                    height: 24.0,
-                                                    fit: BoxFit.cover,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    if (FFAppState().selectPageIndex != 0)
-                                      Align(
-                                        alignment:
-                                            const AlignmentDirectional(0.0, -1.0),
-                                        child: Padding(
-                                          padding:
-                                              const EdgeInsetsDirectional.fromSTEB(
-                                                  0.0, 0.0, 0.0, 7.0),
-                                          child: Container(
-                                            width: 59.0,
-                                            height: 32.0,
-                                            decoration: BoxDecoration(
-                                              color: Colors.transparent,
-                                              borderRadius:
-                                                  BorderRadius.circular(170.0),
-                                            ),
-                                            child: Visibility(
-                                              visible: FFAppState()
-                                                      .selectPageIndex !=
-                                                  0,
-                                              child: Padding(
-                                                padding: const EdgeInsetsDirectional
-                                                    .fromSTEB(
-                                                        17.0, 4.0, 17.0, 4.0),
-                                                child: ClipRRect(
-                                                  borderRadius:
-                                                      BorderRadius.circular(
-                                                          0.0),
-                                                  child: Image.asset(
-                                                    'assets/images/homeUnselect.png',
-                                                    width: 24.0,
-                                                    height: 24.0,
-                                                    fit: BoxFit.cover,
-                                                  ),
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                  ],
-                                ),
-                              ),
-                              Text(
-                                'ASSIGNMENT',
-                                textAlign: TextAlign.center,
-                                style: FlutterFlowTheme.of(context)
-                                    .bodyMedium
-                                    .override(
-                                      fontFamily: FlutterFlowTheme.of(context)
-                                          .bodyMediumFamily,
-                                      color: valueOrDefault<Color>(
-                                        FFAppState().selectPageIndex == 0
-                                            ? FlutterFlowTheme.of(context)
-                                                .primary
-                                            : const Color(0xFF696969),
-                                        FlutterFlowTheme.of(context).primary,
-                                      ),
-                                      useGoogleFonts: GoogleFonts.asMap()
-                                          .containsKey(
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMediumFamily),
+                          height: 60.0,
+                          decoration: BoxDecoration(
+                            color: FFAppState().selectPageIndex == 0
+                                ? const Color(0xFF1A1A1A)
+                                : Colors.transparent,
+                            border: FFAppState().selectPageIndex == 0
+                                ? const Border(
+                                    top: BorderSide(
+                                      color: Colors.white,
+                                      width: 2.0,
                                     ),
-                              ),
-                            ],
+                                  )
+                                : null,
+                          ),
+                          alignment: Alignment.center,
+                          child: Text(
+                            'ASSIGNMENT',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.ibmPlexMono(
+                              color: FFAppState().selectPageIndex == 0
+                                  ? Colors.white
+                                  : const Color(0xFF666666),
+                              fontSize: 11.0,
+                              fontWeight: FFAppState().selectPageIndex == 0
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              letterSpacing: 1.0,
+                            ),
                           ),
                         ),
                       ),
@@ -281,114 +190,34 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                           );
                         },
                         child: Container(
-                          width: double.infinity,
-                          decoration: const BoxDecoration(
-                            color: Colors.transparent,
+                          height: 60.0,
+                          decoration: BoxDecoration(
+                            color: FFAppState().selectPageIndex == 1
+                                ? const Color(0xFF1A1A1A)
+                                : Colors.transparent,
+                            border: FFAppState().selectPageIndex == 1
+                                ? const Border(
+                                    top: BorderSide(
+                                      color: Colors.white,
+                                      width: 2.0,
+                                    ),
+                                  )
+                                : null,
                           ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.max,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Stack(
-                                children: [
-                                  if (FFAppState().selectPageIndex == 1)
-                                    Align(
-                                      alignment:
-                                          const AlignmentDirectional(0.0, -1.0),
-                                      child: Padding(
-                                        padding: const EdgeInsetsDirectional.fromSTEB(
-                                            0.0, 0.0, 0.0, 7.0),
-                                        child: Container(
-                                          width: 59.0,
-                                          height: 32.0,
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFF313926),
-                                            borderRadius:
-                                                BorderRadius.circular(120.0),
-                                          ),
-                                          alignment:
-                                              const AlignmentDirectional(0.0, 0.0),
-                                          child: Visibility(
-                                            visible:
-                                                FFAppState().selectPageIndex ==
-                                                    1,
-                                            child: Padding(
-                                              padding: const EdgeInsetsDirectional
-                                                  .fromSTEB(
-                                                      17.0, 4.0, 17.0, 4.0),
-                                              child: ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(0.0),
-                                                child: Image.asset(
-                                                  'assets/images/reportSelect.png',
-                                                  width: 24.0,
-                                                  height: 24.0,
-                                                  fit: BoxFit.cover,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  if (FFAppState().selectPageIndex != 1)
-                                    Align(
-                                      alignment:
-                                          const AlignmentDirectional(0.0, -1.0),
-                                      child: Padding(
-                                        padding: const EdgeInsetsDirectional.fromSTEB(
-                                            0.0, 0.0, 0.0, 7.0),
-                                        child: Container(
-                                          width: 59.0,
-                                          height: 32.0,
-                                          decoration: const BoxDecoration(
-                                            color: Colors.transparent,
-                                          ),
-                                          child: Visibility(
-                                            visible:
-                                                FFAppState().selectPageIndex !=
-                                                    1,
-                                            child: Padding(
-                                              padding: const EdgeInsetsDirectional
-                                                  .fromSTEB(
-                                                      17.0, 4.0, 17.0, 4.0),
-                                              child: ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(0.0),
-                                                child: Image.asset(
-                                                  'assets/images/reportUnselect.png',
-                                                  width: 24.0,
-                                                  height: 24.0,
-                                                  fit: BoxFit.cover,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                              Text(
-                                'TRAINING_LOG',
-                                textAlign: TextAlign.center,
-                                style: FlutterFlowTheme.of(context)
-                                    .bodyMedium
-                                    .override(
-                                      fontFamily: FlutterFlowTheme.of(context)
-                                          .bodyMediumFamily,
-                                      color: FFAppState().selectPageIndex == 1
-                                          ? FlutterFlowTheme.of(context).primary
-                                          : const Color(0xFF696969),
-                                      fontSize: 13.0,
-                                      fontWeight: FontWeight.normal,
-                                      useGoogleFonts: GoogleFonts.asMap()
-                                          .containsKey(
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMediumFamily),
-                                    ),
-                              ),
-                            ],
+                          alignment: Alignment.center,
+                          child: Text(
+                            'TRAINING_LOG',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.ibmPlexMono(
+                              color: FFAppState().selectPageIndex == 1
+                                  ? Colors.white
+                                  : const Color(0xFF666666),
+                              fontSize: 11.0,
+                              fontWeight: FFAppState().selectPageIndex == 1
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              letterSpacing: 1.0,
+                            ),
                           ),
                         ),
                       ),
@@ -410,114 +239,34 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                           );
                         },
                         child: Container(
-                          width: double.infinity,
-                          decoration: const BoxDecoration(
-                            color: Colors.transparent,
+                          height: 60.0,
+                          decoration: BoxDecoration(
+                            color: FFAppState().selectPageIndex == 2
+                                ? const Color(0xFF1A1A1A)
+                                : Colors.transparent,
+                            border: FFAppState().selectPageIndex == 2
+                                ? const Border(
+                                    top: BorderSide(
+                                      color: Colors.white,
+                                      width: 2.0,
+                                    ),
+                                  )
+                                : null,
                           ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.max,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Stack(
-                                children: [
-                                  if (FFAppState().selectPageIndex == 2)
-                                    Align(
-                                      alignment: const AlignmentDirectional(0.0, 0.0),
-                                      child: Padding(
-                                        padding: const EdgeInsetsDirectional.fromSTEB(
-                                            0.0, 0.0, 0.0, 7.0),
-                                        child: Container(
-                                          width: 59.0,
-                                          height: 32.0,
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFF313926),
-                                            borderRadius:
-                                                BorderRadius.circular(120.0),
-                                          ),
-                                          alignment:
-                                              const AlignmentDirectional(0.0, 0.0),
-                                          child: Visibility(
-                                            visible:
-                                                FFAppState().selectPageIndex ==
-                                                    2,
-                                            child: Padding(
-                                              padding: const EdgeInsetsDirectional
-                                                  .fromSTEB(
-                                                      17.0, 4.0, 17.0, 4.0),
-                                              child: ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(0.0),
-                                                child: Image.asset(
-                                                  'assets/images/calanderSelect.png',
-                                                  width: 24.0,
-                                                  height: 24.0,
-                                                  fit: BoxFit.cover,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  if (FFAppState().selectPageIndex != 2)
-                                    Align(
-                                      alignment: const AlignmentDirectional(0.0, 0.0),
-                                      child: Padding(
-                                        padding: const EdgeInsetsDirectional.fromSTEB(
-                                            0.0, 0.0, 0.0, 7.0),
-                                        child: Container(
-                                          width: 59.0,
-                                          height: 32.0,
-                                          decoration: BoxDecoration(
-                                            color: Colors.transparent,
-                                            borderRadius:
-                                                BorderRadius.circular(170.0),
-                                          ),
-                                          child: Visibility(
-                                            visible:
-                                                FFAppState().selectPageIndex !=
-                                                    2,
-                                            child: Padding(
-                                              padding: const EdgeInsetsDirectional
-                                                  .fromSTEB(
-                                                      17.0, 4.0, 17.0, 4.0),
-                                              child: ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(0.0),
-                                                child: Image.asset(
-                                                  'assets/images/calendar.png',
-                                                  width: 24.0,
-                                                  height: 24.0,
-                                                  fit: BoxFit.contain,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                              Text(
-                                'SCHEDULE',
-                                textAlign: TextAlign.center,
-                                style: FlutterFlowTheme.of(context)
-                                    .bodyMedium
-                                    .override(
-                                      fontFamily: FlutterFlowTheme.of(context)
-                                          .bodyMediumFamily,
-                                      color: FFAppState().selectPageIndex == 2
-                                          ? FlutterFlowTheme.of(context).primary
-                                          : const Color(0xFF696969),
-                                      fontSize: 13.0,
-                                      fontWeight: FontWeight.normal,
-                                      useGoogleFonts: GoogleFonts.asMap()
-                                          .containsKey(
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMediumFamily),
-                                    ),
-                              ),
-                            ],
+                          alignment: Alignment.center,
+                          child: Text(
+                            'SCHEDULE',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.ibmPlexMono(
+                              color: FFAppState().selectPageIndex == 2
+                                  ? Colors.white
+                                  : const Color(0xFF666666),
+                              fontSize: 11.0,
+                              fontWeight: FFAppState().selectPageIndex == 2
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              letterSpacing: 1.0,
+                            ),
                           ),
                         ),
                       ),
@@ -539,113 +288,34 @@ class _HomePageWidgetState extends State<HomePageWidget> {
                           );
                         },
                         child: Container(
-                          width: double.infinity,
-                          decoration: const BoxDecoration(
-                            color: Colors.transparent,
+                          height: 60.0,
+                          decoration: BoxDecoration(
+                            color: FFAppState().selectPageIndex == 3
+                                ? const Color(0xFF1A1A1A)
+                                : Colors.transparent,
+                            border: FFAppState().selectPageIndex == 3
+                                ? const Border(
+                                    top: BorderSide(
+                                      color: Colors.white,
+                                      width: 2.0,
+                                    ),
+                                  )
+                                : null,
                           ),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.max,
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Stack(
-                                children: [
-                                  if (FFAppState().selectPageIndex == 3)
-                                    Align(
-                                      alignment: const AlignmentDirectional(0.0, 0.0),
-                                      child: Padding(
-                                        padding: const EdgeInsetsDirectional.fromSTEB(
-                                            0.0, 0.0, 0.0, 7.0),
-                                        child: Container(
-                                          width: 59.0,
-                                          height: 32.0,
-                                          decoration: BoxDecoration(
-                                            color: const Color(0xFF313926),
-                                            borderRadius:
-                                                BorderRadius.circular(170.0),
-                                          ),
-                                          child: Visibility(
-                                            visible:
-                                                FFAppState().selectPageIndex ==
-                                                    3,
-                                            child: Padding(
-                                              padding: const EdgeInsetsDirectional
-                                                  .fromSTEB(
-                                                      17.0, 4.0, 17.0, 4.0),
-                                              child: ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(0.0),
-                                                child: Image.asset(
-                                                  'assets/images/frame.png',
-                                                  width: 24.0,
-                                                  height: 24.0,
-                                                  fit: BoxFit.cover,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  if (FFAppState().selectPageIndex != 3)
-                                    Align(
-                                      alignment:
-                                          const AlignmentDirectional(0.0, -1.0),
-                                      child: Padding(
-                                        padding: const EdgeInsetsDirectional.fromSTEB(
-                                            0.0, 0.0, 0.0, 7.0),
-                                        child: Container(
-                                          width: 59.0,
-                                          height: 32.0,
-                                          decoration: BoxDecoration(
-                                            color: Colors.transparent,
-                                            borderRadius:
-                                                BorderRadius.circular(170.0),
-                                          ),
-                                          child: Visibility(
-                                            visible:
-                                                FFAppState().selectPageIndex !=
-                                                    3,
-                                            child: Padding(
-                                              padding: const EdgeInsetsDirectional
-                                                  .fromSTEB(
-                                                      17.0, 4.0, 17.0, 4.0),
-                                              child: ClipRRect(
-                                                borderRadius:
-                                                    BorderRadius.circular(0.0),
-                                                child: Image.asset(
-                                                  'assets/images/prodileUnselect.png',
-                                                  width: 24.0,
-                                                  height: 24.0,
-                                                  fit: BoxFit.cover,
-                                                ),
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                ],
-                              ),
-                              Text(
-                                'SYSTEM_SETTINGS',
-                                textAlign: TextAlign.center,
-                                style: FlutterFlowTheme.of(context)
-                                    .bodyMedium
-                                    .override(
-                                      fontFamily: FlutterFlowTheme.of(context)
-                                          .bodyMediumFamily,
-                                      color: FFAppState().selectPageIndex == 3
-                                          ? FlutterFlowTheme.of(context).primary
-                                          : const Color(0xFF696969),
-                                      fontSize: 13.0,
-                                      fontWeight: FontWeight.normal,
-                                      useGoogleFonts: GoogleFonts.asMap()
-                                          .containsKey(
-                                              FlutterFlowTheme.of(context)
-                                                  .bodyMediumFamily),
-                                    ),
-                              ),
-                            ],
+                          alignment: Alignment.center,
+                          child: Text(
+                            'SETTINGS',
+                            textAlign: TextAlign.center,
+                            style: GoogleFonts.ibmPlexMono(
+                              color: FFAppState().selectPageIndex == 3
+                                  ? Colors.white
+                                  : const Color(0xFF666666),
+                              fontSize: 11.0,
+                              fontWeight: FFAppState().selectPageIndex == 3
+                                  ? FontWeight.bold
+                                  : FontWeight.normal,
+                              letterSpacing: 1.0,
+                            ),
                           ),
                         ),
                       ),
