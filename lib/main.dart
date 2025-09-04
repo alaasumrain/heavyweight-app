@@ -2,23 +2,38 @@
 
 import 'package:provider/provider.dart';
 import 'package:flutter/material.dart';
+import 'backend/supabase/supabase_workout_repository.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'flutter_flow/flutter_flow_theme.dart';
-import 'flutter_flow/flutter_flow_util.dart';
+import 'package:go_router/go_router.dart';
+import 'backend/supabase/supabase.dart';
+import 'providers/profile_provider.dart';
+import 'providers/repository_provider.dart';
+import 'providers/mandate_engine_provider.dart';
+import 'providers/app_state_provider.dart';
+import 'nav.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   usePathUrlStrategy();
 
-  await FlutterFlowTheme.initialize();
+  // Initialize Supabase
+  await SupabaseConfig.initialize();
 
-  final appState = FFAppState(); // Initialize FFAppState
-  await appState.initializePersistedState();
+  // Initialize providers
+  final repositoryProvider = RepositoryProvider();
+  await repositoryProvider.initialize();
+  
+  final appStateProvider = AppStateProvider();
 
-  runApp(ChangeNotifierProvider(
-    create: (context) => appState,
+  runApp(MultiProvider(
+    providers: [
+      ChangeNotifierProvider(create: (context) => ProfileProvider()),
+      ChangeNotifierProvider(create: (context) => MandateEngineProvider()),
+      ChangeNotifierProvider.value(value: repositoryProvider),
+      ChangeNotifierProvider.value(value: appStateProvider),
+    ],
     child: const MyApp(),
   ));
 }
@@ -34,29 +49,53 @@ class MyApp extends StatefulWidget {
       context.findAncestorStateOfType<_MyAppState>()!;
 }
 
-class _MyAppState extends State<MyApp> {
-  ThemeMode _themeMode = FlutterFlowTheme.themeMode;
-
+class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   late AppStateNotifier _appStateNotifier;
   late GoRouter _router;
+  ThemeMode _themeMode = ThemeMode.dark;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
 
     _appStateNotifier = AppStateNotifier.instance;
     _router = createRouter(_appStateNotifier);
   }
-
-  void setThemeMode(ThemeMode mode) => setState(() {
-        _themeMode = mode;
-        FlutterFlowTheme.saveThemeMode(mode);
-      });
+  
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+  
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    if (state == AppLifecycleState.resumed) {
+      // App resumed - process offline queue
+      _processOfflineQueueIfNeeded();
+    }
+  }
+  
+  void _processOfflineQueueIfNeeded() {
+    try {
+      final repositoryProvider = context.read<RepositoryProvider>();
+      final repository = repositoryProvider.repository;
+      if (repository is SupabaseWorkoutRepository) {
+        repository.processOfflineQueue().catchError((error) {
+          print('Failed to process offline queue on app resume: $error');
+        });
+      }
+    } catch (e) {
+      print('Error accessing repository for offline queue processing: $e');
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     return MaterialApp.router(
-      title: 'pluseUpFitnessApp',
+      title: 'HEAVYWEIGHT',
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,

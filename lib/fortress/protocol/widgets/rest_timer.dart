@@ -1,18 +1,22 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 
-/// Enforced Rest Timer - Cannot be skipped
-/// Recovery is not optional
+/// Flexible Rest Timer - Smart skip/extend based on context
+/// Recovery is important, but so is practical training flow
 class RestTimer extends StatefulWidget {
   final int restSeconds;
   final VoidCallback onComplete;
-  final bool canSkip; // Should always be false in production
+  final bool canSkip; // Allow early skip based on conditions
+  final bool canExtend; // Allow extending rest time
+  final String? lastSetPerformance; // 'below_mandate', 'within_mandate', 'above_mandate'
   
   const RestTimer({
     Key? key,
     required this.restSeconds,
     required this.onComplete,
-    this.canSkip = false,
+    this.canSkip = true, // Default to flexible
+    this.canExtend = true,
+    this.lastSetPerformance,
   }) : super(key: key);
   
   @override
@@ -22,6 +26,8 @@ class RestTimer extends StatefulWidget {
 class _RestTimerState extends State<RestTimer> with SingleTickerProviderStateMixin {
   late Timer _timer;
   late int _remainingSeconds;
+  late int _originalRestSeconds; // Track original time for extend calculations
+  bool _isExtended = false;
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
   
@@ -29,6 +35,7 @@ class _RestTimerState extends State<RestTimer> with SingleTickerProviderStateMix
   void initState() {
     super.initState();
     _remainingSeconds = widget.restSeconds;
+    _originalRestSeconds = widget.restSeconds;
     
     // Pulse animation for urgency
     _pulseController = AnimationController(
@@ -73,9 +80,53 @@ class _RestTimerState extends State<RestTimer> with SingleTickerProviderStateMix
   
   double get _progress => 1 - (_remainingSeconds / widget.restSeconds);
   
+  /// Skip rest early (with conditions)
+  void _skipRest() {
+    _timer.cancel();
+    _pulseController.stop();
+    widget.onComplete();
+  }
+  
+  /// Extend rest time by 30 seconds
+  void _extendRest() {
+    setState(() {
+      _remainingSeconds += 30;
+      _isExtended = true;
+    });
+  }
+  
+  /// Check if skip is allowed based on conditions
+  bool get _canSkipNow {
+    if (!widget.canSkip) return false;
+    
+    // Always allow skip if more than half the time is left and performance was good
+    if (_remainingSeconds > (_originalRestSeconds * 0.5) && 
+        widget.lastSetPerformance == 'within_mandate') {
+      return true;
+    }
+    
+    // Allow skip in final 30 seconds regardless of performance
+    if (_remainingSeconds <= 30) return true;
+    
+    // Allow skip if last set exceeded mandate (feeling strong)
+    if (widget.lastSetPerformance == 'above_mandate' && _remainingSeconds > 15) {
+      return true;
+    }
+    
+    return false;
+  }
+  
+  /// Check if extend is recommended based on last performance
+  bool get _shouldRecommendExtend {
+    if (!widget.canExtend || _isExtended) return false;
+    
+    // Recommend extend if last set was below mandate
+    return widget.lastSetPerformance == 'below_mandate';
+  }
+  
   Color _getTimerColor() {
     if (_remainingSeconds <= 10) {
-      return const Color(0xFF00FF00); // Green - ready
+      return Colors.white; // White - ready
     } else if (_remainingSeconds <= 30) {
       return Colors.amber; // Warning
     } else {
@@ -173,46 +224,126 @@ class _RestTimerState extends State<RestTimer> with SingleTickerProviderStateMix
           
           const SizedBox(height: 40),
           
-          // Cannot skip indicator
-          if (!widget.canSkip)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-              decoration: BoxDecoration(
-                border: Border.all(color: Colors.red.shade900, width: 2),
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(Icons.lock, color: Colors.red.shade900, size: 20),
-                  const SizedBox(width: 10),
-                  Text(
-                    'RECOVERY CANNOT BE SKIPPED',
-                    style: TextStyle(
-                      color: Colors.red.shade900,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1,
+          // Smart controls based on context
+          Column(
+            children: [
+              // Skip button - appears when conditions are met
+              if (_canSkipNow)
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    ElevatedButton(
+                      onPressed: _skipRest,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.white,
+                        foregroundColor: Colors.black,
+                        shape: const RoundedRectangleBorder(
+                          borderRadius: BorderRadius.zero,
+                        ),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(Icons.skip_next, size: 16),
+                          const SizedBox(width: 8),
+                          Text(
+                            _getSkipReason(),
+                            style: const TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 1,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              
+              // Extend button - appears when recommended
+              if (_shouldRecommendExtend)
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: OutlinedButton(
+                    onPressed: _extendRest,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.orange,
+                      side: const BorderSide(color: Colors.orange),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.zero,
+                      ),
+                      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.add_alarm, size: 16),
+                        SizedBox(width: 8),
+                        Text(
+                          'EXTEND +30s (RECOMMENDED)',
+                          style: TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
-            ),
-          
-          // Skip button (only if allowed - should never be)
-          if (widget.canSkip && _remainingSeconds > 10)
-            TextButton(
-              onPressed: () {
-                _timer.cancel();
-                widget.onComplete();
-              },
-              child: Text(
-                'SKIP (NOT RECOMMENDED)',
-                style: TextStyle(
-                  color: Colors.red.shade400,
-                  fontSize: 12,
                 ),
-              ),
-            ),
+              
+              // Status indicator
+              if (_isExtended)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.orange.shade800),
+                      color: Colors.orange.shade900.withOpacity(0.3),
+                    ),
+                    child: Text(
+                      'REST EXTENDED',
+                      style: TextStyle(
+                        color: Colors.orange.shade400,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                ),
+                
+              // Rigid mode indicator
+              if (!widget.canSkip && !widget.canExtend)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    decoration: BoxDecoration(
+                      border: Border.all(color: Colors.red.shade900, width: 2),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.lock, color: Colors.red.shade900, size: 20),
+                        const SizedBox(width: 10),
+                        Text(
+                          'RECOVERY IS MANDATORY',
+                          style: TextStyle(
+                            color: Colors.red.shade900,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ],
       ),
     );
@@ -230,5 +361,16 @@ class _RestTimerState extends State<RestTimer> with SingleTickerProviderStateMix
     } else {
       return 'PREPARE TO LIFT';
     }
+  }
+  
+  String _getSkipReason() {
+    if (widget.lastSetPerformance == 'above_mandate') {
+      return 'SKIP - FEELING STRONG';
+    } else if (_remainingSeconds <= 30) {
+      return 'SKIP - TIME READY';
+    } else if (widget.lastSetPerformance == 'within_mandate') {
+      return 'SKIP - GOOD PERFORMANCE';
+    }
+    return 'SKIP REST';
   }
 }

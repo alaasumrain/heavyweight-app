@@ -1,0 +1,84 @@
+{
+  "project": {
+    "name": "Heavyweight Fitness App",
+    "type": "flutter_mobile",
+    "version": "1.0.0",
+    "description": "Brutalist strength training app with 4-6 rep mandate system"
+  },
+  
+  "technology": {
+    "framework": "Flutter",
+    "language": "Dart", 
+    "backend": "Supabase",
+    "stateManagement": "Provider",
+    "database": "PostgreSQL",
+    "platforms": ["iOS", "Android"]
+  },
+  
+  "agents": {
+    "analyst": {
+      "enabled": true,
+      "specialization": "flutter_mobile_fitness",
+      "focus": "requirements_analysis_prd_creation"
+    },
+    "pm": {
+      "enabled": true,
+      "specialization": "mobile_product_management",
+      "focus": "feature_prioritization_user_stories"
+    },
+    "architect": {
+      "enabled": true,
+      "specialization": "flutter_supabase_architecture",
+      "focus": "clean_architecture_performance"
+    },
+    "scrumMaster": {
+      "enabled": true,
+      "specialization": "flutter_development_process",
+      "focus": "story_engineering_sprint_management"
+    },
+    "dev": {
+      "enabled": true,
+      "specialization": "flutter_dart_implementation",
+      "focus": "clean_code_performance_optimization"
+    },
+    "qa": {
+      "enabled": true,
+      "specialization": "flutter_testing_quality_assurance",
+      "focus": "automated_testing_performance_validation"
+    }
+  },
+  
+  "workflow": {
+    "sprintLength": 14,
+    "sprintLengthUnit": "days",
+    "planningDay": "Monday",
+    "reviewDay": "Friday",
+    "retrospectiveDay": "Friday",
+    "dailyStandupTime": "09:00"
+  },
+  
+  "qualityGates": {
+    "codeReview": {
+      "required": true,
+      "approvalRequired": 1
+    },
+    "testing": {
+      "unitTestCoverage": 85,
+      "integrationTestsRequired": true,
+      "performanceTestingRequired": true
+    },
+    "performance": {
+      "coldStartTime": 3000,
+      "memoryUsage": 150,
+      "crashRate": 0.1,
+      "batteryImpact": "minimal"
+    }
+  },
+  
+  "integrations": {
+    "versionControl": "git",
+    "issueTracking": "github_issues", 
+    "documentation": "markdown",
+    "analytics": "custom"
+  }
+}

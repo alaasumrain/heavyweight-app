@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import 'widgets/rest_timer.dart';
 import 'widgets/rep_logger.dart';
 import '../engine/mandate_engine.dart';
-import '../engine/models/exercise.dart';
 import '../engine/models/set_data.dart';
-import '../engine/storage/workout_repository.dart';
+import '../../backend/supabase/supabase_workout_repository.dart';
 
 /// The Protocol Screen - The heart of the workout experience
 /// Minimalist, brutal, effective
 class ProtocolScreen extends StatefulWidget {
-  final WorkoutMandate mandate;
+  final WorkoutMandate? mandate;
   
   const ProtocolScreen({
     Key? key,
-    required this.mandate,
+    this.mandate,
   }) : super(key: key);
   
   @override
@@ -21,13 +21,13 @@ class ProtocolScreen extends StatefulWidget {
 }
 
 class _ProtocolScreenState extends State<ProtocolScreen> {
-  late WorkoutRepository _repository;
+  late SupabaseWorkoutRepository _repository;
   late MandateEngine _engine;
   
   int _currentExerciseIndex = 0;
   int _currentSet = 1;
   bool _isResting = false;
-  int _restSeconds = 180;
+  int _restSeconds = 5; // TESTING: 5 seconds instead of 180
   
   // Calibration mode tracking
   bool _isCalibrating = false;
@@ -35,7 +35,13 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
   int _calibrationAttempt = 1;
   Map<String, double> _calibratedWeights = {};
   
+  // Weight adjustment system
+  Map<String, double> _adjustedWeights = {};
+  bool _showWeightAdjustment = false;
+  String? _lastAdjustmentReason;
+  
   List<SetData> _sessionSets = [];
+  bool _showSaveSuccess = false;
   
   @override
   void initState() {
@@ -43,21 +49,51 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
     _initializeRepository();
     _engine = MandateEngine();
     
-    // Check if first exercise needs calibration
-    if (widget.mandate.prescriptions.isNotEmpty) {
-      _isCalibrating = widget.mandate.prescriptions[0].needsCalibration;
+    // Check if mandate is valid and has exercises
+    if (widget.mandate?.prescriptions.isNotEmpty == true) {
+      final firstPrescription = widget.mandate!.prescriptions[0];
+      _isCalibrating = firstPrescription.needsCalibration;
       if (_isCalibrating) {
-        _currentCalibrationWeight = widget.mandate.prescriptions[0].prescribedWeight;
+        _currentCalibrationWeight = firstPrescription.prescribedWeight;
       }
+    } else {
+      // No valid mandate - this shouldn't happen, but handle gracefully
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          context.pop();
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('No workout mandate available'),
+              backgroundColor: Colors.red,
+            ),
+          );
+        }
+      });
     }
   }
   
   Future<void> _initializeRepository() async {
-    _repository = await WorkoutRepository.create();
+    _repository = SupabaseWorkoutRepository();
   }
   
-  ExercisePrescription get _currentPrescription {
-    return widget.mandate.prescriptions[_currentExerciseIndex];
+  ExercisePrescription? get _currentPrescription {
+    if (widget.mandate?.prescriptions.isEmpty != false) return null;
+    return widget.mandate!.prescriptions[_currentExerciseIndex];
+  }
+  
+  /// Get current working weight (adjusted or prescribed)
+  double get _currentWorkingWeight {
+    final exerciseId = _currentPrescription?.exercise.id;
+    if (exerciseId != null && _adjustedWeights.containsKey(exerciseId)) {
+      return _adjustedWeights[exerciseId]!;
+    }
+    return _currentPrescription?.prescribedWeight ?? 0.0;
+  }
+  
+  /// Check if current exercise has been adjusted
+  bool get _hasWeightAdjustment {
+    final exerciseId = _currentPrescription?.exercise.id;
+    return exerciseId != null && _adjustedWeights.containsKey(exerciseId);
   }
   
   void _onRepsLogged(int actualReps) async {
@@ -79,17 +115,19 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
     
     if (actualReps == 5) {
       // Found the 5RM!
-      _calibratedWeights[_currentPrescription.exercise.id] = _currentCalibrationWeight;
+      if (_currentPrescription != null) {
+        _calibratedWeights[_currentPrescription!.exercise.id] = _currentCalibrationWeight;
+      }
       
       // If this is bench press on Day 1, estimate all other weights
-      if (widget.mandate.isDay1 && _currentPrescription.exercise.id == 'bench') {
+      if (widget.mandate?.isDay1 == true && _currentPrescription?.exercise.id == 'bench') {
         final estimatedWeights = _engine.estimateWeightsFromBenchPress(_currentCalibrationWeight);
         _calibratedWeights.addAll(estimatedWeights);
       }
       
       // Save the calibration as a set
       final setData = SetData(
-        exerciseId: _currentPrescription.exercise.id,
+        exerciseId: _currentPrescription?.exercise.id ?? 'unknown',
         weight: _currentCalibrationWeight,
         actualReps: actualReps,
         timestamp: DateTime.now(),
@@ -101,13 +139,13 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
       
       // Move to next exercise
       setState(() {
-        if (_currentExerciseIndex < widget.mandate.prescriptions.length - 1) {
+        if (widget.mandate != null && _currentExerciseIndex < widget.mandate!.prescriptions.length - 1) {
           _currentExerciseIndex++;
           _currentSet = 1;
           _calibrationAttempt = 1;
           
           // Check if next exercise needs calibration
-          final nextPrescription = widget.mandate.prescriptions[_currentExerciseIndex];
+          final nextPrescription = widget.mandate!.prescriptions[_currentExerciseIndex];
           _isCalibrating = nextPrescription.needsCalibration;
           
           if (_isCalibrating) {
@@ -117,7 +155,7 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
           }
           
           _isResting = true;
-          _restSeconds = 180;
+          _restSeconds = 5;
         } else {
           _completeWorkout();
         }
@@ -128,7 +166,7 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
         _currentCalibrationWeight = nextWeight;
         _calibrationAttempt++;
         _isResting = true;
-        _restSeconds = actualReps < 5 ? 180 : 120; // Less rest if too heavy
+        _restSeconds = 5; // TESTING: 5 seconds for all calibration rest
       });
     }
   }
@@ -136,38 +174,58 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
   void _handleWorkoutReps(int actualReps) async {
     // Create set data
     final setData = SetData(
-      exerciseId: _currentPrescription.exercise.id,
-      weight: _currentPrescription.prescribedWeight,
+      exerciseId: _currentPrescription?.exercise.id ?? 'unknown',
+      weight: _currentWorkingWeight,
       actualReps: actualReps,
       timestamp: DateTime.now(),
       setNumber: _currentSet,
       restTaken: _restSeconds,
     );
     
-    // Save to repository
-    await _repository.saveSet(setData);
+    // Show save success immediately (optimistic UI)
+    setState(() {
+      _showSaveSuccess = true;
+    });
+    
+    // Save to repository (fire and forget)
+    _repository.saveSet(setData).then((_) {
+      // Success - the optimistic UI was correct
+    }).catchError((error) {
+      // Handle error silently, could add to retry queue
+      print('Failed to save set: $error');
+    });
+    
     _sessionSets.add(setData);
+    
+    // Hide success indicator after 500ms
+    Future.delayed(const Duration(milliseconds: 500), () {
+      if (mounted) {
+        setState(() {
+          _showSaveSuccess = false;
+        });
+      }
+    });
     
     // Calculate rest time based on performance
     final calculatedRest = _engine.calculateRestSeconds(
       actualReps,
-      _currentPrescription.restSeconds,
+      _currentPrescription?.restSeconds ?? 180,
     );
     
     setState(() {
-      if (_currentSet < _currentPrescription.targetSets) {
+      if (_currentSet < (_currentPrescription?.targetSets ?? 3)) {
         // More sets remaining for this exercise
         _currentSet++;
         _isResting = true;
         _restSeconds = calculatedRest;
       } else {
         // Move to next exercise
-        if (_currentExerciseIndex < widget.mandate.prescriptions.length - 1) {
+        if (widget.mandate != null && _currentExerciseIndex < widget.mandate!.prescriptions.length - 1) {
           _currentExerciseIndex++;
           _currentSet = 1;
           
           // Check if next exercise needs calibration
-          final nextPrescription = widget.mandate.prescriptions[_currentExerciseIndex];
+          final nextPrescription = widget.mandate!.prescriptions[_currentExerciseIndex];
           _isCalibrating = nextPrescription.needsCalibration;
           
           if (_isCalibrating) {
@@ -189,12 +247,112 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
   void _onRestComplete() {
     setState(() {
       _isResting = false;
+      _showWeightAdjustment = false; // Hide adjustment UI when returning to workout
     });
   }
   
+  void _showWeightAdjustmentDialog() {
+    setState(() {
+      _showWeightAdjustment = true;
+    });
+  }
+  
+  void _adjustWeight(double newWeight, String reason) {
+    final exerciseId = _currentPrescription?.exercise.id;
+    if (exerciseId != null) {
+      setState(() {
+        _adjustedWeights[exerciseId] = newWeight;
+        _lastAdjustmentReason = reason;
+        _showWeightAdjustment = false;
+      });
+    }
+  }
+  
+  void _resetWeight() {
+    final exerciseId = _currentPrescription?.exercise.id;
+    if (exerciseId != null) {
+      setState(() {
+        _adjustedWeights.remove(exerciseId);
+        _lastAdjustmentReason = null;
+        _showWeightAdjustment = false;
+      });
+    }
+  }
+  
+  /// Get last set performance for smart rest timer decisions
+  String? _getLastSetPerformance() {
+    if (_sessionSets.isEmpty) return null;
+    
+    final lastSet = _sessionSets.last;
+    if (lastSet.metMandate) {
+      return 'within_mandate';
+    } else if (lastSet.isFailure) {
+      return 'below_mandate';
+    } else if (lastSet.exceededMandate) {
+      return 'above_mandate';
+    }
+    
+    return null;
+  }
+  
+  /// Get previous set reps for the current exercise to show progression
+  List<int>? _getPreviousSetRepsForCurrentExercise() {
+    final currentExerciseId = _currentPrescription?.exercise.id;
+    if (currentExerciseId == null) return null;
+    
+    // Get all sets for current exercise
+    final exerciseSets = _sessionSets
+        .where((set) => set.exerciseId == currentExerciseId)
+        .toList();
+    
+    if (exerciseSets.isEmpty) return null;
+    
+    // Return the reps from all previous sets
+    return exerciseSets.map((set) => set.actualReps).toList();
+  }
+  
   void _completeWorkout() {
-    // Navigate to completion screen or back to mandate
-    Navigator.of(context).pop(_sessionSets);
+    // End the workout session in Supabase
+    _repository.endWorkoutSession();
+    
+    // Calculate mandate satisfaction (4-6 reps is the mandate)
+    bool mandateSatisfied = _calculateMandateSatisfaction();
+    
+    // Navigate to session completion screen with data
+    context.go('/session-complete', extra: {
+      'sessionSets': _sessionSets,
+      'mandateSatisfied': mandateSatisfied,
+    });
+  }
+  
+  /// Calculate if the mandate (4-6 reps) was satisfied for most sets
+  bool _calculateMandateSatisfaction() {
+    if (_sessionSets.isEmpty) return false;
+    
+    int mandateSets = 0;
+    for (final set in _sessionSets) {
+      if (set.actualReps >= 4 && set.actualReps <= 6) {
+        mandateSets++;
+      }
+    }
+    
+    // Mandate satisfied if more than 70% of sets were in the 4-6 range
+    return (mandateSets / _sessionSets.length) >= 0.7;
+  }
+  
+  /// Calculate workout progress safely
+  double _calculateProgress() {
+    final mandate = widget.mandate;
+    if (mandate == null || mandate.prescriptions.isEmpty) {
+      return 0.0;
+    }
+    
+    final totalExercises = mandate.prescriptions.length;
+    final setsPerExercise = 3; // Assuming 3 sets per exercise
+    final totalSets = totalExercises * setsPerExercise;
+    final completedSets = _currentExerciseIndex * setsPerExercise + _currentSet - 1;
+    
+    return (completedSets / totalSets).clamp(0.0, 1.0);
   }
   
   @override
@@ -206,7 +364,7 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
           backgroundColor: Colors.black,
           leading: IconButton(
             icon: const Icon(Icons.arrow_back, color: Colors.grey),
-            onPressed: () => Navigator.of(context).pop(),
+            onPressed: () => context.pop(),
           ),
           title: const Text(
             'RESTING',
@@ -221,53 +379,56 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
           child: RestTimer(
             restSeconds: _restSeconds,
             onComplete: _onRestComplete,
-            canSkip: false, // Rest is mandatory
+            canSkip: true, // Smart skip based on performance
+            canExtend: true, // Allow extending when needed
+            lastSetPerformance: _getLastSetPerformance(),
           ),
         ),
       );
     }
     
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.grey),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
-        title: const Text(
-          'PROTOCOL',
-          style: TextStyle(
-            color: Colors.grey,
-            fontSize: 14,
-            letterSpacing: 2,
-          ),
-        ),
-      ),
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Progress indicator
-            Container(
-              padding: const EdgeInsets.all(20),
-              child: LinearProgressIndicator(
-                value: (_currentExerciseIndex * 3 + _currentSet) / 
-                       (widget.mandate.prescriptions.length * 3),
-                backgroundColor: Colors.grey.shade900,
-                valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00FF00)),
+    return Stack(
+      children: [
+        Scaffold(
+          backgroundColor: Colors.black,
+          appBar: AppBar(
+            backgroundColor: Colors.black,
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.grey),
+              onPressed: () => context.pop(),
+            ),
+            title: const Text(
+              'PROTOCOL',
+              style: TextStyle(
+                color: Colors.grey,
+                fontSize: 14,
+                letterSpacing: 2,
               ),
             ),
-            
-            // Exercise info
-            Expanded(
-              child: Container(
-                padding: const EdgeInsets.all(20),
+          ),
+          body: SafeArea(
+            child: Column(
+              children: [
+                // Progress indicator
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  child: LinearProgressIndicator(
+                    value: _calculateProgress(),
+                    backgroundColor: Colors.grey.shade900,
+                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                  ),
+                ),
+                
+                // Exercise info
+                Expanded(
+                  child: Container(
+                    padding: const EdgeInsets.all(20),
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     // Exercise name
                     Text(
-                      _currentPrescription.exercise.name.toUpperCase(),
+                      _currentPrescription?.exercise.name.toUpperCase() ?? 'UNKNOWN EXERCISE',
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 32,
@@ -282,7 +443,7 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
                     Text(
                       _isCalibrating
                         ? 'CALIBRATION IN PROGRESS'
-                        : 'SET $_currentSet OF ${_currentPrescription.targetSets}',
+                        : 'SET $_currentSet OF ${_currentPrescription?.targetSets ?? 3}',
                       style: TextStyle(
                         color: _isCalibrating ? Colors.amber : Colors.grey.shade400,
                         fontSize: 18,
@@ -297,7 +458,7 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
                       padding: const EdgeInsets.all(20),
                       decoration: BoxDecoration(
                         border: Border.all(
-                          color: _isCalibrating ? Colors.amber : const Color(0xFF00FF00), 
+                          color: _isCalibrating ? Colors.amber : Colors.white, 
                           width: 2,
                         ),
                       ),
@@ -317,17 +478,65 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
                           Text(
                             _isCalibrating
                               ? '${_currentCalibrationWeight} KG'
-                              : '${_currentPrescription.prescribedWeight} KG',
+                              : '${_currentWorkingWeight} KG',
                             style: TextStyle(
-                              color: _isCalibrating ? Colors.amber : const Color(0xFF00FF00),
+                              color: _isCalibrating 
+                                  ? Colors.amber 
+                                  : _hasWeightAdjustment 
+                                      ? Colors.orange 
+                                      : Colors.white,
                               fontSize: 48,
                               fontWeight: FontWeight.bold,
                               fontFamily: 'monospace',
                             ),
                           ),
+                          
+                          // Weight adjustment indicator
+                          if (_hasWeightAdjustment && !_isCalibrating) ...[
+                            const SizedBox(height: 8),
+                            Text(
+                              'ADJUSTED: ${_lastAdjustmentReason ?? 'Manual'}',
+                              style: TextStyle(
+                                color: Colors.orange.shade300,
+                                fontSize: 12,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                          ],
                         ],
                       ),
                     ),
+                    
+                    // Weight Adjustment Button (only for normal workout mode)
+                    if (!_isCalibrating) ...[
+                      const SizedBox(height: 20),
+                      
+                      OutlinedButton.icon(
+                        onPressed: _showWeightAdjustmentDialog,
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: _hasWeightAdjustment ? Colors.orange : Colors.grey.shade400,
+                          side: BorderSide(
+                            color: _hasWeightAdjustment ? Colors.orange : Colors.grey.shade600,
+                            width: 1,
+                          ),
+                          shape: const RoundedRectangleBorder(
+                            borderRadius: BorderRadius.zero,
+                          ),
+                        ),
+                        icon: Icon(
+                          _hasWeightAdjustment ? Icons.tune : Icons.scale,
+                          size: 16,
+                        ),
+                        label: Text(
+                          _hasWeightAdjustment ? 'WEIGHT_ADJUSTED' : 'ADJUST_WEIGHT',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            letterSpacing: 1,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
                     
                     const SizedBox(height: 40),
                     
@@ -367,13 +576,206 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
                 ),
               ),
             ),
-            
-            // Rep logger
-            RepLogger(
-              onRepsLogged: _onRepsLogged,
-              initialValue: 5,
+                
+                // Rep logger
+                RepLogger(
+                  onRepsLogged: _onRepsLogged,
+                  initialValue: 5,
+                  currentSet: _currentSet,
+                  previousSetReps: _getPreviousSetRepsForCurrentExercise(),
+                  liveMode: true,
+                ),
+                
+                // Save success indicator
+                if (_showSaveSuccess)
+                  Container(
+                    padding: const EdgeInsets.all(10),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(
+                          Icons.check_circle,
+                          color: Colors.green,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'SET LOGGED',
+                          style: TextStyle(
+                            color: Colors.green,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+              ],
             ),
-          ],
+          ),
+        ),
+        
+        // Weight Adjustment Overlay
+        if (_showWeightAdjustment)
+          _buildWeightAdjustmentOverlay(),
+      ],
+    );
+  }
+  
+  Widget _buildWeightAdjustmentOverlay() {
+    final currentWeight = _currentWorkingWeight;
+    final prescribedWeight = _currentPrescription?.prescribedWeight ?? 0.0;
+    
+    return Container(
+      color: Colors.black.withOpacity(0.9),
+      child: SafeArea(
+        child: Center(
+          child: Container(
+            margin: const EdgeInsets.all(20),
+            padding: const EdgeInsets.all(24),
+            decoration: BoxDecoration(
+              border: Border.all(color: Colors.white, width: 2),
+              color: Colors.black,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'WEIGHT_ADJUSTMENT',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2,
+                  ),
+                ),
+                
+                const SizedBox(height: 20),
+                
+                Text(
+                  'CURRENT: ${currentWeight.toStringAsFixed(1)} KG',
+                  style: TextStyle(
+                    color: Colors.grey.shade400,
+                    fontSize: 14,
+                    letterSpacing: 1,
+                  ),
+                ),
+                
+                if (currentWeight != prescribedWeight) ...[
+                  Text(
+                    'PRESCRIBED: ${prescribedWeight.toStringAsFixed(1)} KG',
+                    style: TextStyle(
+                      color: Colors.grey.shade600,
+                      fontSize: 12,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ],
+                
+                const SizedBox(height: 30),
+                
+                // Quick adjustment buttons
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildQuickAdjustButton(
+                      'TOO_HEAVY\n-2.5KG',
+                      currentWeight - 2.5,
+                      'Too Heavy',
+                      Colors.red.shade400,
+                    ),
+                    _buildQuickAdjustButton(
+                      'TOO_LIGHT\n+2.5KG',
+                      currentWeight + 2.5,
+                      'Too Light',
+                      Colors.blue.shade400,
+                    ),
+                  ],
+                ),
+                
+                const SizedBox(height: 20),
+                
+                // Reset to prescribed button
+                if (_hasWeightAdjustment) ...[
+                  OutlinedButton(
+                    onPressed: _resetWeight,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.grey.shade400,
+                      side: BorderSide(color: Colors.grey.shade600),
+                      shape: const RoundedRectangleBorder(
+                        borderRadius: BorderRadius.zero,
+                      ),
+                    ),
+                    child: const Text(
+                      'RESET_TO_PRESCRIBED',
+                      style: TextStyle(
+                        fontSize: 12,
+                        letterSpacing: 1,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                ],
+                
+                // Cancel button
+                OutlinedButton(
+                  onPressed: () {
+                    setState(() {
+                      _showWeightAdjustment = false;
+                    });
+                  },
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.white,
+                    side: const BorderSide(color: Colors.white),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: BorderRadius.zero,
+                    ),
+                  ),
+                  child: const Text(
+                    'CANCEL',
+                    style: TextStyle(
+                      fontSize: 12,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildQuickAdjustButton(
+    String label,
+    double newWeight,
+    String reason,
+    Color color,
+  ) {
+    return Expanded(
+      child: Container(
+        margin: const EdgeInsets.symmetric(horizontal: 5),
+        child: ElevatedButton(
+          onPressed: newWeight > 0 ? () => _adjustWeight(newWeight, reason) : null,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: color,
+            foregroundColor: Colors.white,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.zero,
+            ),
+            padding: const EdgeInsets.symmetric(vertical: 16),
+          ),
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 1,
+            ),
+          ),
         ),
       ),
     );

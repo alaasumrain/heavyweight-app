@@ -8,6 +8,7 @@
 .pub-cache/
 .pub/
 /build/
+.fvm/
 
 # Web related
 
@@ -22,6 +23,38 @@ app.*.map.json
 /android/app/profile
 /android/app/release
 
+# iOS related
+**/ios/**/*.mode1v3
+**/ios/**/*.mode2v3
+**/ios/**/*.moved-aside
+**/ios/**/*.pbxuser
+**/ios/**/*.perspectivev3
+**/ios/**/DerivedData/
+**/ios/**/*.hmap
+**/ios/**/*.ipa
+**/ios/.symlinks/
+**/ios/Flutter/App.framework
+**/ios/Flutter/Flutter.framework
+**/ios/Flutter/Flutter.podspec
+**/ios/Flutter/Generated.xcconfig
+**/ios/Flutter/app.flx
+**/ios/Flutter/app.zip
+**/ios/Flutter/flutter_assets/
+**/ios/Flutter/flutter_export_environment.sh
+**/ios/ServiceDefinitions.json
+**/ios/Runner/GeneratedPluginRegistrant.*
+
+# Android related
+**/android/**/gradle-wrapper.jar
+**/android/.gradle
+**/android/captures/
+**/android/gradlew
+**/android/gradlew.bat
+**/android/local.properties
+**/android/**/GeneratedPluginRegistrant.java
+**/android/key.properties
+*.jks
+
 # VS Code
 .vscode/
 
@@ -33,6 +66,7 @@ app.*.map.json
 
 # Mac
 .DS_Store
+._*
 
 # Windows
 Thumbs.db
@@ -43,6 +77,34 @@ desktop.ini
 
 # Flutter test coverage
 coverage/
+lcov.info
+
+# Firebase
+**/ios/Runner/GoogleService-Info.plist
+**/android/app/google-services.json
+
+# Environment variables
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+logs/
+
+# Node modules (if using for any tooling)
+node_modules/
+.npm-cache/
+
+# Temporary files
+*.tmp
+*.temp
+
+# Generated files
+**/*.g.dart
+**/*.freezed.dart
+**/*.mocks.dart
 
 # Exceptions to above rules.
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
+.env

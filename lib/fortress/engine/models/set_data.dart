@@ -48,11 +48,11 @@ class SetData {
   factory SetData.fromJson(Map<String, dynamic> json) {
     return SetData(
       exerciseId: json['exerciseId'],
-      weight: json['weight'].toDouble(),
-      actualReps: json['actualReps'],
+      weight: (json['weight'] as num).toDouble(),
+      actualReps: json['actualReps'] as int,
       timestamp: DateTime.parse(json['timestamp']),
-      setNumber: json['setNumber'],
-      restTaken: json['restTaken'],
+      setNumber: json['setNumber'] as int,
+      restTaken: json['restTaken'] as int,
     );
   }
 }

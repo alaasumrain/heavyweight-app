@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
-import '../models/exercise.dart';
+
 import '../models/set_data.dart';
+import '../models/exercise.dart';
+import 'workout_repository_interface.dart';
 
 /// Repository for persisting workout data
 /// Uses SharedPreferences for simplicity - can be upgraded to SQLite later
-class WorkoutRepository {
+class WorkoutRepository implements WorkoutRepositoryInterface {
   static const String _historyKey = 'fortress_workout_history';
   static const String _calibrationKey = 'fortress_calibration_complete';
   static const String _exerciseWeightsKey = 'fortress_exercise_weights';
@@ -97,7 +99,7 @@ class WorkoutRepository {
     if (jsonString == null) return {};
     
     final json = jsonDecode(jsonString) as Map<String, dynamic>;
-    return json.map((key, value) => MapEntry(key, value.toDouble()));
+    return json.map((key, value) => MapEntry(key, (value as num).toDouble()));
   }
   
   /// Get last weight used for an exercise
@@ -156,35 +158,3 @@ class WorkoutRepository {
   }
 }
 
-/// Performance statistics
-class PerformanceStats {
-  final int totalSets;
-  final int mandateSets;
-  final int failureSets;
-  final int exceededSets;
-  final double totalVolume;
-  final int workoutDays;
-  final double mandateAdherence; // Percentage
-  
-  const PerformanceStats({
-    required this.totalSets,
-    required this.mandateSets,
-    required this.failureSets,
-    required this.exceededSets,
-    required this.totalVolume,
-    required this.workoutDays,
-    required this.mandateAdherence,
-  });
-  
-  factory PerformanceStats.empty() {
-    return const PerformanceStats(
-      totalSets: 0,
-      mandateSets: 0,
-      failureSets: 0,
-      exceededSets: 0,
-      totalVolume: 0,
-      workoutDays: 0,
-      mandateAdherence: 0,
-    );
-  }
-}

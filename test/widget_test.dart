@@ -9,7 +9,7 @@
 
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:pluse_up_fitness_app/main.dart';
+import 'package:heavyweight_app/main.dart';
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {

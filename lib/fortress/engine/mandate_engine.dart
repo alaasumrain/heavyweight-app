@@ -1,4 +1,4 @@
-import 'dart:math';
+
 import 'models/exercise.dart';
 import 'models/set_data.dart';
 
@@ -47,16 +47,20 @@ class MandateEngine {
   /// Calculate rest time based on performance
   /// Failure requires more recovery
   int calculateRestSeconds(int actualReps, int baseRest) {
-    if (actualReps == 0) {
-      // Complete failure - maximum rest
-      return 300; // 5 minutes
-    } else if (actualReps < 4) {
-      // Below mandate - extra rest
-      return 240; // 4 minutes
-    } else {
-      // Standard rest for mandate performance
-      return baseRest; // Usually 3 minutes
-    }
+    // TESTING: 5 seconds for all rest periods
+    return 5;
+    
+    // PRODUCTION CODE (commented out for testing):
+    // if (actualReps == 0) {
+    //   // Complete failure - maximum rest
+    //   return 300; // 5 minutes
+    // } else if (actualReps < 4) {
+    //   // Below mandate - extra rest
+    //   return 240; // 4 minutes
+    // } else {
+    //   // Standard rest for mandate performance
+    //   return baseRest; // Usually 3 minutes
+    // }
   }
   
   /// Determine next exercise based on rotation
@@ -150,9 +154,10 @@ class MandateEngine {
   WorkoutMandate generateMandate(List<SetData> history) {
     // Check if this is Day 1 (no history)
     if (history.isEmpty) {
-      // Day 1: Chest focus with calibration
+      // Day 1: CHEST DAY with calibration
       return WorkoutMandate(
         date: DateTime.now(),
+        dayName: "CHEST",
         prescriptions: [
           ExercisePrescription(
             exercise: Exercise.bigSix[2], // Bench Press
@@ -168,13 +173,6 @@ class MandateEngine {
             restSeconds: 180,
             needsCalibration: true,
           ),
-          ExercisePrescription(
-            exercise: Exercise.bigSix[4], // Row
-            prescribedWeight: 20.0, // Will be estimated after bench
-            targetSets: 3,
-            restSeconds: 180,
-            needsCalibration: true,
-          ),
         ],
         isDay1: true,
       );
@@ -182,6 +180,12 @@ class MandateEngine {
     
     // Determine which exercises to do today
     final exercises = _selectTodaysExercises(history);
+    
+    // Get current day name
+    final workoutCount = _getWorkoutCount(history);
+    final dayInCycle = workoutCount % 5;
+    final dayNames = ["CHEST", "BACK", "ARMS", "SHOULDERS", "LEGS"];
+    final currentDayName = dayNames[dayInCycle];
     
     // Calculate prescribed weights
     final prescriptions = <ExercisePrescription>[];
@@ -201,48 +205,65 @@ class MandateEngine {
     
     return WorkoutMandate(
       date: DateTime.now(),
+      dayName: currentDayName,
       prescriptions: prescriptions,
       isDay1: false,
     );
   }
   
-  /// Select exercises for today based on recovery and rotation
+  /// Select exercises for today based on HEAVYWEIGHT 5-day rotation
+  /// CHEST → BACK → ARMS → SHOULDERS → LEGS
   List<Exercise> _selectTodaysExercises(List<SetData> history) {
     if (history.isEmpty) {
-      // First workout - Big Three
+      // Day 1: CHEST
       return [
-        Exercise.bigSix[0], // Squat
-        Exercise.bigSix[2], // Bench
-        Exercise.bigSix[1], // Deadlift
+        Exercise.bigSix[2], // Bench Press
+        Exercise.bigSix[3], // Overhead Press (secondary chest)
       ];
     }
     
     // Get last workout date
     final lastWorkout = history.last.timestamp;
-    final daysSinceLastWorkout = 
-        DateTime.now().difference(lastWorkout).inDays;
     
-    // Rest days are SUGGESTED not MANDATED - let people train if they want
-    // if (daysSinceLastWorkout < 1) {
-    //   return []; // Rest day mandated
-    // }
+    // Enforce minimum rest - THE MANDATE demands recovery
+    final daysSinceLastWorkout = DateTime.now().difference(lastWorkout).inDays;
+    if (daysSinceLastWorkout < 1) {
+      return []; // Rest day MANDATED - no exceptions
+    }
     
-    // A/B workout rotation
+    // HEAVYWEIGHT 5-day rotation: CHEST → BACK → ARMS → SHOULDERS → LEGS
     final workoutCount = _getWorkoutCount(history);
-    if (workoutCount % 2 == 0) {
-      // Workout A: Squat, Bench, Row
-      return [
-        Exercise.bigSix[0], // Squat
-        Exercise.bigSix[2], // Bench
-        Exercise.bigSix[4], // Row
-      ];
-    } else {
-      // Workout B: Deadlift, Overhead, Pull-up
-      return [
-        Exercise.bigSix[1], // Deadlift
-        Exercise.bigSix[3], // Overhead
-        Exercise.bigSix[5], // Pull-up
-      ];
+    final dayInCycle = workoutCount % 5;
+    
+    switch (dayInCycle) {
+      case 0: // CHEST DAY
+        return [
+          Exercise.bigSix[2], // Bench Press
+          Exercise.bigSix[3], // Overhead Press (secondary)
+        ];
+      case 1: // BACK DAY
+        return [
+          Exercise.bigSix[1], // Deadlift
+          Exercise.bigSix[4], // Row
+          Exercise.bigSix[5], // Pull-up
+        ];
+      case 2: // ARMS DAY
+        return [
+          Exercise.bigSix[5], // Pull-up (biceps)
+          Exercise.bigSix[3], // Overhead Press (triceps)
+        ];
+      case 3: // SHOULDERS DAY
+        return [
+          Exercise.bigSix[3], // Overhead Press
+          Exercise.bigSix[4], // Row (rear delts)
+        ];
+      case 4: // LEGS DAY
+        return [
+          Exercise.bigSix[0], // Squat
+          Exercise.bigSix[1], // Deadlift (posterior chain)
+        ];
+      default:
+        return [Exercise.bigSix[2]]; // Default to bench
     }
   }
   
@@ -302,11 +323,13 @@ class ExercisePrescription {
 /// Today's workout mandate
 class WorkoutMandate {
   final DateTime date;
+  final String dayName;
   final List<ExercisePrescription> prescriptions;
   final bool isDay1;
   
   const WorkoutMandate({
     required this.date,
+    required this.dayName,
     required this.prescriptions,
     this.isDay1 = false,
   });

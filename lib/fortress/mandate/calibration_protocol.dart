@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import '../engine/mandate_engine.dart';
+import 'package:go_router/go_router.dart';
+
 import '../engine/models/exercise.dart';
 import '../engine/models/set_data.dart';
 import '../engine/storage/workout_repository.dart';
@@ -16,7 +17,7 @@ class CalibrationProtocolScreen extends StatefulWidget {
 
 class _CalibrationProtocolScreenState extends State<CalibrationProtocolScreen> {
   late WorkoutRepository _repository;
-  late MandateEngine _engine;
+
   
   int _currentExerciseIndex = 0;
   double _currentWeight = 20.0; // Starting weight
@@ -28,7 +29,7 @@ class _CalibrationProtocolScreenState extends State<CalibrationProtocolScreen> {
   @override
   void initState() {
     super.initState();
-    _engine = MandateEngine();
+
     _initializeRepository();
   }
   
@@ -87,7 +88,7 @@ class _CalibrationProtocolScreenState extends State<CalibrationProtocolScreen> {
         _currentWeight = Exercise.bigSix[_currentExerciseIndex].prescribedWeight;
         _attemptNumber = 1;
       });
-      _showFeedback('CALIBRATED - NEXT EXERCISE', const Color(0xFF00FF00));
+      _showFeedback('CALIBRATED - NEXT EXERCISE', Colors.white);
     } else {
       _completeCalibration();
     }
@@ -124,12 +125,12 @@ class _CalibrationProtocolScreenState extends State<CalibrationProtocolScreen> {
         backgroundColor: Colors.black,
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.zero,
-          side: BorderSide(color: Color(0xFF00FF00), width: 2),
+          side: BorderSide(color: Colors.white, width: 2),
         ),
         title: const Text(
           'CALIBRATION COMPLETE',
           style: TextStyle(
-            color: Color(0xFF00FF00),
+            color: Colors.white,
             fontWeight: FontWeight.bold,
             letterSpacing: 2,
           ),
@@ -144,13 +145,13 @@ class _CalibrationProtocolScreenState extends State<CalibrationProtocolScreen> {
         actions: [
           TextButton(
             onPressed: () {
-              Navigator.of(context).pop(); // Close dialog
-              Navigator.of(context).pop(true); // Return to mandate screen
+              context.pop(); // Close dialog
+              context.pop(true); // Return to mandate screen
             },
             child: const Text(
               'UNDERSTOOD',
               style: TextStyle(
-                color: Color(0xFF00FF00),
+                color: Colors.white,
                 fontWeight: FontWeight.bold,
               ),
             ),
@@ -167,7 +168,7 @@ class _CalibrationProtocolScreenState extends State<CalibrationProtocolScreen> {
         backgroundColor: Colors.black,
         body: Center(
           child: CircularProgressIndicator(
-            color: Color(0xFF00FF00),
+            color: Colors.white,
           ),
         ),
       );
@@ -196,7 +197,7 @@ class _CalibrationProtocolScreenState extends State<CalibrationProtocolScreen> {
                   LinearProgressIndicator(
                     value: (_currentExerciseIndex + 1) / Exercise.bigSix.length,
                     backgroundColor: Colors.grey.shade900,
-                    valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF00FF00)),
+                    valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
                   ),
                   const SizedBox(height: 10),
                   Text(

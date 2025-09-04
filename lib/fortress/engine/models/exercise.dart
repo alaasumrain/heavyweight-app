@@ -91,9 +91,69 @@ class Exercise {
       id: json['id'],
       name: json['name'],
       muscleGroup: json['muscleGroup'],
-      prescribedWeight: json['prescribedWeight'].toDouble(),
+      prescribedWeight: (json['prescribedWeight'] as num).toDouble(),
       targetReps: json['targetReps'] ?? 5,
       restSeconds: json['restSeconds'] ?? 180,
     );
+  }
+
+  /// Create Exercise from Supabase database row
+  factory Exercise.fromSupabase(Map<String, dynamic> row) {
+    return Exercise(
+      id: _mapExerciseNameToId(row['name']),
+      name: row['name'],
+      muscleGroup: _getMuscleGroupForExercise(row['name']),
+      prescribedWeight: 60.0, // Will be determined by calibration
+      targetReps: 5,
+      restSeconds: 180,
+    );
+  }
+
+  /// Map exercise name from Supabase to internal ID format
+  static String _mapExerciseNameToId(String name) {
+    switch (name.toLowerCase()) {
+      case 'squat':
+        return 'squat';
+      case 'bench press':
+        return 'bench';
+      case 'deadlift':
+        return 'deadlift';
+      case 'overhead press':
+        return 'overhead';
+      case 'row':
+        return 'row';
+      default:
+        return name.toLowerCase().replaceAll(' ', '_');
+    }
+  }
+
+  /// Public method for external use of exercise name mapping
+  static String mapNameToId(String name) => _mapExerciseNameToId(name);
+
+  /// Get exercise by ID from the Big Six
+  static Exercise? getById(String id) {
+    try {
+      return bigSix.firstWhere((e) => e.id == id);
+    } catch (e) {
+      return null;
+    }
+  }
+
+  /// Get muscle group for exercise name
+  static String _getMuscleGroupForExercise(String name) {
+    switch (name.toLowerCase()) {
+      case 'squat':
+        return 'Legs';
+      case 'bench press':
+        return 'Chest';
+      case 'deadlift':
+        return 'Back/Legs';
+      case 'overhead press':
+        return 'Shoulders';
+      case 'row':
+        return 'Back';
+      default:
+        return 'Unknown';
+    }
   }
 }

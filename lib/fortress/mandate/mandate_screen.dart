@@ -1,97 +1,132 @@
 import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import 'package:go_router/go_router.dart';
+
 import 'package:shared_preferences/shared_preferences.dart';
-import '../engine/mandate_engine.dart';
 import '../engine/models/set_data.dart';
-import '../engine/storage/workout_repository.dart';
+import '../engine/mandate_engine.dart';
+import '../viewmodels/mandate_viewmodel.dart';
+import '../../providers/mandate_viewmodel_provider.dart';
+import '../../providers/repository_provider.dart';
 import '../protocol/protocol_screen.dart';
-import 'calibration_protocol.dart';
+
 
 /// The Mandate Screen - The sole entry point to the system
 /// No choices, only the mandate
+/// Now uses MandateViewModel for state management
 class MandateScreen extends StatefulWidget {
-  const MandateScreen({Key? key}) : super(key: key);
+  const MandateScreen({super.key});
+  
+  static Widget withProvider() {
+    return const MandateViewModelProvider(
+      child: MandateScreen(),
+    );
+  }
   
   @override
   State<MandateScreen> createState() => _MandateScreenState();
 }
 
 class _MandateScreenState extends State<MandateScreen> {
-  late WorkoutRepository _repository;
-  late MandateEngine _engine;
-  WorkoutMandate? _todaysMandate;
-  bool _isLoading = true;
-  bool _needsCalibration = false;
-  
   @override
   void initState() {
     super.initState();
-    _engine = MandateEngine();
-    _initializeMandate();
-  }
-  
-  Future<void> _initializeMandate() async {
-    _repository = await WorkoutRepository.create();
-    
-    // Generate today's mandate (handles Day 1 automatically)
-    final history = await _repository.getHistory();
-    final mandate = _engine.generateMandate(history);
-    
-    setState(() {
-      _todaysMandate = mandate;
-      _isLoading = false;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<MandateViewModel>().initialize();
     });
   }
   
+
+
+  
   Future<void> _beginProtocol() async {
-    if (_todaysMandate == null) return;
+    final viewModel = context.read<MandateViewModel>();
+    if (viewModel.todaysMandate == null) return;
     
-    final results = await Navigator.push<List<SetData>>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => ProtocolScreen(mandate: _todaysMandate!),
-      ),
+    // Navigate to protocol screen - it will handle completion flow
+    context.push<List<SetData>>(
+      '/protocol',
+      extra: viewModel.todaysMandate!,
     );
-    
-    if (results != null && results.isNotEmpty) {
-      // Workout completed, refresh mandate
-      _initializeMandate();
-    }
   }
   
-  Future<void> _beginCalibration() async {
-    final completed = await Navigator.push<bool>(
-      context,
-      MaterialPageRoute(
-        builder: (context) => const CalibrationProtocolScreen(),
-      ),
-    );
-    
-    if (completed == true) {
-      _initializeMandate();
-    }
-  }
+
   
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Scaffold(
-        backgroundColor: Colors.black,
-        body: Center(
-          child: CircularProgressIndicator(
-            color: Color(0xFF00FF00),
-          ),
-        ),
-      );
-    }
-    
-    if (_todaysMandate == null || _todaysMandate!.isRestDay) {
-      return _buildRestDay();
-    }
-    
-    return _buildMandate();
+    return Consumer<MandateViewModel>(
+      builder: (context, viewModel, child) {
+        if (viewModel.isLoading) {
+          return const Scaffold(
+            backgroundColor: Colors.black,
+            body: Center(
+              child: CircularProgressIndicator(
+                color: Colors.white,
+              ),
+            ),
+          );
+        }
+        
+        if (viewModel.error != null) {
+          return _buildError(viewModel.error!);
+        }
+        
+        if (!viewModel.hasMandate) {
+          return _buildRestDay();
+        }
+        
+        return _buildMandate(viewModel.todaysMandate!);
+      },
+    );
   }
   
-  Widget _buildMandate() {
+  Widget _buildError(String error) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const Icon(
+                Icons.error_outline,
+                color: Colors.red,
+                size: 48,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'ERROR',
+                style: TextStyle(
+                  color: Colors.red,
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                error,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              ElevatedButton(
+                onPressed: () {
+                  context.read<MandateViewModel>().initialize();
+                },
+                child: const Text('RETRY'),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildMandate(WorkoutMandate mandate) {
     return Scaffold(
       backgroundColor: Colors.black,
       body: SafeArea(
@@ -111,13 +146,23 @@ class _MandateScreenState extends State<MandateScreen> {
                     ),
                   ),
                   const SizedBox(height: 10),
+                  Text(
+                    '${mandate.dayName} DAY',
+                    style: const TextStyle(
+                      color: Colors.amber,
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 4,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
                   const Text(
                     'TODAY\'S MANDATE',
                     style: TextStyle(
                       color: Colors.white,
-                      fontSize: 24,
+                      fontSize: 18,
                       fontWeight: FontWeight.bold,
-                      letterSpacing: 3,
+                      letterSpacing: 2,
                     ),
                   ),
                 ],
@@ -128,9 +173,9 @@ class _MandateScreenState extends State<MandateScreen> {
             Expanded(
               child: ListView.builder(
                 padding: const EdgeInsets.all(20),
-                itemCount: _todaysMandate!.prescriptions.length,
+                itemCount: mandate.prescriptions.length,
                 itemBuilder: (context, index) {
-                  final prescription = _todaysMandate!.prescriptions[index];
+                  final prescription = mandate.prescriptions[index];
                   return _buildExerciseCard(prescription, index + 1);
                 },
               ),
@@ -144,7 +189,7 @@ class _MandateScreenState extends State<MandateScreen> {
                   ElevatedButton(
                     onPressed: _beginProtocol,
                     style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF00FF00),
+                      backgroundColor: Colors.white,
                       foregroundColor: Colors.black,
                       minimumSize: const Size(double.infinity, 80),
                       shape: const RoundedRectangleBorder(
@@ -164,12 +209,15 @@ class _MandateScreenState extends State<MandateScreen> {
                   // Debug reset button (temporary)
                   OutlinedButton(
                     onPressed: () async {
+                      final repository = context.read<RepositoryProvider>().repository;
                       final prefs = await SharedPreferences.getInstance();
                       await prefs.clear();
                       // Also clear the workout database
-                      await _repository.clearAll();
+                      if (repository != null) {
+                        await repository.clearAll();
+                      }
                       if (!mounted) return;
-                      Navigator.of(context).pushReplacementNamed('/fortress/manifesto');
+                      context.go('/manifesto');
                     },
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.red,
@@ -199,15 +247,46 @@ class _MandateScreenState extends State<MandateScreen> {
   Widget _buildExerciseCard(ExercisePrescription prescription, int order) {
     final bool needsCalibration = prescription.needsCalibration;
     
+    // Different colors for different exercises to make them distinct
+    final cardColors = [
+      Colors.blue.shade900,    // Squat - Blue
+      Colors.red.shade900,     // Deadlift - Red  
+      Colors.green.shade900,   // Bench - Green
+      Colors.purple.shade900,  // Overhead - Purple
+      Colors.orange.shade900,  // Row - Orange
+      Colors.teal.shade900,    // Pull-up - Teal
+    ];
+    
+    final borderColors = [
+      Colors.blue.shade700,
+      Colors.red.shade700,
+      Colors.green.shade700,
+      Colors.purple.shade700,
+      Colors.orange.shade700,
+      Colors.teal.shade700,
+    ];
+    
+    final cardColor = cardColors[(order - 1) % cardColors.length];
+    final borderColor = needsCalibration 
+        ? Colors.amber.shade800 
+        : borderColors[(order - 1) % borderColors.length];
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 20),
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         border: Border.all(
-          color: needsCalibration ? Colors.amber.shade800 : Colors.grey.shade800, 
-          width: needsCalibration ? 2 : 1,
+          color: borderColor, 
+          width: needsCalibration ? 3 : 2,
         ),
-        color: Colors.grey.shade900,
+        color: cardColor.withOpacity(0.3),
+        boxShadow: needsCalibration ? [
+          BoxShadow(
+            color: Colors.amber.withOpacity(0.3),
+            blurRadius: 8,
+            spreadRadius: 1,
+          )
+        ] : null,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -257,7 +336,7 @@ class _MandateScreenState extends State<MandateScreen> {
                       ? 'PENDING CALIBRATION'
                       : '${prescription.prescribedWeight} KG',
                     style: TextStyle(
-                      color: needsCalibration ? Colors.amber : const Color(0xFF00FF00),
+                      color: needsCalibration ? Colors.amber : Colors.white,
                       fontSize: needsCalibration ? 12 : 18,
                       fontWeight: FontWeight.bold,
                     ),
@@ -314,6 +393,46 @@ class _MandateScreenState extends State<MandateScreen> {
               ),
             ],
           ),
+          
+          const SizedBox(height: 16),
+          
+          // Exercise Intel Access
+          InkWell(
+            onTap: () {
+              context.go('/exercise-intel', extra: {
+                'exerciseId': prescription.exercise.id,
+                'exerciseName': prescription.exercise.name,
+              });
+            },
+            child: Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+              decoration: BoxDecoration(
+                border: Border.all(color: Colors.grey.shade700),
+                color: Colors.grey.shade900.withOpacity(0.3),
+              ),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(
+                    Icons.info_outline,
+                    color: Colors.grey.shade400,
+                    size: 16,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'FORM_PROTOCOL',
+                    style: TextStyle(
+                      color: Colors.grey.shade400,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 1,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -367,70 +486,5 @@ class _MandateScreenState extends State<MandateScreen> {
       ),
     );
   }
-  
-  Widget _buildCalibrationRequired() {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              const Icon(
-                Icons.fitness_center,
-                color: Color(0xFF00FF00),
-                size: 100,
-              ),
-              const SizedBox(height: 30),
-              const Text(
-                'CALIBRATION REQUIRED',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 3,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
-                child: Text(
-                  'Before the mandate can be issued,\nwe must establish your baseline.\n\nYou will find your true 4-6 rep max\nfor each of the Big Six movements.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: Colors.grey.shade500,
-                    fontSize: 16,
-                    height: 1.5,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 60),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 40),
-                child: ElevatedButton(
-                  onPressed: _beginCalibration,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF00FF00),
-                    foregroundColor: Colors.black,
-                    minimumSize: const Size(double.infinity, 80),
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.zero,
-                    ),
-                  ),
-                  child: const Text(
-                    'BEGIN CALIBRATION',
-                    style: TextStyle(
-                      fontSize: 24,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 2,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
+
 }

@@ -1,0 +1,18 @@
+{
+  "name": "heavyweight-app-bmad",
+  "version": "1.0.0",
+  "description": "BMAD-METHOD integration for Heavyweight fitness app",
+  "scripts": {
+    "bmad": "node .bmad-core/bmad-core.js",
+    "install:bmad": "npx bmad-method install"
+  },
+  "dependencies": {
+    "bmad-method": "^4.43.0"
+  },
+  "bmadMethod": {
+    "version": "4.43.0",
+    "expansionPacks": [
+      ".bmad-core"
+    ]
+  }
+}
