@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../components/layout/heavyweight_scaffold.dart';
 import '../../components/ui/command_button.dart';
+import '../../components/ui/warning_stripes.dart';
 import '../../core/theme/heavyweight_theme.dart';
 
 class AssignmentScreen extends StatefulWidget {
@@ -15,10 +16,31 @@ class AssignmentScreen extends StatefulWidget {
 class _AssignmentScreenState extends State<AssignmentScreen> {
   bool _showTutorial = false;
   
+  // Current training focus - could be determined by workout logic
+  final String _currentDay = 'DAY 1';
+  final List<String> _todaysExercises = ['SQUAT', 'BENCH_PRESS', 'BARBELL_ROW'];
+  
   @override
   void initState() {
     super.initState();
     _checkFirstVisit();
+  }
+  
+  String _getBodyPartFocus() {
+    // Determine body part focus based on exercises
+    final exercises = _todaysExercises.map((e) => e.toLowerCase()).toList();
+    
+    if (exercises.contains('bench_press') || exercises.contains('incline_press')) {
+      return 'CHEST & TRICEPS FOCUS';
+    } else if (exercises.contains('squat') || exercises.contains('deadlift')) {
+      return 'LEGS & GLUTES FOCUS';
+    } else if (exercises.contains('barbell_row') || exercises.contains('pull_up')) {
+      return 'BACK & BICEPS FOCUS';
+    } else if (exercises.contains('overhead_press') || exercises.contains('shoulder_press')) {
+      return 'SHOULDERS & ARMS FOCUS';
+    } else {
+      return 'FULL BODY FOCUS';
+    }
   }
   
   Future<void> _checkFirstVisit() async {
@@ -54,13 +76,61 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
     return Stack(
       children: [
         HeavyweightScaffold(
-      title: 'ASSIGNMENT_$dateStr',
-      subtitle: 'STATUS: PROTOCOL_READY',
-      navIndex: 0,
-      showNavigation: true,
-      body: Column(
+          title: 'ASSIGNMENT_$dateStr',
+          subtitle: 'STATUS: PROTOCOL_READY',
+          navIndex: 0,
+          showNavigation: true,
+          body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // Training Day & Body Part Focus Banner
+          WarningStripes.warning(
+            height: 55,
+            text: '$_currentDay: ${_getBodyPartFocus()}',
+            textStyle: TextStyle(
+              color: Colors.black,
+              fontWeight: FontWeight.bold,
+              fontSize: 16,
+              letterSpacing: 3,
+            ),
+          ),
+          
+          
+          // Training cycle progress indicator
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.symmetric(
+              horizontal: HeavyweightTheme.spacingMd,
+              vertical: HeavyweightTheme.spacingSm,
+            ),
+            decoration: BoxDecoration(
+              border: Border(
+                left: BorderSide(color: HeavyweightTheme.warning, width: 4),
+              ),
+              color: HeavyweightTheme.warning.withOpacity(0.1),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'TRAINING CYCLE: WEEK 2 OF 4',
+                  style: HeavyweightTheme.labelSmall.copyWith(
+                    color: HeavyweightTheme.warning,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  'PROGRESSION: ON TRACK',
+                  style: HeavyweightTheme.labelSmall.copyWith(
+                    color: HeavyweightTheme.primary,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          
+          const SizedBox(height: HeavyweightTheme.spacingLg),
+          
           // Terminal-style assignment header
           Container(
             width: double.infinity,
@@ -158,7 +228,8 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
           ),
           
           const SizedBox(height: HeavyweightTheme.spacingLg),
-        ],
+          ],
+        ),
         ),
         
         // HUD Tutorial Overlay

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import '../../../components/ui/warning_stripes.dart';
 
 /// Flexible Rest Timer - Smart skip/extend based on context
 /// Recovery is important, but so is practical training flow
@@ -143,11 +144,26 @@ class _RestTimerState extends State<RestTimer> with SingleTickerProviderStateMix
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
+          // Warning stripes when timer is complete or in final countdown
+          if (_remainingSeconds <= 0 || _remainingSeconds <= 30)
+            WarningStripes.warning(
+              height: 50,
+              text: _remainingSeconds <= 0 
+                  ? 'CONTINUE_PROTOCOL' 
+                  : _remainingSeconds <= 10
+                      ? 'PREPARE_TO_LIFT'
+                      : 'ALMOST_READY',
+              animated: _remainingSeconds <= 0,
+            ),
+          
+          if (_remainingSeconds <= 0 || _remainingSeconds <= 30)
+            const SizedBox(height: 20),
+          
           // REST MANDATORY text
-          const Text(
-            'REST MANDATORY',
+          Text(
+            _remainingSeconds <= 0 ? 'REST COMPLETE' : 'REST MANDATORY',
             style: TextStyle(
-              color: Colors.red,
+              color: _remainingSeconds <= 0 ? Colors.white : Colors.red,
               fontSize: 24,
               fontWeight: FontWeight.bold,
               letterSpacing: 3,

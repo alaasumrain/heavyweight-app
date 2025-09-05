@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../components/layout/heavyweight_scaffold.dart';
 import '../../components/ui/command_button.dart';
+import '../../components/ui/warning_stripes.dart';
 import '../../core/theme/heavyweight_theme.dart';
 
 class EnforcedRestScreen extends StatefulWidget {
@@ -59,9 +60,26 @@ class _EnforcedRestScreenState extends State<EnforcedRestScreen> {
       title: 'ENFORCED_REST',
       subtitle: isRestComplete ? 'STATUS: READY_TO_CONTINUE' : 'STATUS: REST_MANDATORY',
       showNavigation: false, // No navigation during rest
-      body: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
+      body: SingleChildScrollView(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: MediaQuery.of(context).size.height - 200, // Account for scaffold
+          ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Warning stripes when rest is complete or in final countdown
+              if (isRestComplete || remainingSeconds <= 30)
+                WarningStripes.warning(
+                  height: 45,
+                  text: isRestComplete 
+                      ? 'CONTINUE_PROTOCOL' 
+                      : 'PREPARE_TO_CONTINUE',
+                  animated: isRestComplete,
+                ),
+              
+              if (isRestComplete || remainingSeconds <= 30)
+                const SizedBox(height: HeavyweightTheme.spacingLg),
           // Large countdown display
           Container(
             width: double.infinity,
@@ -237,7 +255,9 @@ class _EnforcedRestScreenState extends State<EnforcedRestScreen> {
           ),
           
           const SizedBox(height: HeavyweightTheme.spacingLg),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -252,9 +272,20 @@ class _EnforcedRestScreenState extends State<EnforcedRestScreen> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: HeavyweightTheme.surface,
-        title: Text(
-          'TERMINATE_SESSION?',
-          style: HeavyweightTheme.h4,
+        title: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            WarningStripes.danger(
+              height: 35,
+              text: 'CRITICAL_ACTION',
+              animated: true,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'TERMINATE_SESSION?',
+              style: HeavyweightTheme.h4,
+            ),
+          ],
         ),
         content: Text(
           'ALL_PROGRESS_WILL_BE_LOST',
@@ -286,4 +317,5 @@ class _EnforcedRestScreenState extends State<EnforcedRestScreen> {
     );
   }
 }
+
 

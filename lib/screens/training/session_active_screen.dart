@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import '../../components/layout/heavyweight_scaffold.dart';
 import '../../components/ui/command_button.dart';
 import '../../components/ui/selector_wheel.dart';
+import '../../components/ui/warning_stripes.dart';
 import '../../core/theme/heavyweight_theme.dart';
 
 class SessionActiveScreen extends StatefulWidget {

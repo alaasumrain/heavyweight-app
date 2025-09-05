@@ -97,7 +97,8 @@ class ExerciseIntelScreen extends StatelessWidget {
   }
   
   Widget _buildHeader(ExerciseIntelProfile intel) {
-    return Container(\n      width: double.infinity,
+    return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         border: Border.all(color: HeavyweightTheme.primary, width: 2),

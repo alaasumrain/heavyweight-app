@@ -14,14 +14,7 @@ class ProfileScreen extends StatelessWidget {
     return Consumer<ProfileProvider>(
       builder: (context, profileProvider, child) {
         return HeavyweightScaffold(
-          appBar: AppBar(
-            backgroundColor: HeavyweightTheme.surface,
-            title: Text(
-              'PROFILE',
-              style: HeavyweightTheme.h3,
-            ),
-            elevation: 0,
-          ),
+          title: 'PROFILE',
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(20.0),
             child: Column(
@@ -205,13 +198,13 @@ class ProfileScreen extends StatelessWidget {
           CommandButton(
             text: 'COMPLETE PROFILE',
             onPressed: () => context.go('/profile/experience'),
-            style: CommandButtonStyle.primary,
+            variant: ButtonVariant.primary,
           ),
         const SizedBox(height: 15),
         CommandButton(
           text: 'RESET PROFILE',
           onPressed: () => _showResetDialog(context, profileProvider),
-          style: CommandButtonStyle.secondary,
+          variant: ButtonVariant.secondary,
         ),
       ],
     );

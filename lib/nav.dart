@@ -23,6 +23,7 @@ import '/screens/training/session_active_screen.dart';
 import '/screens/training/enforced_rest_screen.dart';
 import '/screens/training/training_log_screen.dart';
 import '/screens/training/exercise_intel_screen.dart';
+import '/fortress/engine/models/set_data.dart';
 import '/screens/settings/settings_main_screen.dart';
 import '/fortress/manifesto/manifesto_screen.dart';
 import '/fortress/mandate/mandate_screen.dart';

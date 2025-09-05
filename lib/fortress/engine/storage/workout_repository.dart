@@ -156,5 +156,10 @@ class WorkoutRepository implements WorkoutRepositoryInterface {
       mandateAdherence: (mandateSets / totalSets) * 100,
     );
   }
+  
+  @override
+  void dispose() {
+    // No resources to dispose for SharedPreferences implementation
+  }
 }
 

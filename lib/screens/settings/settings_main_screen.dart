@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../components/ui/system_banner.dart';
 import '../../components/ui/navigation_bar.dart';
+import '../../components/ui/warning_stripes.dart';
 import '../../core/theme/heavyweight_theme.dart';
 import '../../providers/profile_provider.dart';
 
@@ -230,11 +232,22 @@ class SettingsMainScreen extends StatelessWidget {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: HeavyweightTheme.surface,
-        title: Text(
-          'RESET APPLICATION?',
-          style: HeavyweightTheme.h4.copyWith(
-            color: HeavyweightTheme.error,
-          ),
+        title: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            WarningStripes.danger(
+              height: 35,
+              text: 'DESTRUCTIVE_ACTION',
+              animated: true,
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'RESET APPLICATION?',
+              style: HeavyweightTheme.h4.copyWith(
+                color: HeavyweightTheme.error,
+              ),
+            ),
+          ],
         ),
         content: Text(
           'This will permanently delete:\n• All workout data\n• Profile settings\n• Training history\n\nThis action cannot be undone.',
