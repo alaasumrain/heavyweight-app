@@ -42,12 +42,12 @@ class HeavyweightScaffold extends StatelessWidget {
                   children: [
                     if (showBanner) const SystemBanner(),
                     if (showBanner && title != null) 
-                      const SizedBox(height: HeavyweightTheme.spacingXxxl),
+                      const SizedBox(height: HeavyweightTheme.spacingXl), // Reduced from spacingXxxl to spacingXl
                     
                     if (title != null) ...[
                       Text(
                         title!,
-                        style: HeavyweightTheme.h2,
+                        style: HeavyweightTheme.h1, // Increased from h2 to h1 for larger font
                         textAlign: TextAlign.center,
                       ),
                       if (subtitle != null) ...[
@@ -82,5 +82,13 @@ class HeavyweightScaffold extends StatelessWidget {
     );
   }
 }
+
+
+
+
+
+
+
+
 
 

@@ -8,9 +8,8 @@ import 'package:go_router/go_router.dart';
 import '/providers/app_state_provider.dart';
 
 
-import '/screens/onboarding/splash_screen.dart';
+import '/components/navigation/navigation_shell.dart';
 import '/screens/onboarding/legal_gate_screen.dart';
-import '/screens/onboarding/philosophy_screen.dart';
 import '/screens/profile/profile_screen.dart';
 import '/screens/onboarding/profile/training_experience_screen.dart';
 import '/screens/onboarding/profile/training_frequency_screen.dart';
@@ -23,13 +22,20 @@ import '/screens/training/session_active_screen.dart';
 import '/screens/training/enforced_rest_screen.dart';
 import '/screens/training/training_log_screen.dart';
 import '/screens/training/exercise_intel_screen.dart';
+import '/screens/training/session_detail_screen.dart';
 import '/fortress/engine/models/set_data.dart';
 import '/screens/settings/settings_main_screen.dart';
+import '/screens/paywall/paywall_screen.dart';
+import '/screens/paywall/subscription_plans_screen.dart';
+import '/screens/error/error_screen.dart';
 import '/fortress/manifesto/manifesto_screen.dart';
-import '/fortress/mandate/mandate_screen.dart';
+import '/fortress/daily_workout/daily_workout_screen.dart';
 import '/fortress/protocol/protocol_screen.dart';
 import '/fortress/session_complete/session_complete_screen.dart';
-import '/fortress/engine/mandate_engine.dart';
+import '/fortress/engine/workout_engine.dart';
+import '/core/page_transitions.dart';
+import '/core/error_handler.dart';
+import '/components/navigation/swipeable_screen.dart';
 
 
 
@@ -38,43 +44,52 @@ class AppStateNotifier extends ChangeNotifier {
 
   static AppStateNotifier? _instance;
   static AppStateNotifier get instance => _instance ??= AppStateNotifier._();
+  
+  String? _previousRoute;
+  String? get previousRoute => _previousRoute;
+  
+  void updateRoute(String route) {
+    _previousRoute = route;
+    notifyListeners();
+  }
 }
 
 GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
       initialLocation: '/', 
       debugLogDiagnostics: true,
       refreshListenable: appStateNotifier,
-      errorBuilder: (context, state) => const SplashScreen(),
+      errorBuilder: (context, state) => ErrorScreen(
+        error: state.error,
+        retryRoute: '/',
+      ),
       redirect: (context, state) {
-        // Wait for AppState to be initialized
-        try {
-          final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
-          if (!appStateProvider.isInitialized) {
-            return null; // Show splash while loading
+        // Only protect training routes that require authentication
+        final protectedRoutes = ['/assignment', '/session-active', '/training-log'];
+        final currentPath = state.matchedLocation;
+        
+        if (protectedRoutes.any((route) => currentPath.startsWith(route))) {
+          try {
+            final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
+            if (appStateProvider.isInitialized && !appStateProvider.appState.isAuthenticated) {
+              return '/auth';
+            }
+          } catch (e) {
+            // If provider not available, let it through (will be handled by NavigationShell)
           }
-          
-          // Get redirect from AppState
-          return appStateProvider.appState.getRedirectRoute(state.matchedLocation);
-        } catch (e) {
-          // If provider not available, continue to splash
-          return null;
         }
+        
+        return null; // Let everything else through
       },
       routes: [
         GoRoute(
-          name: '_initialize',
+          name: 'splash',
           path: '/',
-          builder: (context, state) => const SplashScreen(),
+          builder: (context, state) => const NavigationShell(),
         ),
         GoRoute(
           name: 'legal',
           path: '/legal',
           builder: (context, state) => const LegalGateScreen(),
-        ),
-        GoRoute(
-          name: 'philosophy',
-          path: '/philosophy',
-          builder: (context, state) => const PhilosophyScreen(),
         ),
         GoRoute(
           name: 'manifesto',
@@ -119,7 +134,28 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         GoRoute(
           name: 'assignment',
           path: '/assignment',
-          builder: (context, state) => const AssignmentScreen(),
+          pageBuilder: (context, state) {
+            final fromIndex = NavigationHelper.getRouteIndex(appStateNotifier.previousRoute ?? '');
+            final toIndex = NavigationHelper.getRouteIndex('/assignment');
+            appStateNotifier.updateRoute('/assignment');
+            
+            final swipeRoutes = SwipeNavigation.getRoutes('/assignment');
+            final screen = SwipeableScreen(
+              previousRoute: swipeRoutes?.previous,
+              nextRoute: swipeRoutes?.next,
+              child: ErrorBoundary(
+                child: AssignmentScreen.withProvider(),
+              ),
+            );
+            
+            return HeavyweightPageTransitions.slideTransition(
+              context,
+              state,
+              screen,
+              fromIndex: fromIndex,
+              toIndex: toIndex,
+            );
+          },
         ),
         GoRoute(
           name: 'session_active',
@@ -132,16 +168,16 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, state) => const EnforcedRestScreen(),
         ),
         GoRoute(
-          name: 'mandate',
-          path: '/mandate',
-          builder: (context, state) => MandateScreen.withProvider(),
+          name: 'daily_workout',
+          path: '/daily-workout',
+          builder: (context, state) => DailyWorkoutScreen.withProvider(),
         ),
         GoRoute(
           name: 'protocol',
           path: '/protocol',
           builder: (context, state) {
-            final mandate = state.extra as WorkoutMandate?;
-            return ProtocolScreen(mandate: mandate);
+            final workout = state.extra as DailyWorkout?;
+            return ProtocolScreen(workout: workout);
           },
         ),
         GoRoute(
@@ -150,14 +186,14 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, state) {
             final sessionData = state.extra as Map<String, dynamic>?;
             if (sessionData != null) {
-              return SessionCompleteScreen(
+              return SessionCompleteScreen.withProvider(
                 sessionSets: sessionData['sessionSets'] as List<SetData>,
                 mandateSatisfied: sessionData['mandateSatisfied'] as bool,
               );
             }
             // Fallback to empty session
-            return const SessionCompleteScreen(
-              sessionSets: [],
+            return SessionCompleteScreen.withProvider(
+              sessionSets: const [],
               mandateSatisfied: false,
             );
           },
@@ -165,12 +201,54 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
         GoRoute(
           name: 'training_log',
           path: '/training-log',
-          builder: (context, state) => const TrainingLogScreen(),
+          pageBuilder: (context, state) {
+            final fromIndex = NavigationHelper.getRouteIndex(appStateNotifier.previousRoute ?? '');
+            final toIndex = NavigationHelper.getRouteIndex('/training-log');
+            appStateNotifier.updateRoute('/training-log');
+            
+            final swipeRoutes = SwipeNavigation.getRoutes('/training-log');
+            final screen = SwipeableScreen(
+              previousRoute: swipeRoutes?.previous,
+              nextRoute: swipeRoutes?.next,
+              child: ErrorBoundary(
+                child: TrainingLogScreen.withProvider(),
+              ),
+            );
+            
+            return HeavyweightPageTransitions.slideTransition(
+              context,
+              state,
+              screen,
+              fromIndex: fromIndex,
+              toIndex: toIndex,
+            );
+          },
         ),
         GoRoute(
           name: 'settings',
           path: '/settings',
-          builder: (context, state) => const SettingsMainScreen(),
+          pageBuilder: (context, state) {
+            final fromIndex = NavigationHelper.getRouteIndex(appStateNotifier.previousRoute ?? '');
+            final toIndex = NavigationHelper.getRouteIndex('/settings');
+            appStateNotifier.updateRoute('/settings');
+            
+            final swipeRoutes = SwipeNavigation.getRoutes('/settings');
+            final screen = SwipeableScreen(
+              previousRoute: swipeRoutes?.previous,
+              nextRoute: swipeRoutes?.next,
+              child: ErrorBoundary(
+                child: const SettingsMainScreen(),
+              ),
+            );
+            
+            return HeavyweightPageTransitions.slideTransition(
+              context,
+              state,
+              screen,
+              fromIndex: fromIndex,
+              toIndex: toIndex,
+            );
+          },
         ),
         GoRoute(
           name: 'exercise_intel',
@@ -182,6 +260,61 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
               exerciseName: params?['exerciseName'] ?? 'Unknown Exercise',
             );
           },
+        ),
+        GoRoute(
+          name: 'session_detail',
+          path: '/session-detail',
+          builder: (context, state) {
+            final session = state.extra as WorkoutSession?;
+            if (session == null) {
+              return const ErrorScreen(
+                errorMessage: 'SESSION_NOT_FOUND',
+                retryRoute: '/training-log',
+              );
+            }
+            return ErrorBoundary(
+              child: SessionDetailScreen(session: session),
+            );
+          },
+        ),
+        
+        // Paywall routes
+        GoRoute(
+          name: 'paywall',
+          path: '/paywall',
+          builder: (context, state) => ErrorBoundary(
+            child: const PaywallScreen(),
+          ),
+        ),
+        GoRoute(
+          name: 'subscription_plans',
+          path: '/subscription-plans',
+          builder: (context, state) => ErrorBoundary(
+            child: const SubscriptionPlansScreen(),
+          ),
+        ),
+        
+        // Error routes
+        GoRoute(
+          name: 'error',
+          path: '/error',
+          builder: (context, state) {
+            final error = state.extra;
+            return ErrorScreen(
+              error: error,
+              retryRoute: '/assignment',
+            );
+          },
+        ),
+        GoRoute(
+          name: 'network_error',
+          path: '/network-error',
+          builder: (context, state) => const NetworkErrorScreen(),
+        ),
+        GoRoute(
+          name: 'auth_error',
+          path: '/auth-error',
+          builder: (context, state) => const AuthErrorScreen(),
         ),
       ],
     );

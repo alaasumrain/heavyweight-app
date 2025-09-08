@@ -1,20 +1,26 @@
 /// Exercise model for the Fortress system
 /// Represents a single exercise with its prescribed weight and mandate
 class Exercise {
-  final String id;
+  final int? databaseId; // Database ID from Supabase
+  final String id; // Legacy string ID (for compatibility)
   final String name;
   final String muscleGroup;
   final double prescribedWeight; // In kg
   final int targetReps; // Always 4-6, but stored for clarity
   final int restSeconds; // Rest period after this exercise
+  final int? setsTarget; // Target sets for this exercise (from database)
+  final String? description; // Exercise description
   
   const Exercise({
+    this.databaseId,
     required this.id,
     required this.name,
     required this.muscleGroup,
     required this.prescribedWeight,
     this.targetReps = 5, // Middle of the 4-6 mandate
     this.restSeconds = 180, // 3 minutes default
+    this.setsTarget,
+    this.description,
   });
   
   /// The Big Six compound movements
@@ -58,20 +64,44 @@ class Exercise {
   ];
   
   Exercise copyWith({
+    int? databaseId,
     String? id,
     String? name,
     String? muscleGroup,
     double? prescribedWeight,
     int? targetReps,
     int? restSeconds,
+    int? setsTarget,
+    String? description,
   }) {
     return Exercise(
+      databaseId: databaseId ?? this.databaseId,
       id: id ?? this.id,
       name: name ?? this.name,
       muscleGroup: muscleGroup ?? this.muscleGroup,
       prescribedWeight: prescribedWeight ?? this.prescribedWeight,
       targetReps: targetReps ?? this.targetReps,
       restSeconds: restSeconds ?? this.restSeconds,
+      setsTarget: setsTarget ?? this.setsTarget,
+      description: description ?? this.description,
+    );
+  }
+  
+  /// Create Exercise from database row
+  factory Exercise.fromDatabase({
+    required int databaseId,
+    required String name,
+    required String description,
+    int setsTarget = 3,
+  }) {
+    return Exercise(
+      databaseId: databaseId,
+      id: name.toLowerCase().replaceAll(' ', '_'),
+      name: name,
+      muscleGroup: 'Mixed', // Will be set based on day
+      prescribedWeight: 20.0, // Default starting weight
+      setsTarget: setsTarget,
+      description: description,
     );
   }
   

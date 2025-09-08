@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../../components/ui/system_banner.dart';
+import '../../components/layout/heavyweight_scaffold.dart';
 import '../../components/ui/command_button.dart';
+import '../../core/theme/heavyweight_theme.dart';
 import '../../providers/app_state_provider.dart';
 
 class LegalGateScreen extends StatelessWidget {
@@ -12,14 +12,28 @@ class LegalGateScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: HeavyweightTheme.background,
+      appBar: AppBar(
+        backgroundColor: HeavyweightTheme.background,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: HeavyweightTheme.primary),
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              context.go('/'); // Go back to splash
+            }
+          },
+        ),
+        elevation: 0,
+      ),
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(HeavyweightTheme.spacingLg),
           child: Column(
             children: [
               const SystemBanner(),
-              const SizedBox(height: 40),
+              const SizedBox(height: HeavyweightTheme.spacingXl),
               
               // Warning text
               Expanded(
@@ -28,29 +42,19 @@ class LegalGateScreen extends StatelessWidget {
                   children: [
                     Icon(
                       Icons.warning_outlined,
-                      color: Colors.red.shade600,
+                      color: HeavyweightTheme.error,
                       size: 64,
                     ),
-                    const SizedBox(height: 30),
+                    const SizedBox(height: HeavyweightTheme.spacingXl),
                     Text(
                       'LEGAL DISCLAIMER',
-                      style: GoogleFonts.ibmPlexMono(
-                        color: Colors.red.shade600,
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 2,
-                      ),
+                      style: HeavyweightTheme.bodyLarge,
                     ),
-                    const SizedBox(height: 30),
+                    const SizedBox(height: HeavyweightTheme.spacingXl),
                     Text(
                       'THIS APPLICATION PROVIDES FITNESS GUIDANCE.\n\nYOU ASSUME ALL RISKS.\n\nCONSULT A PHYSICIAN BEFORE STARTING ANY EXERCISE PROGRAM.\n\nTHE AUTHORS DISCLAIM ALL LIABILITY.',
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.ibmPlexMono(
-                        color: Colors.grey.shade400,
-                        fontSize: 14,
-                        height: 1.8,
-                        letterSpacing: 1,
-                      ),
+                      style: HeavyweightTheme.bodyMedium,
                     ),
                   ],
                 ),
@@ -69,11 +73,12 @@ class LegalGateScreen extends StatelessWidget {
                       
                       // Navigate to next screen (AppState will handle routing)
                       if (context.mounted) {
-                        context.go('/philosophy');
+                        final nextRoute = appState.nextRoute;
+                        context.go(nextRoute);
                       }
                     },
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: HeavyweightTheme.spacingMd),
                   CommandButton(
                     text: 'VIEW TERMS & PRIVACY POLICY',
                     onPressed: () {
@@ -82,7 +87,7 @@ class LegalGateScreen extends StatelessWidget {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Terms & Privacy would open here'),
-                          backgroundColor: Colors.grey,
+                          backgroundColor: HeavyweightTheme.secondary,
                         ),
                       );
                     },

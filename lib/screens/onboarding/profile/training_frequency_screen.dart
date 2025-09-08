@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../core/theme/heavyweight_theme.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../components/ui/system_banner.dart';
@@ -7,6 +7,7 @@ import '../../../components/ui/command_button.dart';
 import '../../../components/ui/selector_wheel.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../providers/app_state_provider.dart';
+import '../../../nav.dart';
 
 class TrainingFrequencyScreen extends StatelessWidget {
   const TrainingFrequencyScreen({Key? key}) : super(key: key);
@@ -17,15 +18,21 @@ class TrainingFrequencyScreen extends StatelessWidget {
     final isEditMode = GoRouterState.of(context).matchedLocation.contains('/profile/');
     
     return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: isEditMode ? AppBar(
-        backgroundColor: Colors.black,
+      backgroundColor: HeavyweightTheme.background,
+      appBar: AppBar(
+        backgroundColor: HeavyweightTheme.background,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => context.pop(),
+          icon: const Icon(Icons.arrow_back, color: HeavyweightTheme.primary),
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              context.go('/profile/experience');
+            }
+          },
         ),
         elevation: 0,
-      ) : null,
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -37,23 +44,13 @@ class TrainingFrequencyScreen extends StatelessWidget {
               // Header
               Text(
                 'FREQUENCY CALIBRATION',
-                style: GoogleFonts.ibmPlexMono(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 2,
-                ),
+                style: HeavyweightTheme.h3,
               ),
               const SizedBox(height: 10),
               Text(
                 'SET PROTOCOL EXECUTION FREQUENCY\nDAYS PER WEEK AVAILABLE FOR TRAINING',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.ibmPlexMono(
-                  color: Colors.grey.shade500,
-                  fontSize: 14,
-                  height: 1.5,
-                  letterSpacing: 1,
-                ),
+                style: HeavyweightTheme.bodyMedium,
               ),
               const SizedBox(height: 60),
               
@@ -75,16 +72,12 @@ class TrainingFrequencyScreen extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(20),
                           decoration: BoxDecoration(
-                            border: Border.all(color: Colors.grey.shade800),
+                            border: Border.all(color: HeavyweightTheme.secondary.shade800),
                           ),
                           child: Text(
                             _getFrequencyDescription(provider.frequency ?? 3),
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.ibmPlexMono(
-                              color: Colors.grey.shade400,
-                              fontSize: 12,
-                              height: 1.5,
-                            ),
+                            style: HeavyweightTheme.bodyMedium,
                           ),
                         ),
                       ],

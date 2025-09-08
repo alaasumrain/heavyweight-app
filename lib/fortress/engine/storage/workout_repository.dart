@@ -3,6 +3,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/set_data.dart';
 import '../models/exercise.dart';
+import '../models/workout_day.dart';
 import 'workout_repository_interface.dart';
 
 /// Repository for persisting workout data
@@ -157,6 +158,20 @@ class WorkoutRepository implements WorkoutRepositoryInterface {
     );
   }
   
+  /// Fetch workout days from database (SharedPreferences implementation returns empty)
+  @override
+  Future<List<WorkoutDay>> fetchWorkoutDays() async {
+    // SharedPreferences doesn't support database-driven exercises
+    return [];
+  }
+  
+  /// Fetch complete workout day with exercises (SharedPreferences implementation returns null)
+  @override
+  Future<WorkoutDay?> fetchCompleteWorkoutDay(int workoutDayId) async {
+    // SharedPreferences doesn't support database-driven exercises
+    return null;
+  }
+
   @override
   void dispose() {
     // No resources to dispose for SharedPreferences implementation

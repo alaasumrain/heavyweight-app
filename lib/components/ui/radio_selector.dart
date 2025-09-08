@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../core/theme/heavyweight_theme.dart';
 
 class RadioSelector<T> extends StatelessWidget {
   final List<RadioOption<T>> options;
@@ -66,14 +66,9 @@ class RadioSelector<T> extends StatelessWidget {
                 Expanded(
                   child: Text(
                     option.label,
-                    style: GoogleFonts.ibmPlexMono(
-                      color: isSelected ? Colors.white : Colors.grey.shade300,
-                      fontSize: 18,
+                    style: HeavyweightTheme.bodyLarge.copyWith(
+                      color: isSelected ? HeavyweightTheme.primary : HeavyweightTheme.textSecondary,
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      height: 1.4,
-                    ).copyWith(
-                      // Fallback font family in case Google Fonts fails
-                      fontFamily: 'monospace',
                     ),
                   ),
                 ),

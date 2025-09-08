@@ -1,46 +1,25 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import 'package:google_fonts/google_fonts.dart';
-import '../../components/ui/system_banner.dart';
-import '../../components/ui/navigation_bar.dart';
+import '../../components/layout/heavyweight_scaffold.dart';
 import '../../components/ui/warning_stripes.dart';
 import '../../core/theme/heavyweight_theme.dart';
 import '../../providers/profile_provider.dart';
+import '../../providers/app_state_provider.dart';
+import '../../providers/repository_provider.dart';
 
 class SettingsMainScreen extends StatelessWidget {
   const SettingsMainScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
-              const SystemBanner(),
-              const SizedBox(height: 40),
-              
-              Text(
-                'SETTINGS',
-                style: GoogleFonts.ibmPlexMono(
-                  color: Colors.white,
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 3,
-                ),
-              ),
-              
-              const SizedBox(height: 40),
-              
-              // Settings sections
-              Expanded(
-                child: SingleChildScrollView(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
+    return HeavyweightScaffold(
+      title: 'SETTINGS',
+      showBanner: true,
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
                       _buildSettingsSection('PROFILE', [
                         _buildSettingsItem(
                           icon: Icons.person_outline,
@@ -50,7 +29,7 @@ class SettingsMainScreen extends StatelessWidget {
                         ),
                       ]),
                       
-                      const SizedBox(height: 30),
+                      const SizedBox(height: HeavyweightTheme.spacingXl),
                       
                       _buildSettingsSection('DATA', [
                         _buildSettingsItem(
@@ -68,7 +47,7 @@ class SettingsMainScreen extends StatelessWidget {
                         ),
                       ]),
                       
-                      const SizedBox(height: 30),
+                      const SizedBox(height: HeavyweightTheme.spacingXl),
                       
                       _buildSettingsSection('ABOUT', [
                         _buildSettingsItem(
@@ -84,16 +63,20 @@ class SettingsMainScreen extends StatelessWidget {
                           onTap: () => context.go('/manifesto'),
                         ),
                       ]),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          ),
+                      
+                      const SizedBox(height: HeavyweightTheme.spacingXl),
+                      
+                      _buildSettingsSection('DEVELOPER', [
+                        _buildSettingsItem(
+                          icon: Icons.refresh,
+                          label: 'Reset All Data',
+                          subtitle: 'Clear all data and restart onboarding',
+                          onTap: () => _resetAllData(context),
+                          isDestructive: true,
+                        ),
+                      ]),
+          ],
         ),
-      ),
-      bottomNavigationBar: const HeavyweightNavigationBar(
-        currentIndex: 2, // Settings is index 2
       ),
     );
   }
@@ -109,7 +92,7 @@ class SettingsMainScreen extends StatelessWidget {
             letterSpacing: 2,
           ),
         ),
-        const SizedBox(height: 15),
+        const SizedBox(height: HeavyweightTheme.spacingMd),
         ...items,
       ],
     );
@@ -123,12 +106,12 @@ class SettingsMainScreen extends StatelessWidget {
     bool isDestructive = false,
   }) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: HeavyweightTheme.spacingSm),
       child: InkWell(
         onTap: onTap,
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(15),
+          padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
           decoration: BoxDecoration(
             border: Border.all(
               color: isDestructive 
@@ -145,7 +128,7 @@ class SettingsMainScreen extends StatelessWidget {
                     : HeavyweightTheme.textSecondary,
                 size: 24,
               ),
-              const SizedBox(width: 15),
+              const SizedBox(width: HeavyweightTheme.spacingMd),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -158,7 +141,7 @@ class SettingsMainScreen extends StatelessWidget {
                             : HeavyweightTheme.textPrimary,
                       ),
                     ),
-                    const SizedBox(height: 5),
+                    const SizedBox(height: HeavyweightTheme.spacingXs),
                     Text(
                       subtitle,
                       style: HeavyweightTheme.bodySmall.copyWith(
@@ -185,7 +168,7 @@ class SettingsMainScreen extends StatelessWidget {
       context: context,
       backgroundColor: HeavyweightTheme.surface,
       builder: (context) => Container(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(HeavyweightTheme.spacingLg),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
@@ -193,7 +176,7 @@ class SettingsMainScreen extends StatelessWidget {
               'TRAINING DATA',
               style: HeavyweightTheme.h4,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: HeavyweightTheme.spacingLg),
             ListTile(
               leading: const Icon(Icons.file_download, color: HeavyweightTheme.textPrimary),
               title: const Text('Export Data', style: TextStyle(color: HeavyweightTheme.textPrimary)),
@@ -223,6 +206,49 @@ class SettingsMainScreen extends StatelessWidget {
       SnackBar(
         content: const Text('DATA EXPORT: FEATURE_COMING_SOON'),
         backgroundColor: HeavyweightTheme.primary,
+      ),
+    );
+  }
+  
+  void _resetAllData(BuildContext context) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: HeavyweightTheme.surface,
+        title: const Text(
+          'RESET ALL DATA',
+          style: TextStyle(color: HeavyweightTheme.textPrimary),
+        ),
+        content: const Text(
+          'This will delete ALL your data and restart the onboarding process. This action cannot be undone.',
+          style: TextStyle(color: HeavyweightTheme.textSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('CANCEL'),
+          ),
+          TextButton(
+            onPressed: () async {
+              Navigator.pop(context);
+              
+              // Reset app state
+              final appState = context.read<AppStateProvider>().appState;
+              await appState.reset();
+              
+              // Reset repository
+              final repository = context.read<RepositoryProvider>().repository;
+              if (repository != null) {
+                await repository.clearAll();
+              }
+              
+              // Navigate to splash/onboarding
+              context.go('/');
+            },
+            style: TextButton.styleFrom(foregroundColor: HeavyweightTheme.danger),
+            child: const Text('RESET ALL'),
+          ),
+        ],
       ),
     );
   }
@@ -303,12 +329,12 @@ class SettingsMainScreen extends StatelessWidget {
                 color: HeavyweightTheme.primary,
               ),
             ),
-            const SizedBox(height: 15),
+            const SizedBox(height: HeavyweightTheme.spacingMd),
             Text(
               'The uncompromising strength training protocol.',
               style: HeavyweightTheme.bodyMedium,
             ),
-            const SizedBox(height: 15),
+            const SizedBox(height: HeavyweightTheme.spacingMd),
             Text(
               'Built on the principle that 4-6 reps per set is non-negotiable for optimal strength development.',
               style: HeavyweightTheme.bodySmall.copyWith(

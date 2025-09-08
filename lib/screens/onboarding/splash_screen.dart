@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../core/theme/heavyweight_theme.dart';
 import 'package:go_router/go_router.dart';
 import '../../components/ui/system_banner.dart';
 
@@ -27,27 +27,23 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: HeavyweightTheme.background,
       body: SafeArea(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             const SystemBanner(),
-            const SizedBox(height: 40),
-            Text(
+            const SizedBox(height: HeavyweightTheme.spacingXl),
+            const Text(
               'INITIALIZING...',
-              style: GoogleFonts.ibmPlexMono(
-                color: Colors.grey.shade600,
-                fontSize: 12,
-                letterSpacing: 2,
-              ),
+              style: HeavyweightTheme.bodySmall,
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: HeavyweightTheme.spacingLg),
             SizedBox(
               width: 200,
               child: LinearProgressIndicator(
-                backgroundColor: Colors.grey.shade900,
-                valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                backgroundColor: HeavyweightTheme.secondary,
+                valueColor: const AlwaysStoppedAnimation<Color>(HeavyweightTheme.primary),
               ),
             ),
           ],

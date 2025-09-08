@@ -1,13 +1,24 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:provider/provider.dart';
 import '../../components/layout/heavyweight_scaffold.dart';
 import '../../components/ui/command_button.dart';
-import '../../components/ui/warning_stripes.dart';
 import '../../core/theme/heavyweight_theme.dart';
+import '../../fortress/viewmodels/workout_viewmodel.dart';
+import '../../providers/workout_viewmodel_provider.dart';
+import '../../providers/repository_provider.dart';
+import '../../fortress/engine/workout_engine.dart';
+import '../../fortress/engine/models/exercise.dart';
 
 class AssignmentScreen extends StatefulWidget {
   const AssignmentScreen({Key? key}) : super(key: key);
+  
+  static Widget withProvider() {
+    return const WorkoutViewModelProvider(
+      child: AssignmentScreen(),
+    );
+  }
   
   @override
   State<AssignmentScreen> createState() => _AssignmentScreenState();
@@ -15,32 +26,76 @@ class AssignmentScreen extends StatefulWidget {
 
 class _AssignmentScreenState extends State<AssignmentScreen> {
   bool _showTutorial = false;
-  
-  // Current training focus - could be determined by workout logic
-  final String _currentDay = 'DAY 1';
-  final List<String> _todaysExercises = ['SQUAT', 'BENCH_PRESS', 'BARBELL_ROW'];
+  String _lastSessionText = 'LOADING';
+  String _streakText = 'LOADING';
   
   @override
   void initState() {
     super.initState();
     _checkFirstVisit();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<WorkoutViewModel>().initialize();
+      _loadSessionStats();
+    });
   }
   
-  String _getBodyPartFocus() {
-    // Determine body part focus based on exercises
-    final exercises = _todaysExercises.map((e) => e.toLowerCase()).toList();
-    
-    if (exercises.contains('bench_press') || exercises.contains('incline_press')) {
-      return 'CHEST & TRICEPS FOCUS';
-    } else if (exercises.contains('squat') || exercises.contains('deadlift')) {
-      return 'LEGS & GLUTES FOCUS';
-    } else if (exercises.contains('barbell_row') || exercises.contains('pull_up')) {
-      return 'BACK & BICEPS FOCUS';
-    } else if (exercises.contains('overhead_press') || exercises.contains('shoulder_press')) {
-      return 'SHOULDERS & ARMS FOCUS';
-    } else {
-      return 'FULL BODY FOCUS';
+  Future<void> _loadSessionStats() async {
+    try {
+      final viewModel = context.read<WorkoutViewModel>();
+      final stats = await viewModel.getStats();
+      
+      // Get last session from repository
+      final repository = context.read<RepositoryProvider>().repository;
+      if (repository != null) {
+        final lastSession = await repository.getLastSession();
+        
+        // Calculate days since last session
+        String lastSessionDisplay = 'NO_PREVIOUS_SESSION';
+        if (lastSession != null) {
+          final daysSince = DateTime.now().difference(lastSession.date).inDays;
+          if (daysSince == 0) {
+            lastSessionDisplay = 'TODAY';
+          } else if (daysSince == 1) {
+            lastSessionDisplay = '1_DAY_AGO';
+          } else {
+            lastSessionDisplay = '${daysSince}_DAYS_AGO';
+          }
+        }
+        
+        // Set streak based on workout days
+        final streakDisplay = '${stats.workoutDays}_SESSIONS';
+        
+        if (mounted) {
+          setState(() {
+            _lastSessionText = lastSessionDisplay;
+            _streakText = streakDisplay;
+          });
+        }
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _lastSessionText = 'ERROR_LOADING';
+          _streakText = 'ERROR_LOADING';
+        });
+      }
     }
+  }
+  
+  String _getBodyPartFocus(DailyWorkout? workout) {
+    if (workout == null) return 'LOADING';
+    
+    // Just show the day name without date
+    return workout.dayName;
+  }
+  
+  String _getSubtitle() {
+    final now = DateTime.now();
+    final dayNames = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+    final dayName = dayNames[now.weekday - 1];
+    final dateStr = '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
+    
+    return '$dayName | $dateStr';
   }
   
   Future<void> _checkFirstVisit() async {
@@ -68,244 +123,235 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
     });
   }
 
+  void _showExerciseInfo(Exercise exercise) {
+    showDialog(
+      context: context,
+      builder: (context) => Dialog(
+        backgroundColor: Colors.black,
+        child: Container(
+          padding: const EdgeInsets.all(20),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.white),
+            color: Colors.black,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                exercise.name.toUpperCase(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'EXERCISE_INTEL:',
+                style: TextStyle(
+                  color: Colors.grey.shade400,
+                  fontSize: 12,
+                  letterSpacing: 1,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                (exercise.description?.isNotEmpty ?? false)
+                    ? exercise.description! 
+                    : 'COMPOUND_MOVEMENT. FOCUS_ON_FORM. PROGRESSIVE_OVERLOAD.',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 14,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 20),
+              CommandButton(
+                text: 'COMMAND: CLOSE',
+                variant: ButtonVariant.secondary,
+                onPressed: () {
+                  Navigator.of(context, rootNavigator: true).pop();
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    final now = DateTime.now();
-    final dateStr = '${now.year}${now.month.toString().padLeft(2, '0')}${now.day.toString().padLeft(2, '0')}';
-    
-    return Stack(
-      children: [
-        HeavyweightScaffold(
-          title: 'ASSIGNMENT_$dateStr',
-          subtitle: 'STATUS: PROTOCOL_READY',
-          navIndex: 0,
-          showNavigation: true,
-          body: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Training Day & Body Part Focus Banner
-          WarningStripes.warning(
-            height: 55,
-            text: '$_currentDay: ${_getBodyPartFocus()}',
-            textStyle: TextStyle(
-              color: Colors.black,
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-              letterSpacing: 3,
-            ),
-          ),
-          
-          
-          // Training cycle progress indicator
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(
-              horizontal: HeavyweightTheme.spacingMd,
-              vertical: HeavyweightTheme.spacingSm,
-            ),
-            decoration: BoxDecoration(
-              border: Border(
-                left: BorderSide(color: HeavyweightTheme.warning, width: 4),
+    return Consumer<WorkoutViewModel>(
+      builder: (context, viewModel, child) {
+        if (viewModel.isLoading) {
+          return const Scaffold(
+            backgroundColor: Colors.black,
+            body: Center(
+              child: CircularProgressIndicator(
+                color: Colors.white,
               ),
-              color: HeavyweightTheme.warning.withOpacity(0.1),
             ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  'TRAINING CYCLE: WEEK 2 OF 4',
-                  style: HeavyweightTheme.labelSmall.copyWith(
-                    color: HeavyweightTheme.warning,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                Text(
-                  'PROGRESSION: ON TRACK',
-                  style: HeavyweightTheme.labelSmall.copyWith(
-                    color: HeavyweightTheme.primary,
-                  ),
-                ),
-              ],
+          );
+        }
+        
+        if (viewModel.error != null) {
+          return _buildError(viewModel.error!);
+        }
+        
+        if (!viewModel.hasWorkout) {
+          return _buildRestDay();
+        }
+        
+        return Stack(
+          children: [
+            HeavyweightScaffold(
+              title: _getBodyPartFocus(viewModel.todaysWorkout),
+              subtitle: _getSubtitle(),
+              navIndex: 0,
+              showNavigation: true,
+              body: _buildWorkoutContent(viewModel.todaysWorkout!),
             ),
+            
+            // HUD Tutorial Overlay
+            if (_showTutorial)
+              _buildHudTutorialOverlay(),
+          ],
+        );
+      },
+    );
+  }
+  
+  Widget _buildWorkoutContent(DailyWorkout workout) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        
+        // Terminal-style exercise list
+        Text(
+          'PROTOCOL_SEQUENCE:',
+          style: HeavyweightTheme.labelMedium.copyWith(
+            color: HeavyweightTheme.primary,
           ),
-          
-          const SizedBox(height: HeavyweightTheme.spacingLg),
-          
-          // Terminal-style assignment header
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
-            decoration: BoxDecoration(
-              border: Border.all(color: HeavyweightTheme.primary, width: 1),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'SYSTEM_STATUS: OPERATIONAL',
-                  style: HeavyweightTheme.bodyMedium.copyWith(
-                    color: HeavyweightTheme.primary,
-                  ),
-                ),
-                const SizedBox(height: HeavyweightTheme.spacingSm),
-                Text(
-                  'LAST_SESSION: 2_DAYS_AGO',
-                  style: HeavyweightTheme.labelSmall,
-                ),
-                Text(
-                  'STREAK: 12_SESSIONS',
-                  style: HeavyweightTheme.labelSmall,
-                ),
-              ],
-            ),
-          ),
-          
-          const SizedBox(height: HeavyweightTheme.spacingXl),
-          
-          // Terminal-style exercise list
-          Text(
-            'PROTOCOL_SEQUENCE:',
-            style: HeavyweightTheme.labelMedium.copyWith(
-              color: HeavyweightTheme.primary,
-            ),
-          ),
-          const SizedBox(height: HeavyweightTheme.spacingMd),
-              
-          // Exercise assignments
-          Expanded(
-            child: ListView(
-              children: [
-                _buildTerminalExerciseEntry('01', 'SQUAT', '80.0', 'KG', '0/3', '6@77.5KG'),
-                _buildTerminalExerciseEntry('02', 'BENCH_PRESS', '60.0', 'KG', '0/3', '5@57.5KG'),
-                _buildTerminalExerciseEntry('03', 'BARBELL_ROW', '55.0', 'KG', '0/3', '6@52.5KG'),
-                
-                const SizedBox(height: HeavyweightTheme.spacingXl),
-                
-                // Session summary
-                Container(
-                  padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
-                  decoration: BoxDecoration(
-                    border: Border.all(color: HeavyweightTheme.textSecondary, width: 1),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'SESSION_SUMMARY:',
-                        style: HeavyweightTheme.labelMedium.copyWith(
-                          color: HeavyweightTheme.textSecondary,
-                        ),
-                      ),
-                      const SizedBox(height: HeavyweightTheme.spacingSm),
-                      Text(
-                        'TOTAL_SETS: 9',
-                        style: HeavyweightTheme.bodySmall,
-                      ),
-                      Text(
-                        'EST_DURATION: 45_MIN',
-                        style: HeavyweightTheme.bodySmall,
-                      ),
-                      Text(
-                        'TOTAL_VOLUME: 1755_KG',
-                        style: HeavyweightTheme.bodySmall,
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          const SizedBox(height: HeavyweightTheme.spacingXl),
-          
-          // Begin Protocol button
-          CommandButton(
-            text: 'EXECUTE_PROTOCOL',
-            variant: ButtonVariant.primary,
-            onPressed: () {
-              context.go('/session-active');
+        ),
+        const SizedBox(height: HeavyweightTheme.spacingMd),
+            
+        // Exercise assignments
+        Expanded(
+          child: ListView.builder(
+            itemCount: workout.exercises.length,
+            itemBuilder: (context, index) {
+              final exercise = workout.exercises[index];
+              return _buildTerminalExerciseEntry(
+                '${(index + 1).toString().padLeft(2, '0')}',
+                exercise.exercise.name.toUpperCase().replaceAll(' ', '_'),
+                exercise.prescribedWeight.toString(),
+                'KG',
+                '0/${exercise.targetSets}',
+                'LAST: --',
+                onTap: () => _showExerciseInfo(exercise.exercise),
+              );
             },
           ),
-          
-          const SizedBox(height: HeavyweightTheme.spacingLg),
-          ],
-        ),
         ),
         
-        // HUD Tutorial Overlay
-        if (_showTutorial)
-          _buildHudTutorialOverlay(),
+        const SizedBox(height: HeavyweightTheme.spacingXl),
+        
+        // Begin Protocol button  
+        CommandButton(
+          text: 'BEGIN_WORKOUT',
+          variant: ButtonVariant.primary,
+          onPressed: () {
+            context.go('/daily-workout');
+          },
+        ),
+        
+        const SizedBox(height: HeavyweightTheme.spacingLg),
       ],
     );
   }
   
-  Widget _buildHudTutorialOverlay() {
-    return Container(
-      color: Colors.black.withOpacity(0.85),
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(24),
+  Widget _buildError(String error) {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Center(
           child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const SizedBox(height: 60),
-              
-              // Tutorial content
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // HUD label
-                    Text(
-                      'HUD_ORIENTATION',
-                      style: HeavyweightTheme.h3.copyWith(
-                        color: Colors.white,
-                        letterSpacing: 3,
-                      ),
-                    ),
-                    
-                    const SizedBox(height: 48),
-                    
-                    // Interface elements
-                    Container(
-                      padding: const EdgeInsets.all(32),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: Colors.white.withOpacity(0.3)),
-                      ),
-                      child: Column(
-                        children: [
-                          _buildHudLabel('[1] YOUR MANDATE', 'Today\'s assigned training protocol'),
-                          const SizedBox(height: 24),
-                          _buildHudLabel('[2] YOUR LOGBOOK', 'Access via bottom navigation'),
-                          const SizedBox(height: 24),
-                          _buildHudLabel('[3] YOUR PROFILE', 'Calibration & system settings'),
-                        ],
-                      ),
-                    ),
-                  ],
+              const Icon(
+                Icons.error_outline,
+                color: Colors.red,
+                size: 48,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'ERROR',
+                style: HeavyweightTheme.h3.copyWith(
+                  color: Colors.red,
+                  letterSpacing: 2,
                 ),
               ),
-              
-              // Dismiss button
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _dismissTutorial,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.white,
-                    foregroundColor: Colors.black,
-                    shape: const RoundedRectangleBorder(
-                      borderRadius: BorderRadius.zero,
-                    ),
-                  ),
-                  child: Text(
-                    'INTERFACE_UNDERSTOOD',
-                    style: HeavyweightTheme.bodyMedium.copyWith(
-                      color: Colors.black,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 2,
-                    ),
-                  ),
+              const SizedBox(height: 8),
+              Text(
+                error,
+                style: HeavyweightTheme.bodyMedium.copyWith(
+                  color: Colors.white,
+                ),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              CommandButton(
+                text: 'RETRY',
+                onPressed: () {
+                  context.read<WorkoutViewModel>().initialize();
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildRestDay() {
+    return Scaffold(
+      backgroundColor: Colors.black,
+      body: SafeArea(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.block,
+                color: Colors.red.shade900,
+                size: 100,
+              ),
+              const SizedBox(height: 30),
+              Text(
+                'REST DAY ENFORCED',
+                style: HeavyweightTheme.h2.copyWith(
+                  color: Colors.red,
+                  letterSpacing: 3,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'Recovery is mandatory.\\nYour muscles grow during rest.',
+                textAlign: TextAlign.center,
+                style: HeavyweightTheme.bodyMedium.copyWith(
+                  color: HeavyweightTheme.textSecondary,
+                  height: 1.5,
+                ),
+              ),
+              const SizedBox(height: 40),
+              Text(
+                'NEXT WORKOUT: TOMORROW',
+                style: HeavyweightTheme.labelSmall.copyWith(
+                  color: HeavyweightTheme.textSecondary,
+                  letterSpacing: 2,
                 ),
               ),
             ],
@@ -315,39 +361,16 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
     );
   }
   
-  Widget _buildHudLabel(String label, String description) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: HeavyweightTheme.bodyMedium.copyWith(
-            color: HeavyweightTheme.primary,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1,
-          ),
+  Widget _buildTerminalExerciseEntry(String number, String exercise, String weight, String unit, String progress, String lastPerformance, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        margin: const EdgeInsets.only(bottom: HeavyweightTheme.spacingXs),
+        padding: const EdgeInsets.all(HeavyweightTheme.spacingXs),
+        decoration: BoxDecoration(
+          border: Border.all(color: HeavyweightTheme.textSecondary, width: 1),
+          color: onTap != null ? HeavyweightTheme.surface : HeavyweightTheme.background,
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Text(
-            description,
-            style: HeavyweightTheme.bodySmall.copyWith(
-              color: Colors.grey.shade300,
-              height: 1.4,
-            ),
-          ),
-        ),
-      ],
-    );
-  }
-  
-  Widget _buildTerminalExerciseEntry(String number, String exercise, String weight, String unit, String progress, String lastPerformance) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: HeavyweightTheme.spacingMd),
-      padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
-      decoration: BoxDecoration(
-        border: Border.all(color: HeavyweightTheme.textSecondary, width: 1),
-      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -429,6 +452,90 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
           ),
         ],
       ),
+    ));
+  }
+  
+  Widget _buildHudTutorialOverlay() {
+    return Container(
+      color: Colors.black.withOpacity(0.85),
+      child: SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            children: [
+              const SizedBox(height: 60),
+              
+              // Tutorial content
+              Expanded(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // HUD label
+                    Text(
+                      'HUD_ORIENTATION',
+                      style: HeavyweightTheme.h3.copyWith(
+                        color: Colors.white,
+                        letterSpacing: 3,
+                      ),
+                    ),
+                    
+                    const SizedBox(height: 48),
+                    
+                    // Interface elements
+                    Container(
+                      padding: const EdgeInsets.all(32),
+                      decoration: BoxDecoration(
+                        border: Border.all(color: Colors.white.withOpacity(0.3)),
+                      ),
+                      child: Column(
+                        children: [
+                          _buildHudLabel('[1] YOUR WORKOUT', 'Today\'s assigned training protocol'),
+                          const SizedBox(height: 24),
+                          _buildHudLabel('[2] YOUR LOGBOOK', 'Access via bottom navigation'),
+                          const SizedBox(height: 24),
+                          _buildHudLabel('[3] YOUR PROFILE', 'Settings & system configuration'),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              
+              // Dismiss button
+              CommandButton(
+                text: 'INTERFACE_UNDERSTOOD',
+                onPressed: _dismissTutorial,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  
+  Widget _buildHudLabel(String label, String description) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          label,
+          style: HeavyweightTheme.bodyMedium.copyWith(
+            color: HeavyweightTheme.primary,
+            fontWeight: FontWeight.bold,
+            letterSpacing: 1,
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Text(
+            description,
+            style: HeavyweightTheme.bodySmall.copyWith(
+              color: Colors.grey.shade300,
+              height: 1.4,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

@@ -21,19 +21,28 @@ export 'screens/training/training_log_screen.dart';
 
 // Fortress system
 export 'fortress/manifesto/manifesto_screen.dart';
-export 'fortress/mandate/mandate_screen.dart';
 export 'fortress/protocol/protocol_screen.dart';
 export 'fortress/session_complete/session_complete_screen.dart';
 
 // Settings
 export 'screens/settings/settings_main_screen.dart';
 
+// Paywall
+export 'screens/paywall/paywall_screen.dart';
+export 'screens/paywall/subscription_plans_screen.dart';
+
+// Error handling
+export 'screens/error/error_screen.dart';
+export 'core/error_handler.dart';
+
 // Core components
 export 'core/app_state.dart';
 export 'core/theme/heavyweight_theme.dart';
+export 'core/page_transitions.dart';
 
 // UI Components
 export 'components/ui/command_button.dart';
 export 'components/ui/heavyweight_card.dart';
 export 'components/ui/system_banner.dart';
 export 'components/layout/heavyweight_scaffold.dart';
+export 'components/navigation/swipeable_screen.dart';

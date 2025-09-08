@@ -4,6 +4,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../providers/app_state_provider.dart';
+import '../../core/theme/heavyweight_theme.dart';
 
 /// The Manifesto Screen - The gateway to the system
 /// User must read the philosophy and type "I COMMIT" to enter
@@ -37,9 +38,10 @@ class _ManifestoScreenState extends State<ManifestoScreen> {
       final appState = context.read<AppStateProvider>().appState;
       await appState.commitManifesto();
       
-      // Navigate to profile setup (AppState will handle routing)
+      // Navigate to next step (AppState will handle routing)
       if (!mounted) return;
-      context.go('/profile');
+      final nextRoute = appState.nextRoute;
+      context.go(nextRoute);
     }
   }
   
@@ -47,6 +49,20 @@ class _ManifestoScreenState extends State<ManifestoScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xFF111111),
+      appBar: AppBar(
+        backgroundColor: const Color(0xFF111111),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: HeavyweightTheme.primary),
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              context.go('/'); // Go back to main app
+            }
+          },
+        ),
+        elevation: 0,
+      ),
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -76,12 +92,7 @@ class _ManifestoScreenState extends State<ManifestoScreen> {
       children: [
         Text(
           'THE MANIFESTO',
-          style: GoogleFonts.ibmPlexMono(
-            color: Colors.white,
-            fontSize: 24,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 3,
-          ),
+          style: HeavyweightTheme.bodyMedium,
         ),
         
         const SizedBox(height: 30),
@@ -99,8 +110,7 @@ NO LIES ABOUT PERFORMANCE.
 LIFT HEAVY. LIFT HONESTLY. EXECUTE THE PROTOCOL.
 
 READY TO SURRENDER CONTROL?''',
-          style: GoogleFonts.ibmPlexMono(
-            color: Colors.white.withOpacity(0.9),
+          style: HeavyweightTheme.bodyMedium,
             fontSize: 16,
             height: 1.8,
           ),
@@ -117,8 +127,7 @@ READY TO SURRENDER CONTROL?''',
           // Instruction
           Text(
             'TYPE "I COMMIT" TO BEGIN',
-            style: GoogleFonts.ibmPlexMono(
-              color: const Color(0xFF444444),
+            style: HeavyweightTheme.bodyMedium,
               fontSize: 12,
               letterSpacing: 2,
             ),
@@ -132,21 +141,15 @@ READY TO SURRENDER CONTROL?''',
             focusNode: _focusNode,
             textCapitalization: TextCapitalization.characters,
             textAlign: TextAlign.center,
-            style: GoogleFonts.ibmPlexMono(
-              color: Colors.white,
-              fontSize: 24,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 2,
-            ),
+            style: HeavyweightTheme.bodyMedium,
             decoration: InputDecoration(
               hintText: '...',
-              hintStyle: GoogleFonts.ibmPlexMono(
-                color: const Color(0xFF444444),
+              hintStyle: HeavyweightTheme.bodySmall,
                 fontSize: 24,
               ),
               border: const OutlineInputBorder(
                 borderRadius: BorderRadius.zero,
-                borderSide: BorderSide(color: Colors.white),
+                borderSide: BorderSide(color: HeavyweightTheme.primary),
               ),
               enabledBorder: const OutlineInputBorder(
                 borderRadius: BorderRadius.zero,
@@ -154,7 +157,7 @@ READY TO SURRENDER CONTROL?''',
               ),
               focusedBorder: const OutlineInputBorder(
                 borderRadius: BorderRadius.zero,
-                borderSide: BorderSide(color: Colors.white, width: 2),
+                borderSide: BorderSide(color: HeavyweightTheme.primary, width: 2),
               ),
               errorBorder: const OutlineInputBorder(
                 borderRadius: BorderRadius.zero,
@@ -188,16 +191,11 @@ READY TO SURRENDER CONTROL?''',
               child: Container(
                 width: double.infinity,
                 height: 60,
-                color: Colors.white,
+                color: HeavyweightTheme.primary,
                 child: Center(
                   child: Text(
                     'ENTER THE SYSTEM',
-                    style: GoogleFonts.ibmPlexMono(
-                      color: Colors.black,
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      letterSpacing: 1,
-                    ),
+                    style: HeavyweightTheme.bodyMedium,
                   ),
                 ),
               ),
@@ -205,7 +203,7 @@ READY TO SURRENDER CONTROL?''',
           
           if (_isValidating)
             const CircularProgressIndicator(
-              color: Colors.white,
+              color: HeavyweightTheme.primary,
             ),
         ],
       ),

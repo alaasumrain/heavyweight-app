@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '/fortress/engine/models/exercise.dart';
 import '/fortress/engine/models/set_data.dart';
+import '/fortress/engine/models/workout_day.dart';
 import '/fortress/engine/storage/workout_repository_interface.dart';
 import 'supabase.dart';
 
@@ -299,6 +300,88 @@ class SupabaseWorkoutRepository implements WorkoutRepositoryInterface {
       print('Failed to fetch exercises: $error');
       // Return default big six if database fails
       return Exercise.bigSix;
+    }
+  }
+
+  /// Fetch workout days from Supabase database
+  @override
+  Future<List<WorkoutDay>> fetchWorkoutDays() async {
+    try {
+      final response = await _supabase
+          .from('workout_days')
+          .select('*')
+          .order('day_order', ascending: true);
+
+      return response.map<WorkoutDay>((row) {
+        return WorkoutDay.fromDatabase(
+          id: row['id'],
+          name: row['name'],
+          dayOrder: row['day_order'],
+        );
+      }).toList();
+    } catch (error) {
+      print('Failed to fetch workout days: $error');
+      return [];
+    }
+  }
+
+  /// Fetch exercises for a specific workout day
+  Future<List<DayExercise>> fetchDayExercises(int workoutDayId) async {
+    try {
+      final response = await _supabase
+          .from('day_exercises')
+          .select('''
+            *,
+            exercises!inner(*)
+          ''')
+          .eq('workout_day_id', workoutDayId)
+          .order('order_in_day', ascending: true);
+
+      return response.map<DayExercise>((row) {
+        final exerciseData = row['exercises'];
+        final exercise = Exercise.fromDatabase(
+          databaseId: exerciseData['id'],
+          name: exerciseData['name'],
+          description: exerciseData['description'] ?? '',
+        );
+
+        return DayExercise.fromDatabase(
+          id: row['id'],
+          workoutDayId: row['workout_day_id'],
+          orderInDay: row['order_in_day'],
+          setsTarget: row['sets_target'],
+          exercise: exercise,
+        );
+      }).toList();
+    } catch (error) {
+      print('Failed to fetch day exercises: $error');
+      return [];
+    }
+  }
+
+  /// Fetch complete workout day with exercises
+  @override
+  Future<WorkoutDay?> fetchCompleteWorkoutDay(int workoutDayId) async {
+    try {
+      // Get workout day
+      final dayResponse = await _supabase
+          .from('workout_days')
+          .select('*')
+          .eq('id', workoutDayId)
+          .single();
+
+      // Get exercises for this day
+      final exercises = await fetchDayExercises(workoutDayId);
+
+      return WorkoutDay.fromDatabase(
+        id: dayResponse['id'],
+        name: dayResponse['name'],
+        dayOrder: dayResponse['day_order'],
+        exercises: exercises,
+      );
+    } catch (error) {
+      print('Failed to fetch complete workout day: $error');
+      return null;
     }
   }
 

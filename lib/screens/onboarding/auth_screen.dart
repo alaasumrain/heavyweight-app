@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../core/theme/heavyweight_theme.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../components/ui/system_banner.dart';
 import '../../components/ui/command_button.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/app_state_provider.dart';
-import '../../backend/supabase/supabase.dart';
+import '../../core/auth_service.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({Key? key}) : super(key: key);
@@ -19,7 +19,13 @@ class _AuthScreenState extends State<AuthScreen> {
   bool _isLogin = false;
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _isLoading = false;
+  final _authService = AuthService();
+  
+  @override
+  void initState() {
+    super.initState();
+    _authService.initialize();
+  }
 
   @override
   void dispose() {
@@ -29,44 +35,44 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   void _handleAuth() async {
+    // Validation
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      _showError('Please fill in all fields');
+      _showError('FIELDS_REQUIRED: Please fill in all fields');
       return;
     }
-
-    setState(() => _isLoading = true);
     
-    try {
-      if (_isLogin) {
-        // Sign in existing user
-        await supabase.auth.signInWithPassword(
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
-        );
-      } else {
-        // Sign up new user
-        await supabase.auth.signUp(
-          email: _emailController.text.trim(),
-          password: _passwordController.text,
-        );
-      }
+    if (!AuthService.isValidEmail(_emailController.text)) {
+      _showError('INVALID_EMAIL: Please enter a valid email address');
+      return;
+    }
+    
+    if (!_isLogin && !AuthService.isValidPassword(_passwordController.text)) {
+      _showError(AuthService.getPasswordFeedback(_passwordController.text));
+      return;
+    }
+    
+    bool success;
+    if (_isLogin) {
+      success = await _authService.signInWithEmail(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
+    } else {
+      success = await _authService.signUpWithEmail(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
+    }
+    
+    if (success && mounted) {
+      // Notify AppState of auth change
+      final appState = context.read<AppStateProvider>().appState;
+      appState.onAuthStateChanged();
       
-      if (mounted) {
-        // Notify AppState of auth change
-        final appState = context.read<AppStateProvider>().appState;
-        appState.onAuthStateChanged();
-        
-        // Navigate to assignment (AppState will handle proper routing)
-        context.go('/assignment');
-      }
-    } catch (error) {
-      if (mounted) {
-        _showError(error.toString());
-      }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
+      // Navigate to assignment
+      context.go('/assignment');
+    } else if (mounted && _authService.error != null) {
+      _showError(_authService.error!);
     }
   }
   
@@ -82,12 +88,34 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: HeavyweightTheme.background,
+      appBar: AppBar(
+        backgroundColor: HeavyweightTheme.background,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: HeavyweightTheme.primary),
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              context.go('/'); // Go back to main app
+            }
+          },
+        ),
+        elevation: 0,
+      ),
       body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
-          child: Column(
-            children: [
+        child: SingleChildScrollView(
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: ConstrainedBox(
+              constraints: BoxConstraints(
+                minHeight: MediaQuery.of(context).size.height - 
+                          MediaQuery.of(context).padding.top - 
+                          MediaQuery.of(context).padding.bottom - 40,
+              ),
+              child: IntrinsicHeight(
+                child: Column(
+                  children: [
               const SystemBanner(),
               const SizedBox(height: 40),
               
@@ -95,7 +123,7 @@ class _AuthScreenState extends State<AuthScreen> {
               Container(
                 width: double.infinity,
                 decoration: BoxDecoration(
-                  border: Border.all(color: Colors.white),
+                  border: Border.all(color: HeavyweightTheme.primary),
                 ),
                 child: Row(
                   children: [
@@ -104,16 +132,11 @@ class _AuthScreenState extends State<AuthScreen> {
                         onTap: () => setState(() => _isLogin = true),
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          color: _isLogin ? Colors.white : Colors.transparent,
+                          color: _isLogin ? HeavyweightTheme.primary : Colors.transparent,
                           child: Text(
                             'LOGIN',
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.ibmPlexMono(
-                              color: _isLogin ? Colors.black : Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 2,
-                            ),
+                            style: HeavyweightTheme.bodyMedium,
                           ),
                         ),
                       ),
@@ -123,16 +146,11 @@ class _AuthScreenState extends State<AuthScreen> {
                         onTap: () => setState(() => _isLogin = false),
                         child: Container(
                           padding: const EdgeInsets.symmetric(vertical: 16),
-                          color: !_isLogin ? Colors.white : Colors.transparent,
+                          color: !_isLogin ? HeavyweightTheme.primary : Colors.transparent,
                           child: Text(
                             'SIGNUP',
                             textAlign: TextAlign.center,
-                            style: GoogleFonts.ibmPlexMono(
-                              color: !_isLogin ? Colors.black : Colors.white,
-                              fontSize: 14,
-                              fontWeight: FontWeight.bold,
-                              letterSpacing: 2,
-                            ),
+                            style: HeavyweightTheme.bodyMedium,
                           ),
                         ),
                       ),
@@ -146,24 +164,17 @@ class _AuthScreenState extends State<AuthScreen> {
               // Email field
               TextField(
                 controller: _emailController,
-                style: GoogleFonts.ibmPlexMono(
-                  color: Colors.white,
-                  fontSize: 16,
-                ),
+                style: HeavyweightTheme.bodyLarge,
                 decoration: InputDecoration(
                   labelText: 'EMAIL',
-                  labelStyle: GoogleFonts.ibmPlexMono(
-                    color: Colors.grey.shade600,
-                    fontSize: 12,
-                    letterSpacing: 2,
-                  ),
+                  labelStyle: HeavyweightTheme.bodyMedium,
                   enabledBorder: const OutlineInputBorder(
                     borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide(color: Colors.white),
+                    borderSide: BorderSide(color: HeavyweightTheme.primary),
                   ),
                   focusedBorder: const OutlineInputBorder(
                     borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide(color: Colors.white, width: 2),
+                    borderSide: BorderSide(color: HeavyweightTheme.primary, width: 2),
                   ),
                 ),
                 keyboardType: TextInputType.emailAddress,
@@ -175,24 +186,17 @@ class _AuthScreenState extends State<AuthScreen> {
               TextField(
                 controller: _passwordController,
                 obscureText: true,
-                style: GoogleFonts.ibmPlexMono(
-                  color: Colors.white,
-                  fontSize: 16,
-                ),
+                style: HeavyweightTheme.bodyLarge,
                 decoration: InputDecoration(
                   labelText: 'PASSWORD',
-                  labelStyle: GoogleFonts.ibmPlexMono(
-                    color: Colors.grey.shade600,
-                    fontSize: 12,
-                    letterSpacing: 2,
-                  ),
+                  labelStyle: HeavyweightTheme.bodyMedium,
                   enabledBorder: const OutlineInputBorder(
                     borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide(color: Colors.white),
+                    borderSide: BorderSide(color: HeavyweightTheme.primary),
                   ),
                   focusedBorder: const OutlineInputBorder(
                     borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide(color: Colors.white, width: 2),
+                    borderSide: BorderSide(color: HeavyweightTheme.primary, width: 2),
                   ),
                 ),
               ),
@@ -224,22 +228,13 @@ class _AuthScreenState extends State<AuthScreen> {
                             Text(
                               'INCOMPLETE PROFILE',
                               textAlign: TextAlign.center,
-                              style: GoogleFonts.ibmPlexMono(
-                                color: Colors.red.shade300,
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                letterSpacing: 2,
-                              ),
+                              style: HeavyweightTheme.bodyMedium,
                             ),
                             const SizedBox(height: 8),
                             Text(
                               'MISSING: ${missing.join(', ')}',
                               textAlign: TextAlign.center,
-                              style: GoogleFonts.ibmPlexMono(
-                                color: Colors.red.shade400,
-                                fontSize: 11,
-                                letterSpacing: 1,
-                              ),
+                              style: HeavyweightTheme.bodyMedium,
                             ),
                             const SizedBox(height: 8),
                             GestureDetector(
@@ -247,12 +242,7 @@ class _AuthScreenState extends State<AuthScreen> {
                               child: Text(
                                 'TAP TO COMPLETE →',
                                 textAlign: TextAlign.center,
-                                style: GoogleFonts.ibmPlexMono(
-                                  color: Colors.red.shade200,
-                                  fontSize: 10,
-                                  letterSpacing: 1,
-                                  decoration: TextDecoration.underline,
-                                ),
+                                style: HeavyweightTheme.bodyMedium,
                               ),
                             ),
                           ],
@@ -263,29 +253,21 @@ class _AuthScreenState extends State<AuthScreen> {
                     return Container(
                       padding: const EdgeInsets.all(16),
                       decoration: BoxDecoration(
-                        border: Border.all(color: Colors.grey.shade800),
+                        border: Border.all(color: HeavyweightTheme.secondary.shade800),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Text(
                             'PROFILE SUMMARY',
-                            style: GoogleFonts.ibmPlexMono(
-                              color: Colors.grey.shade600,
-                              fontSize: 10,
-                              letterSpacing: 2,
-                            ),
+                            style: HeavyweightTheme.bodyMedium,
                           ),
                           const SizedBox(height: 8),
                           Text(
                             '${provider.experience?.name.toUpperCase()} • ${provider.frequency} DAYS/WEEK\n'
                             '${provider.age} YRS • ${provider.weight?.round()}${provider.unit.name.toUpperCase()} • ${provider.height}CM\n'
                             '${provider.objective?.name.toUpperCase()} FOCUSED',
-                            style: GoogleFonts.ibmPlexMono(
-                              color: Colors.grey.shade400,
-                              fontSize: 11,
-                              height: 1.4,
-                            ),
+                            style: HeavyweightTheme.bodyMedium,
                           ),
                         ],
                       ),
@@ -298,19 +280,25 @@ class _AuthScreenState extends State<AuthScreen> {
               const Spacer(),
               
               // Action button
-              if (_isLoading)
-                Container(
-                  height: 60,
-                  child: const Center(
-                    child: CircularProgressIndicator(color: Colors.white),
-                  ),
-                )
-              else
-                                  CommandButton(
+              ListenableBuilder(
+                listenable: _authService,
+                builder: (context, child) {
+                  if (_authService.isLoading) {
+                    return Container(
+                      height: 60,
+                      child: const Center(
+                        child: CircularProgressIndicator(color: HeavyweightTheme.primary),
+                      ),
+                    );
+                  }
+                  
+                  return CommandButton(
                     text: _isLogin ? 'LOGIN' : 'CREATE ACCOUNT',
                     variant: ButtonVariant.primary,
                     onPressed: _handleAuth,
-                  ),
+                  );
+                },
+              ),
               
               if (_isLogin) ...[
                 const SizedBox(height: 16),
@@ -322,27 +310,30 @@ class _AuthScreenState extends State<AuthScreen> {
                       return;
                     }
                     
-                    try {
-                      final messenger = ScaffoldMessenger.of(context);
-                      await supabase.auth.resetPasswordForEmail(
-                        _emailController.text.trim(),
-                      );
-                      
-                      if (!mounted) return;
-                      messenger.showSnackBar(
+                    if (!AuthService.isValidEmail(_emailController.text)) {
+                      _showError('INVALID_EMAIL: Please enter a valid email');
+                      return;
+                    }
+                    
+                    final success = await _authService.resetPassword(_emailController.text);
+                    
+                    if (success && mounted) {
+                      ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('PASSWORD_RESET_SENT'),
+                          content: Text('PASSWORD_RESET_SENT: Check your email'),
                           backgroundColor: Colors.green,
                         ),
                       );
-                    } catch (error) {
-                      if (!mounted) return;
-                      _showError('RESET_FAILED: ${error.toString()}');
+                    } else if (mounted && _authService.error != null) {
+                      _showError(_authService.error!);
                     }
                   },
                 ),
               ],
-            ],
+                  ],
+                ),
+              ),
+            ),
           ),
         ),
       ),

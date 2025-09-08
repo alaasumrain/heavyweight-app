@@ -209,3 +209,11 @@ class _AnimatedStripesState extends State<_AnimatedStripes>
     );
   }
 }
+
+
+
+
+
+
+
+

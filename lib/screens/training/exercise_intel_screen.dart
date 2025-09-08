@@ -26,7 +26,13 @@ class ExerciseIntelScreen extends StatelessWidget {
         backgroundColor: Colors.black,
         leading: IconButton(
           icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => context.pop(),
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              context.go('/assignment');
+            }
+          },
         ),
         title: Text(
           'EXERCISE_INTEL',

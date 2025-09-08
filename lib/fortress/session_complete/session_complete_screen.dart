@@ -3,7 +3,8 @@ import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../engine/models/set_data.dart';
-import '../viewmodels/mandate_viewmodel.dart';
+import '../viewmodels/workout_viewmodel.dart';
+import '../../providers/workout_viewmodel_provider.dart';
 
 
 /// Session Complete Screen - Final judgment of the workout
@@ -17,6 +18,18 @@ class SessionCompleteScreen extends StatefulWidget {
     required this.sessionSets,
     required this.mandateSatisfied,
   });
+  
+  static Widget withProvider({
+    required List<SetData> sessionSets,
+    required bool mandateSatisfied,
+  }) {
+    return WorkoutViewModelProvider(
+      child: SessionCompleteScreen(
+        sessionSets: sessionSets,
+        mandateSatisfied: mandateSatisfied,
+      ),
+    );
+  }
   
   @override
   State<SessionCompleteScreen> createState() => _SessionCompleteScreenState();
@@ -69,11 +82,10 @@ class _SessionCompleteScreenState extends State<SessionCompleteScreen>
     if (widget.sessionSets.isEmpty) return;
     
     try {
-      final viewModel = context.read<MandateViewModel>();
+      final viewModel = context.read<WorkoutViewModel>();
       await viewModel.processWorkoutResults(widget.sessionSets);
     } catch (e) {
       // Silently handle errors - the UI has already shown the session results
-      print('Failed to process workout results: $e');
     }
   }
   

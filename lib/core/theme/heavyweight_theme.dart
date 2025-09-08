@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// HEAVYWEIGHT theme constants and styles
 /// Embodies the mandate philosophy: brutal, honest, uncompromising
@@ -37,7 +36,8 @@ class HeavyweightTheme {
   static const double buttonHeightSmall = 48.0;
   
   // Typography
-  static TextStyle get h1 => GoogleFonts.ibmPlexMono(
+  static const TextStyle h1 = TextStyle(
+    fontFamily: 'IBM Plex Mono',
     fontSize: 32,
     fontWeight: FontWeight.bold,
     color: primary,
@@ -45,7 +45,8 @@ class HeavyweightTheme {
     height: 1.2,
   );
   
-  static TextStyle get h2 => GoogleFonts.ibmPlexMono(
+  static const TextStyle h2 = TextStyle(
+    fontFamily: 'IBM Plex Mono',
     fontSize: 24,
     fontWeight: FontWeight.bold,
     color: primary,
@@ -53,7 +54,8 @@ class HeavyweightTheme {
     height: 1.3,
   );
   
-  static TextStyle get h3 => GoogleFonts.ibmPlexMono(
+  static const TextStyle h3 = TextStyle(
+    fontFamily: 'IBM Plex Mono',
     fontSize: 20,
     fontWeight: FontWeight.bold,
     color: primary,
@@ -61,7 +63,8 @@ class HeavyweightTheme {
     height: 1.4,
   );
   
-  static TextStyle get h4 => GoogleFonts.ibmPlexMono(
+  static const TextStyle h4 = TextStyle(
+    fontFamily: 'IBM Plex Mono',
     fontSize: 18,
     fontWeight: FontWeight.bold,
     color: primary,
@@ -69,7 +72,8 @@ class HeavyweightTheme {
     height: 1.4,
   );
   
-  static TextStyle get bodyLarge => GoogleFonts.ibmPlexMono(
+  static const TextStyle bodyLarge = TextStyle(
+    fontFamily: 'IBM Plex Mono',
     fontSize: 18,
     fontWeight: FontWeight.normal,
     color: primary,
@@ -77,7 +81,8 @@ class HeavyweightTheme {
     height: 1.5,
   );
   
-  static TextStyle get bodyMedium => GoogleFonts.ibmPlexMono(
+  static const TextStyle bodyMedium = TextStyle(
+    fontFamily: 'IBM Plex Mono',
     fontSize: 16,
     fontWeight: FontWeight.normal,
     color: primary,
@@ -85,7 +90,8 @@ class HeavyweightTheme {
     height: 1.5,
   );
   
-  static TextStyle get bodySmall => GoogleFonts.ibmPlexMono(
+  static const TextStyle bodySmall = TextStyle(
+    fontFamily: 'IBM Plex Mono',
     fontSize: 14,
     fontWeight: FontWeight.normal,
     color: secondary,
@@ -93,7 +99,8 @@ class HeavyweightTheme {
     height: 1.4,
   );
   
-  static TextStyle get labelLarge => GoogleFonts.ibmPlexMono(
+  static const TextStyle labelLarge = TextStyle(
+    fontFamily: 'IBM Plex Mono',
     fontSize: 16,
     fontWeight: FontWeight.bold,
     color: primary,
@@ -101,7 +108,8 @@ class HeavyweightTheme {
     height: 1.2,
   );
   
-  static TextStyle get labelMedium => GoogleFonts.ibmPlexMono(
+  static const TextStyle labelMedium = TextStyle(
+    fontFamily: 'IBM Plex Mono',
     fontSize: 14,
     fontWeight: FontWeight.bold,
     color: primary,
@@ -109,7 +117,8 @@ class HeavyweightTheme {
     height: 1.2,
   );
   
-  static TextStyle get labelSmall => GoogleFonts.ibmPlexMono(
+  static const TextStyle labelSmall = TextStyle(
+    fontFamily: 'IBM Plex Mono',
     fontSize: 12,
     fontWeight: FontWeight.normal,
     color: secondary,
@@ -163,4 +172,12 @@ class HeavyweightTheme {
     color: surface,
   );
 }
+
+
+
+
+
+
+
+
 

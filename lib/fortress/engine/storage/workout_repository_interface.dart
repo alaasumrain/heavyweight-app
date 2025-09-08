@@ -1,6 +1,7 @@
 
 import '../models/set_data.dart';
 import '../models/exercise.dart';
+import '../models/workout_day.dart';
 
 /// Abstract interface for workout data persistence
 /// Implementations can use SharedPreferences, SQLite, Supabase, etc.
@@ -37,6 +38,12 @@ abstract class WorkoutRepositoryInterface {
   
   /// Get performance statistics
   Future<PerformanceStats> getStats();
+  
+  /// Fetch workout days from database
+  Future<List<WorkoutDay>> fetchWorkoutDays() async => [];
+  
+  /// Fetch complete workout day with exercises
+  Future<WorkoutDay?> fetchCompleteWorkoutDay(int workoutDayId) async => null;
   
   /// Dispose resources and clean up
   void dispose() {} // Default empty implementation

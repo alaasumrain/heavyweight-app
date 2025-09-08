@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../core/theme/heavyweight_theme.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
 import '../../../components/ui/system_banner.dart';
@@ -7,6 +7,7 @@ import '../../../components/ui/command_button.dart';
 import '../../../components/ui/radio_selector.dart';
 
 import '../../../providers/app_state_provider.dart';
+import '../../../nav.dart';
 
 enum WeightUnit { kg, lb }
 
@@ -26,15 +27,21 @@ class _UnitPreferenceScreenState extends State<UnitPreferenceScreen> {
     final isEditMode = GoRouterState.of(context).matchedLocation.contains('/profile/');
     
     return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: isEditMode ? AppBar(
-        backgroundColor: Colors.black,
+      backgroundColor: HeavyweightTheme.background,
+      appBar: AppBar(
+        backgroundColor: HeavyweightTheme.background,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => context.pop(),
+          icon: const Icon(Icons.arrow_back, color: HeavyweightTheme.primary),
+          onPressed: () {
+            if (Navigator.of(context).canPop()) {
+              Navigator.of(context).pop();
+            } else {
+              context.go('/profile/frequency');
+            }
+          },
         ),
         elevation: 0,
-      ) : null,
+      ),
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(20),
@@ -46,23 +53,13 @@ class _UnitPreferenceScreenState extends State<UnitPreferenceScreen> {
               // Header
               Text(
                 'MEASUREMENT PROTOCOL',
-                style: GoogleFonts.ibmPlexMono(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 2,
-                ),
+                style: HeavyweightTheme.h3,
               ),
               const SizedBox(height: 10),
               Text(
                 'SELECT LOAD MEASUREMENT STANDARD\nCONFIGURE SYSTEM DISPLAY UNITS',
                 textAlign: TextAlign.center,
-                style: GoogleFonts.ibmPlexMono(
-                  color: Colors.grey.shade500,
-                  fontSize: 14,
-                  height: 1.5,
-                  letterSpacing: 1,
-                ),
+                style: HeavyweightTheme.bodyMedium,
               ),
               const SizedBox(height: 40),
               
@@ -100,7 +97,9 @@ class _UnitPreferenceScreenState extends State<UnitPreferenceScreen> {
                         await appState.setUnitPreference(_selectedUnit!.name);
                         
                         if (context.mounted) {
-                          context.go('/auth');
+                          // Let the centralized flow controller decide where to go next
+                          final nextRoute = appState.nextRoute;
+                          context.go(nextRoute);
                         }
                       }
                     : null,

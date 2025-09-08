@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import '../../core/theme/heavyweight_theme.dart';
 
 class SystemBanner extends StatelessWidget {
   const SystemBanner({Key? key}) : super(key: key);
@@ -8,16 +8,11 @@ class SystemBanner extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(vertical: 20),
+      padding: const EdgeInsets.symmetric(vertical: HeavyweightTheme.spacingLg),
       child: Text(
         'HEAVYWEIGHT',
         textAlign: TextAlign.center,
-        style: GoogleFonts.ibmPlexMono(
-          color: Colors.white,
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          letterSpacing: 4,
-        ),
+        style: HeavyweightTheme.h4,
       ),
     );
   }

@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'widgets/rest_timer.dart';
 import 'widgets/rep_logger.dart';
-import '../engine/mandate_engine.dart';
+import '../engine/workout_engine.dart';
 import '../engine/models/set_data.dart';
 import '../../backend/supabase/supabase_workout_repository.dart';
 
 /// The Protocol Screen - The heart of the workout experience
 /// Minimalist, brutal, effective
 class ProtocolScreen extends StatefulWidget {
-  final WorkoutMandate? mandate;
+  final DailyWorkout? workout;
   
   const ProtocolScreen({
     Key? key,
-    this.mandate,
+    this.workout,
   }) : super(key: key);
   
   @override
@@ -22,12 +22,12 @@ class ProtocolScreen extends StatefulWidget {
 
 class _ProtocolScreenState extends State<ProtocolScreen> {
   late SupabaseWorkoutRepository _repository;
-  late MandateEngine _engine;
+  late WorkoutEngine _engine;
   
   int _currentExerciseIndex = 0;
   int _currentSet = 1;
   bool _isResting = false;
-  int _restSeconds = 5; // TESTING: 5 seconds instead of 180
+  int _restSeconds = 5; // 5 seconds rest for testing
   
   // Calibration mode tracking
   bool _isCalibrating = false;
@@ -47,11 +47,11 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
   void initState() {
     super.initState();
     _initializeRepository();
-    _engine = MandateEngine();
+    _engine = WorkoutEngine();
     
     // Check if mandate is valid and has exercises
-    if (widget.mandate?.prescriptions.isNotEmpty == true) {
-      final firstPrescription = widget.mandate!.prescriptions[0];
+    if (widget.workout?.exercises.isNotEmpty == true) {
+      final firstPrescription = widget.workout!.exercises[0];
       _isCalibrating = firstPrescription.needsCalibration;
       if (_isCalibrating) {
         _currentCalibrationWeight = firstPrescription.prescribedWeight;
@@ -76,9 +76,9 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
     _repository = SupabaseWorkoutRepository();
   }
   
-  ExercisePrescription? get _currentPrescription {
-    if (widget.mandate?.prescriptions.isEmpty != false) return null;
-    return widget.mandate!.prescriptions[_currentExerciseIndex];
+  PlannedExercise? get _currentPrescription {
+    if (widget.workout?.exercises.isEmpty != false) return null;
+    return widget.workout!.exercises[_currentExerciseIndex];
   }
   
   /// Get current working weight (adjusted or prescribed)
@@ -120,7 +120,7 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
       }
       
       // If this is bench press on Day 1, estimate all other weights
-      if (widget.mandate?.isDay1 == true && _currentPrescription?.exercise.id == 'bench') {
+      if (widget.workout?.isDay1 == true && _currentPrescription?.exercise.id == 'bench') {
         final estimatedWeights = _engine.estimateWeightsFromBenchPress(_currentCalibrationWeight);
         _calibratedWeights.addAll(estimatedWeights);
       }
@@ -139,13 +139,13 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
       
       // Move to next exercise
       setState(() {
-        if (widget.mandate != null && _currentExerciseIndex < widget.mandate!.prescriptions.length - 1) {
+        if (widget.workout != null && _currentExerciseIndex < widget.workout!.exercises.length - 1) {
           _currentExerciseIndex++;
           _currentSet = 1;
           _calibrationAttempt = 1;
           
           // Check if next exercise needs calibration
-          final nextPrescription = widget.mandate!.prescriptions[_currentExerciseIndex];
+          final nextPrescription = widget.workout!.exercises[_currentExerciseIndex];
           _isCalibrating = nextPrescription.needsCalibration;
           
           if (_isCalibrating) {
@@ -155,7 +155,7 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
           }
           
           _isResting = true;
-          _restSeconds = 5;
+          _restSeconds = 180;
         } else {
           _completeWorkout();
         }
@@ -166,7 +166,7 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
         _currentCalibrationWeight = nextWeight;
         _calibrationAttempt++;
         _isResting = true;
-        _restSeconds = 5; // TESTING: 5 seconds for all calibration rest
+        _restSeconds = 5; // 5 seconds rest for testing calibration
       });
     }
   }
@@ -192,7 +192,6 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
       // Success - the optimistic UI was correct
     }).catchError((error) {
       // Handle error silently, could add to retry queue
-      print('Failed to save set: $error');
     });
     
     _sessionSets.add(setData);
@@ -206,26 +205,23 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
       }
     });
     
-    // Calculate rest time based on performance
-    final calculatedRest = _engine.calculateRestSeconds(
-      actualReps,
-      _currentPrescription?.restSeconds ?? 180,
-    );
+    // Calculate rest time based on performance (using 5 seconds for testing)
+    final calculatedRest = 5; // Simplified to 5 seconds for testing
     
     setState(() {
       if (_currentSet < (_currentPrescription?.targetSets ?? 3)) {
         // More sets remaining for this exercise
         _currentSet++;
         _isResting = true;
-        _restSeconds = calculatedRest;
+        _restSeconds = 5; // Always 5 seconds for testing
       } else {
         // Move to next exercise
-        if (widget.mandate != null && _currentExerciseIndex < widget.mandate!.prescriptions.length - 1) {
+        if (widget.workout != null && _currentExerciseIndex < widget.workout!.exercises.length - 1) {
           _currentExerciseIndex++;
           _currentSet = 1;
           
           // Check if next exercise needs calibration
-          final nextPrescription = widget.mandate!.prescriptions[_currentExerciseIndex];
+          final nextPrescription = widget.workout!.exercises[_currentExerciseIndex];
           _isCalibrating = nextPrescription.needsCalibration;
           
           if (_isCalibrating) {
@@ -319,7 +315,7 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
     bool mandateSatisfied = _calculateMandateSatisfaction();
     
     // Navigate to session completion screen with data
-    context.go('/session-complete', extra: {
+    context.push('/session-complete', extra: {
       'sessionSets': _sessionSets,
       'mandateSatisfied': mandateSatisfied,
     });
@@ -342,12 +338,12 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
   
   /// Calculate workout progress safely
   double _calculateProgress() {
-    final mandate = widget.mandate;
-    if (mandate == null || mandate.prescriptions.isEmpty) {
+    final workout = widget.workout;
+    if (workout == null || workout.exercises.isEmpty) {
       return 0.0;
     }
     
-    final totalExercises = mandate.prescriptions.length;
+    final totalExercises = workout.exercises.length;
     final setsPerExercise = 3; // Assuming 3 sets per exercise
     final totalSets = totalExercises * setsPerExercise;
     final completedSets = _currentExerciseIndex * setsPerExercise + _currentSet - 1;

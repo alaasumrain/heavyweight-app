@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/theme/heavyweight_theme.dart';
 
 class HeavyweightNavigationBar extends StatelessWidget {
   final int currentIndex;
@@ -14,16 +14,35 @@ class HeavyweightNavigationBar extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
-    const tabs = ['ASSIGNMENT', 'TRAINING_LOG', 'SETTINGS'];
+    const tabs = ['ASSIGNMENT', 'LOGBOOK', 'SETTINGS'];
     const routes = ['/assignment', '/training-log', '/settings'];
     
     return Container(
-      height: 50,
+      height: 70, // Optimized height for aesthetic
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).padding.bottom / 2),
       decoration: BoxDecoration(
-        border: Border(top: BorderSide(color: Colors.grey.shade800, width: 1)),
-        color: Colors.black,
+        border: Border(top: BorderSide(color: HeavyweightTheme.secondary, width: 1)),
+        color: HeavyweightTheme.background,
       ),
-      child: Row(
+      child: Stack(
+        children: [
+          // Animated slide indicator
+          AnimatedPositioned(
+            duration: const Duration(milliseconds: 400),
+            curve: Curves.easeInOutQuart,
+            left: (MediaQuery.of(context).size.width / tabs.length) * currentIndex,
+            top: 0,
+            child: Container(
+              width: MediaQuery.of(context).size.width / tabs.length,
+              height: 3,
+              decoration: BoxDecoration(
+                color: HeavyweightTheme.primary,
+                borderRadius: BorderRadius.circular(1.5),
+              ),
+            ),
+          ),
+          // Tab buttons
+          Row(
         children: tabs.asMap().entries.map((entry) {
           final index = entry.key;
           final label = entry.value;
@@ -41,25 +60,26 @@ class HeavyweightNavigationBar extends StatelessWidget {
                   }
                 }
               },
-              child: Container(
-                color: isSelected ? Colors.grey.shade900 : Colors.transparent,
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 200),
+                    curve: Curves.easeInOut,
+                    color: isSelected ? HeavyweightTheme.primary : Colors.transparent,
                 child: Center(
-                  child: Text(
-                    label,
-                    style: GoogleFonts.ibmPlexMono(
-                      color: isSelected ? Colors.white : Colors.grey.shade600,
-                      fontSize: 10,
+                  child: AnimatedDefaultTextStyle(
+                    duration: const Duration(milliseconds: 200),
+                    style: HeavyweightTheme.labelSmall.copyWith(
+                      color: isSelected ? HeavyweightTheme.onPrimary : HeavyweightTheme.textSecondary,
                       fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                      letterSpacing: 1,
-                    ).copyWith(
-                      fontFamily: 'monospace', // Fallback
                     ),
+                    child: Text(label),
                   ),
                 ),
               ),
             ),
           );
         }).toList(),
+          ),
+        ],
       ),
     );
   }
