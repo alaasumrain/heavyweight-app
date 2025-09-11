@@ -47,8 +47,16 @@
 
   <link rel="manifest" href="manifest.json">
   <script>
-    // The value below is injected by flutter build, do not touch.
-    var serviceWorkerVersion = null;
+    // The value below is injected by flutter build (release/profile).
+    // In debug, this token may not be replaced; fallback to null.
+    const serviceWorkerVersion = (function() {
+      try {
+        // eslint-disable-next-line no-undef
+        return {{flutter_service_worker_version}};
+      } catch (_) {
+        return null;
+      }
+    })();
   </script>
   <!-- This script adds the flutter initialization JS code -->
   <script src="flutter.js" defer></script>
@@ -64,12 +72,11 @@
       _flutter.loader.loadEntrypoint({
         serviceWorker: {
           serviceWorkerVersion: serviceWorkerVersion,
-        },
-        onEntrypointLoaded: function(engineInitializer) {
-          engineInitializer.initializeEngine().then(function(appRunner) {
-            appRunner.runApp();
-          });
         }
+      }).then(function(engineInitializer) {
+        return engineInitializer.initializeEngine();
+      }).then(function(appRunner) {
+        return appRunner.runApp();
       });
     });
   </script>

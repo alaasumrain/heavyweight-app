@@ -7,15 +7,19 @@ import '../../core/theme/heavyweight_theme.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/app_state_provider.dart';
 import '../../providers/repository_provider.dart';
+import '../../core/auth_service.dart';
+import '../../components/ui/toast.dart';
+import '../../core/logging.dart';
 
 class SettingsMainScreen extends StatelessWidget {
   const SettingsMainScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    HWLog.screen('Settings/Main');
     return HeavyweightScaffold(
       title: 'SETTINGS',
-      showBanner: true,
+      
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -115,7 +119,7 @@ class SettingsMainScreen extends StatelessWidget {
           decoration: BoxDecoration(
             border: Border.all(
               color: isDestructive 
-                  ? HeavyweightTheme.error.withOpacity(0.3)
+                  ? HeavyweightTheme.error.withValues(alpha: 0.3)
                   : HeavyweightTheme.secondary,
             ),
           ),
@@ -164,6 +168,7 @@ class SettingsMainScreen extends StatelessWidget {
   }
   
   void _showDataOptions(BuildContext context) {
+    HWLog.event('settings_data_options_open');
     showModalBottomSheet(
       context: context,
       backgroundColor: HeavyweightTheme.surface,
@@ -202,6 +207,7 @@ class SettingsMainScreen extends StatelessWidget {
   }
   
   void _exportData(BuildContext context) {
+    HWLog.event('settings_export_data');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: const Text('DATA EXPORT: FEATURE_COMING_SOON'),
@@ -211,6 +217,7 @@ class SettingsMainScreen extends StatelessWidget {
   }
   
   void _resetAllData(BuildContext context) {
+    HWLog.event('settings_reset_all_open');
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
@@ -233,6 +240,7 @@ class SettingsMainScreen extends StatelessWidget {
               Navigator.pop(context);
               
               // Reset app state
+              HWLog.event('settings_reset_all_confirm');
               final appState = context.read<AppStateProvider>().appState;
               await appState.reset();
               
@@ -242,7 +250,11 @@ class SettingsMainScreen extends StatelessWidget {
                 await repository.clearAll();
               }
               
+              // Sign out to clear auth session
+              await AuthService().signOut();
+              
               // Navigate to splash/onboarding
+              HWLog.event('settings_reset_all_navigate', data: {'to': '/'});
               context.go('/');
             },
             style: TextButton.styleFrom(foregroundColor: HeavyweightTheme.danger),
@@ -266,7 +278,7 @@ class SettingsMainScreen extends StatelessWidget {
               text: 'DESTRUCTIVE_ACTION',
               animated: true,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: HeavyweightTheme.spacingMd),
             Text(
               'RESET APPLICATION?',
               style: HeavyweightTheme.h4.copyWith(
@@ -291,12 +303,7 @@ class SettingsMainScreen extends StatelessWidget {
             onPressed: () {
               context.read<ProfileProvider>().reset();
               context.pop();
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('APPLICATION RESET COMPLETE'),
-                  backgroundColor: HeavyweightTheme.error,
-                ),
-              );
+              HeavyweightToast.show(context, message: 'APPLICATION RESET COMPLETE', variant: ToastVariant.warn);
             },
             child: Text(
               'RESET',
@@ -356,4 +363,3 @@ class SettingsMainScreen extends StatelessWidget {
     );
   }
 }
-

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'auth_service.dart';
+import 'logging.dart';
 
 /// Centralized application state management
 /// Tracks user progress through onboarding flow and determines routing
@@ -12,6 +13,7 @@ class AppState extends ChangeNotifier {
   static const String _keyUnitPreference = 'unit_preference';
   static const String _keyPhysicalStats = 'physical_stats';
   static const String _keyTrainingObjective = 'training_objective';
+  static const String _keyPreferredStartingDay = 'preferred_starting_day';
 
   // State variables
   bool _legalAccepted = false;
@@ -21,6 +23,7 @@ class AppState extends ChangeNotifier {
   String? _unitPreference;
   String? _physicalStats;
   String? _trainingObjective;
+  String? _preferredStartingDay;
   bool _isAuthenticated = false;
 
   // Getters
@@ -31,6 +34,7 @@ class AppState extends ChangeNotifier {
   String? get unitPreference => _unitPreference;
   String? get physicalStats => _physicalStats;
   String? get trainingObjective => _trainingObjective;
+  String? get preferredStartingDay => _preferredStartingDay;
   bool get isAuthenticated => _isAuthenticated;
 
   /// Check if minimal profile is complete (for basic app usage)
@@ -39,7 +43,8 @@ class AppState extends ChangeNotifier {
            _trainingFrequency != null && 
            _unitPreference != null &&
            _physicalStats != null &&
-           _trainingObjective != null;
+           _trainingObjective != null &&
+           _preferredStartingDay != null;
   }
 
   /// Get the next route in the complete onboarding flow
@@ -51,15 +56,23 @@ class AppState extends ChangeNotifier {
     if (_unitPreference == null) return '/profile/units';
     if (_physicalStats == null) return '/profile/stats';
     if (_trainingObjective == null) return '/profile/objective';
+    if (_preferredStartingDay == null) return '/profile/starting-day';
     if (!_isAuthenticated) return '/auth';
     return '/assignment';
   }
 
   /// Initialize the app state - load from persistent storage and check auth
   Future<void> initialize() async {
+    debugPrint('🔧 AppState: Starting initialize()');
+    debugPrint('🔧 AppState: About to call _loadFromStorage()');
     await _loadFromStorage();
+    debugPrint('🔧 AppState: _loadFromStorage() completed');
+    debugPrint('🔧 AppState: About to call _checkAuthState()');
     await _checkAuthState();
+    debugPrint('🔧 AppState: _checkAuthState() completed');
+    debugPrint('🔧 AppState: About to call notifyListeners()');
     notifyListeners();
+    debugPrint('🔧 AppState: initialize() completed');
   }
 
   /// Load state from SharedPreferences
@@ -72,21 +85,40 @@ class AppState extends ChangeNotifier {
     _unitPreference = prefs.getString(_keyUnitPreference);
     _physicalStats = prefs.getString(_keyPhysicalStats);
     _trainingObjective = prefs.getString(_keyTrainingObjective);
+    _preferredStartingDay = prefs.getString(_keyPreferredStartingDay);
+    // Log a snapshot of what we loaded (no PII)
+    HWLog.appStateSnapshot({
+      'phase': 'load_from_storage',
+      'legalAccepted': _legalAccepted,
+      'manifestoCommitted': _manifestoCommitted,
+      'trainingExperience': _trainingExperience,
+      'trainingFrequency': _trainingFrequency,
+      'unitPreference': _unitPreference,
+      'physicalStats': _physicalStats,
+      'trainingObjective': _trainingObjective,
+    });
   }
 
   /// Check current authentication state
   Future<void> _checkAuthState() async {
-    // Initialize auth service
+    // Get existing auth service instance (already initialized in main.dart)
     final authService = AuthService();
-    await authService.initialize();
     
     // Check authentication status
     _isAuthenticated = authService.isAuthenticated;
+    HWLog.event('auth_state', data: {
+      'phase': 'initial',
+      'isAuthenticated': _isAuthenticated,
+    });
     
     // Listen to auth changes
     authService.addListener(() {
       _isAuthenticated = authService.isAuthenticated;
       notifyListeners();
+      HWLog.event('auth_state', data: {
+        'phase': 'changed',
+        'isAuthenticated': _isAuthenticated,
+      });
     });
   }
 
@@ -161,6 +193,14 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// Update preferred starting day
+  Future<void> setPreferredStartingDay(String startingDay) async {
+    _preferredStartingDay = startingDay;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString(_keyPreferredStartingDay, startingDay);
+    notifyListeners();
+  }
+
   /// Handle auth state changes (login/logout)
   void onAuthStateChanged() {
     final authService = AuthService();
@@ -178,6 +218,7 @@ class AppState extends ChangeNotifier {
     _unitPreference = null;
     _physicalStats = null;
     _trainingObjective = null;
+    _preferredStartingDay = null;
     _isAuthenticated = false;
     
     final prefs = await SharedPreferences.getInstance();

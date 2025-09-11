@@ -2,7 +2,6 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/set_data.dart';
-import '../models/exercise.dart';
 import '../models/workout_day.dart';
 import 'workout_repository_interface.dart';
 

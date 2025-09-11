@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../components/ui/system_banner.dart';
 import '../../components/ui/command_button.dart';
 import '../../components/layout/heavyweight_scaffold.dart';
+import '../../core/theme/heavyweight_theme.dart';
 
 /// Subscription plans selection screen
 class SubscriptionPlansScreen extends StatefulWidget {
@@ -17,22 +17,10 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
   @override
   Widget build(BuildContext context) {
     return HeavyweightScaffold(
+      title: 'SUBSCRIPTION_PLANS',
+      
       body: Column(
         children: [
-          const SystemBanner(),
-          const SizedBox(height: 40),
-          
-          const Text(
-            'SUBSCRIPTION_PLANS',
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 2,
-            ),
-          ),
-          
-          const SizedBox(height: 40),
           
           // Plan selection
           Expanded(
@@ -43,33 +31,26 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                   onTap: () => setState(() => _selectedPlan = 0),
                   child: Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
+                    margin: const EdgeInsets.only(bottom: HeavyweightTheme.spacingMd),
                     decoration: BoxDecoration(
                       border: Border.all(
-                        color: _selectedPlan == 0 ? Colors.white : Colors.grey,
+                        color: _selectedPlan == 0 ? HeavyweightTheme.primary : HeavyweightTheme.secondary,
                         width: _selectedPlan == 0 ? 2 : 1,
                       ),
-                      color: _selectedPlan == 0 ? Colors.white.withOpacity(0.1) : Colors.transparent,
+                      color: _selectedPlan == 0 ? HeavyweightTheme.primary.withValues(alpha: 0.1) : Colors.transparent,
                     ),
-                    child: const Column(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
                           'MONTHLY',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
+                          style: HeavyweightTheme.h4,
                         ),
-                        SizedBox(height: 8),
+                        SizedBox(height: HeavyweightTheme.spacingSm),
                         Text(
                           '\$9.99/MONTH',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                          ),
+                          style: HeavyweightTheme.bodyMedium,
                         ),
                       ],
                     ),
@@ -81,16 +62,16 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                   onTap: () => setState(() => _selectedPlan = 1),
                   child: Container(
                     width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    margin: const EdgeInsets.only(bottom: 16),
+                    padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
+                    margin: const EdgeInsets.only(bottom: HeavyweightTheme.spacingMd),
                     decoration: BoxDecoration(
                       border: Border.all(
-                        color: _selectedPlan == 1 ? Colors.white : Colors.grey,
+                        color: _selectedPlan == 1 ? HeavyweightTheme.primary : HeavyweightTheme.secondary,
                         width: _selectedPlan == 1 ? 2 : 1,
                       ),
-                      color: _selectedPlan == 1 ? Colors.white.withOpacity(0.1) : Colors.transparent,
+                      color: _selectedPlan == 1 ? HeavyweightTheme.primary.withValues(alpha: 0.1) : Colors.transparent,
                     ),
-                    child: const Column(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Row(
@@ -98,35 +79,29 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
                             Text(
                               'YEARLY',
                               style: TextStyle(
-                                color: Colors.white,
+                                color: HeavyweightTheme.primary,
                                 fontSize: 16,
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
-                            SizedBox(width: 12),
+                            SizedBox(width: HeavyweightTheme.spacingSm),
                             Text(
                               'SAVE_40%',
-                              style: TextStyle(
-                                color: Colors.green,
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
+                              style: HeavyweightTheme.labelSmall.copyWith(
+                                color: HeavyweightTheme.success,
                               ),
                             ),
                           ],
                         ),
-                        SizedBox(height: 8),
+                        SizedBox(height: HeavyweightTheme.spacingSm),
                         Text(
                           '\$59.99/YEAR',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 14,
-                          ),
+                          style: HeavyweightTheme.bodyMedium,
                         ),
                         Text(
                           '(\$4.99/MONTH)',
-                          style: TextStyle(
-                            color: Colors.grey,
-                            fontSize: 12,
+                          style: HeavyweightTheme.bodySmall.copyWith(
+                            color: HeavyweightTheme.textSecondary,
                           ),
                         ),
                       ],
@@ -146,7 +121,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
             },
           ),
           
-          const SizedBox(height: 16),
+          const SizedBox(height: HeavyweightTheme.spacingMd),
           
           CommandButton(
             text: 'COMMAND: CANCEL',
@@ -154,7 +129,7 @@ class _SubscriptionPlansScreenState extends State<SubscriptionPlansScreen> {
             onPressed: () => Navigator.of(context).pop(),
           ),
           
-          const SizedBox(height: 40),
+          const SizedBox(height: HeavyweightTheme.spacingXl),
         ],
       ),
     );

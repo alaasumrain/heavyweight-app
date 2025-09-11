@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/theme/heavyweight_theme.dart';
+import '../../core/logging.dart';
 
 class HeavyweightNavigationBar extends StatelessWidget {
   final int currentIndex;
@@ -51,6 +52,10 @@ class HeavyweightNavigationBar extends StatelessWidget {
           return Expanded(
             child: GestureDetector(
               onTap: () {
+                HWLog.event('bottom_nav_tap', data: {
+                  'index': index,
+                  'label': label,
+                });
                 if (onTap != null) {
                   onTap!(index);
                 } else {

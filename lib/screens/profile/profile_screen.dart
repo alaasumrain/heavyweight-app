@@ -16,14 +16,14 @@ class ProfileScreen extends StatelessWidget {
         return HeavyweightScaffold(
           title: 'PROFILE',
           body: SingleChildScrollView(
-            padding: const EdgeInsets.all(20.0),
+            padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Profile Status
                 _buildProfileStatus(profileProvider),
                 
-                const SizedBox(height: 30),
+                const SizedBox(height: HeavyweightTheme.spacingXl),
                 
                 // Profile Information
                 _buildProfileSection('TRAINING PROFILE', [
@@ -46,7 +46,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ]),
                 
-                const SizedBox(height: 30),
+                const SizedBox(height: HeavyweightTheme.spacingXl),
                 
                 // Physical Stats
                 _buildProfileSection('PHYSICAL STATS', [
@@ -71,7 +71,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ]),
                 
-                const SizedBox(height: 30),
+                const SizedBox(height: HeavyweightTheme.spacingXl),
                 
                 // Preferences
                 _buildProfileSection('PREFERENCES', [
@@ -82,7 +82,7 @@ class ProfileScreen extends StatelessWidget {
                   ),
                 ]),
                 
-                const SizedBox(height: 40),
+                const SizedBox(height: HeavyweightTheme.spacingXxl),
                 
                 // Actions
                 _buildActionButtons(context, profileProvider),
@@ -99,7 +99,7 @@ class ProfileScreen extends StatelessWidget {
     final isComplete = profileProvider.isComplete;
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
       decoration: BoxDecoration(
         border: Border.all(
           color: isComplete ? Colors.green : Colors.amber,
@@ -113,7 +113,7 @@ class ProfileScreen extends StatelessWidget {
             color: isComplete ? Colors.green : Colors.amber,
             size: 32,
           ),
-          const SizedBox(height: 10),
+          const SizedBox(height: HeavyweightTheme.spacingSm),
           Text(
             isComplete ? 'PROFILE COMPLETE' : 'PROFILE INCOMPLETE',
             style: TextStyle(
@@ -124,7 +124,7 @@ class ProfileScreen extends StatelessWidget {
             ),
           ),
           if (!isComplete) ...[
-            const SizedBox(height: 10),
+            const SizedBox(height: HeavyweightTheme.spacingSm),
             Text(
               'Complete your profile to unlock personalized training',
               style: HeavyweightTheme.bodySmall,
@@ -144,7 +144,7 @@ class ProfileScreen extends StatelessWidget {
           title,
           style: HeavyweightTheme.h4,
         ),
-        const SizedBox(height: 15),
+        const SizedBox(height: HeavyweightTheme.spacingMd),
         ...items,
       ],
     );
@@ -152,12 +152,12 @@ class ProfileScreen extends StatelessWidget {
 
   Widget _buildProfileItem(String label, String value, VoidCallback onTap) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: HeavyweightTheme.spacingSm),
       child: InkWell(
         onTap: onTap,
         child: Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(15),
+          padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
           decoration: BoxDecoration(
             border: Border.all(color: HeavyweightTheme.secondary),
           ),
@@ -173,7 +173,7 @@ class ProfileScreen extends StatelessWidget {
                       color: HeavyweightTheme.textSecondary,
                     ),
                   ),
-                  const SizedBox(height: 5),
+                  const SizedBox(height: HeavyweightTheme.spacingXs),
                   Text(
                     value,
                     style: HeavyweightTheme.bodyMedium,
@@ -200,7 +200,7 @@ class ProfileScreen extends StatelessWidget {
             onPressed: () => context.go('/profile/experience'),
             variant: ButtonVariant.primary,
           ),
-        const SizedBox(height: 15),
+        const SizedBox(height: HeavyweightTheme.spacingMd),
         CommandButton(
           text: 'RESET PROFILE',
           onPressed: () => _showResetDialog(context, profileProvider),

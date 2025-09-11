@@ -19,10 +19,13 @@ export 'screens/training/session_active_screen.dart';
 export 'screens/training/enforced_rest_screen.dart';
 export 'screens/training/training_log_screen.dart';
 
-// Fortress system
-export 'fortress/manifesto/manifesto_screen.dart';
-export 'fortress/protocol/protocol_screen.dart';
-export 'fortress/session_complete/session_complete_screen.dart';
+// Core training screens
+export 'screens/training/daily_workout_screen.dart';
+export 'screens/training/protocol_screen.dart';
+export 'screens/training/session_complete_screen.dart';
+
+// Onboarding
+export 'screens/onboarding/manifesto_screen.dart';
 
 // Settings
 export 'screens/settings/settings_main_screen.dart';
@@ -45,4 +48,3 @@ export 'components/ui/command_button.dart';
 export 'components/ui/heavyweight_card.dart';
 export 'components/ui/system_banner.dart';
 export 'components/layout/heavyweight_scaffold.dart';
-export 'components/navigation/swipeable_screen.dart';

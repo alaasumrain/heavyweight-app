@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import '../../components/ui/system_banner.dart';
 import '../../components/ui/command_button.dart';
 import '../../components/layout/heavyweight_scaffold.dart';
+import '../../core/theme/heavyweight_theme.dart';
 
 /// Paywall screen for subscription management
 /// Shows when free trial expires or premium features accessed
@@ -11,54 +11,37 @@ class PaywallScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return HeavyweightScaffold(
+      title: 'TRIAL_EXPIRED',
+      
       body: Column(
         children: [
-          const SystemBanner(),
-          const SizedBox(height: 40),
           
-          // Trial status
-          const Text(
-            'TRIAL_EXPIRED',
-            style: TextStyle(
-              color: Colors.red,
-              fontSize: 18,
-              fontWeight: FontWeight.bold,
-              letterSpacing: 2,
-            ),
-          ),
-          
-          const SizedBox(height: 40),
           
           // Benefits
-          const Expanded(
+          Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
                   'HEAVYWEIGHT_PREMIUM:',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 1,
-                  ),
+                  style: HeavyweightTheme.h4,
                 ),
-                SizedBox(height: 20),
+                SizedBox(height: HeavyweightTheme.spacingLg),
                 Text(
                   '• UNLIMITED_SESSIONS',
-                  style: TextStyle(color: Colors.white, fontSize: 14),
+                  style: HeavyweightTheme.bodyMedium,
                 ),
                 Text(
                   '• ADVANCED_ANALYTICS',
-                  style: TextStyle(color: Colors.white, fontSize: 14),
+                  style: HeavyweightTheme.bodyMedium,
                 ),
                 Text(
                   '• PRIORITY_SUPPORT',
-                  style: TextStyle(color: Colors.white, fontSize: 14),
+                  style: HeavyweightTheme.bodyMedium,
                 ),
                 Text(
                   '• FUTURE_FEATURES',
-                  style: TextStyle(color: Colors.white, fontSize: 14),
+                  style: HeavyweightTheme.bodyMedium,
                 ),
               ],
             ),
@@ -73,7 +56,7 @@ class PaywallScreen extends StatelessWidget {
             },
           ),
           
-          const SizedBox(height: 16),
+          const SizedBox(height: HeavyweightTheme.spacingMd),
           
           CommandButton(
             text: 'COMMAND: RESTORE_PURCHASE',
@@ -83,7 +66,7 @@ class PaywallScreen extends StatelessWidget {
             },
           ),
           
-          const SizedBox(height: 40),
+          const SizedBox(height: HeavyweightTheme.spacingXl),
         ],
       ),
     );

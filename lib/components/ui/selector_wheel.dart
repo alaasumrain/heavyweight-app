@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../core/theme/heavyweight_theme.dart';
 import 'dart:async';
 
@@ -8,6 +9,7 @@ class SelectorWheel extends StatefulWidget {
   final int max;
   final Function(int) onChanged;
   final String suffix;
+  final String? semanticLabel;
   
   const SelectorWheel({
     Key? key,
@@ -16,6 +18,7 @@ class SelectorWheel extends StatefulWidget {
     required this.max,
     required this.onChanged,
     this.suffix = '',
+    this.semanticLabel,
   }) : super(key: key);
   
   @override
@@ -98,100 +101,137 @@ class _SelectorWheelState extends State<SelectorWheel> {
   
   void _handleSingleDecrement() {
     if (widget.value > widget.min) {
-      widget.onChanged(widget.value - 1);
+      try {
+        HapticFeedback.selectionClick();
+        widget.onChanged(widget.value - 1);
+      } catch (error) {
+        debugPrint('SelectorWheel decrement error: $error');
+      }
     }
   }
   
   void _handleSingleIncrement() {
     if (widget.value < widget.max) {
-      widget.onChanged(widget.value + 1);
+      try {
+        HapticFeedback.selectionClick();
+        widget.onChanged(widget.value + 1);
+      } catch (error) {
+        debugPrint('SelectorWheel increment error: $error');
+      }
     }
   }
   
   @override
   Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Left arrow (minus)
-        GestureDetector(
-          onTap: _handleSingleDecrement,
-          onLongPressStart: (_) {
-            Future.delayed(const Duration(milliseconds: 300), () {
-              if (mounted) _startDecrement();
-            });
-          },
-          onLongPressEnd: (_) => _cancelTimer(),
-          onLongPressCancel: () => _cancelTimer(),
-          child: Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: widget.value > widget.min ? Colors.white : Colors.grey.shade700,
+    return Semantics(
+      label: widget.semanticLabel ?? 'Value selector',
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          // Left arrow (minus)
+          Semantics(
+            button: true,
+            enabled: widget.value > widget.min,
+            label: 'Decrease ${widget.suffix.isEmpty ? 'value' : widget.suffix}',
+            child: InkWell(
+              onTap: widget.value > widget.min ? _handleSingleDecrement : null,
+              onLongPress: widget.value > widget.min ? () {
+                Future.delayed(const Duration(milliseconds: 300), () {
+                  if (mounted) _startDecrement();
+                });
+              } : null,
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: widget.value > widget.min 
+                        ? HeavyweightTheme.primary 
+                        : HeavyweightTheme.textDisabled,
+                  ),
+                  color: widget.value > widget.min 
+                      ? (_isDecrementing 
+                          ? HeavyweightTheme.primary.withValues(alpha: 0.1) 
+                          : Colors.transparent)
+                      : HeavyweightTheme.surface,
+                ),
+                child: Icon(
+                  Icons.remove,
+                  color: widget.value > widget.min 
+                      ? HeavyweightTheme.primary 
+                      : HeavyweightTheme.textDisabled,
+                  size: 24,
+                ),
               ),
-              color: widget.value > widget.min 
-                  ? (_isDecrementing ? Colors.white.withOpacity(0.1) : Colors.transparent)
-                  : Colors.grey.shade900,
-            ),
-            child: Icon(
-              Icons.remove,
-              color: widget.value > widget.min ? Colors.white : Colors.grey.shade600,
-              size: 24,
             ),
           ),
-        ),
-        
-        const SizedBox(width: 16),
-        
-        // Value display
-        Container(
-          width: 120,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          decoration: BoxDecoration(
-            border: Border.all(color: Colors.white, width: 2),
-            color: Colors.white.withOpacity(0.05),
-          ),
-          child: Text(
-            '${widget.value} ${widget.suffix}',
-            textAlign: TextAlign.center,
-            style: HeavyweightTheme.h3.copyWith(
-              fontSize: 20,
-            ),
-          ),
-        ),
-        
-        const SizedBox(width: 16),
-        
-        // Right arrow (plus)
-        GestureDetector(
-          onTap: _handleSingleIncrement,
-          onLongPressStart: (_) {
-            Future.delayed(const Duration(milliseconds: 300), () {
-              if (mounted) _startIncrement();
-            });
-          },
-          onLongPressEnd: (_) => _cancelTimer(),
-          onLongPressCancel: () => _cancelTimer(),
-          child: Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: widget.value < widget.max ? Colors.white : Colors.grey.shade700,
+          
+          const SizedBox(width: HeavyweightTheme.spacingMd),
+          
+          // Value display
+          Semantics(
+            value: '${widget.value} ${widget.suffix}',
+            child: Container(
+              width: 120,
+              padding: const EdgeInsets.symmetric(
+                horizontal: HeavyweightTheme.spacingMd, 
+                vertical: HeavyweightTheme.spacingSm
               ),
-              color: widget.value < widget.max
-                  ? (_isIncrementing ? Colors.white.withOpacity(0.1) : Colors.transparent)
-                  : Colors.grey.shade900,
-            ),
-            child: Icon(
-              Icons.add,
-              color: widget.value < widget.max ? Colors.white : Colors.grey.shade600,
-              size: 24,
+              decoration: BoxDecoration(
+                border: Border.all(color: HeavyweightTheme.primary, width: 2),
+                color: HeavyweightTheme.primary.withValues(alpha: 0.05),
+              ),
+              child: Text(
+                '${widget.value} ${widget.suffix}',
+                textAlign: TextAlign.center,
+                style: HeavyweightTheme.h3.copyWith(
+                  fontSize: 20,
+                ),
+              ),
             ),
           ),
-        ),
-      ],
+          
+          const SizedBox(width: HeavyweightTheme.spacingMd),
+          
+          // Right arrow (plus)
+          Semantics(
+            button: true,
+            enabled: widget.value < widget.max,
+            label: 'Increase ${widget.suffix.isEmpty ? 'value' : widget.suffix}',
+            child: InkWell(
+              onTap: widget.value < widget.max ? _handleSingleIncrement : null,
+              onLongPress: widget.value < widget.max ? () {
+                Future.delayed(const Duration(milliseconds: 300), () {
+                  if (mounted) _startIncrement();
+                });
+              } : null,
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: widget.value < widget.max 
+                        ? HeavyweightTheme.primary 
+                        : HeavyweightTheme.textDisabled,
+                  ),
+                  color: widget.value < widget.max
+                      ? (_isIncrementing 
+                          ? HeavyweightTheme.primary.withValues(alpha: 0.1) 
+                          : Colors.transparent)
+                      : HeavyweightTheme.surface,
+                ),
+                child: Icon(
+                  Icons.add,
+                  color: widget.value < widget.max 
+                      ? HeavyweightTheme.primary 
+                      : HeavyweightTheme.textDisabled,
+                  size: 24,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

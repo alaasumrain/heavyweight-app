@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import '../core/theme/heavyweight_theme.dart';
+import 'logging.dart';
 
 /// Global error handling system for HEAVYWEIGHT app
 /// Provides consistent error handling across the entire application
@@ -21,6 +23,42 @@ class HeavyweightErrorHandler {
       _logError('Async Error', error, stack);
       return true;
     };
+
+    // Provide a global fallback widget for uncaught build errors
+    ErrorWidget.builder = (FlutterErrorDetails details) {
+      return Container(
+        color: Colors.black,
+        padding: const EdgeInsets.all(24),
+        child: Center(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Icon(Icons.error_outline, color: HeavyweightTheme.danger, size: 48),
+              const SizedBox(height: 12),
+              const Text(
+                'SYSTEM_FAULT',
+                style: TextStyle(
+                  color: HeavyweightTheme.primary,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                getErrorMessage(details.exceptionAsString()),
+                style: const TextStyle(
+                  color: HeavyweightTheme.textSecondary,
+                  fontSize: 12,
+                  letterSpacing: 1,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
+        ),
+      );
+    };
   }
 
   /// Log error with context
@@ -31,6 +69,11 @@ class HeavyweightErrorHandler {
         print('Stack trace: $stack');
       }
     }
+    HWLog.event('error', data: {
+      'type': type,
+      'error': error.toString(),
+      'stackPresent': stack != null,
+    });
     
     // TODO: Send to crash reporting service in production
     // FirebaseCrashlytics.instance.recordError(error, stack);
@@ -70,18 +113,18 @@ class HeavyweightErrorHandler {
     
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: Colors.red.shade900,
+        backgroundColor: HeavyweightTheme.danger,
         content: Row(
           children: [
-            const Icon(Icons.error_outline, color: Colors.white, size: 20),
+            const Icon(Icons.error_outline, color: HeavyweightTheme.primary, size: 20),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
                 message,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: HeavyweightTheme.primary,
                   fontSize: 12,
-                  fontFamily: 'IBMPlexMono',
+                  fontFamily: 'IBM Plex Mono',
                   letterSpacing: 1,
                 ),
               ),
@@ -96,7 +139,7 @@ class HeavyweightErrorHandler {
                 child: const Text(
                   'RETRY',
                   style: TextStyle(
-                    color: Colors.white,
+                    color: HeavyweightTheme.primary,
                     fontSize: 12,
                     fontWeight: FontWeight.bold,
                     decoration: TextDecoration.underline,
@@ -156,7 +199,7 @@ class _ErrorBoundaryState extends State<ErrorBoundary> {
             const Text(
               'SYSTEM_FAULT',
               style: TextStyle(
-                color: Colors.white,
+                color: HeavyweightTheme.primary,
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
                 letterSpacing: 2,
@@ -176,7 +219,7 @@ class _ErrorBoundaryState extends State<ErrorBoundary> {
             ElevatedButton(
               onPressed: () => setState(() => _error = null),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.white,
+                backgroundColor: HeavyweightTheme.primary,
                 foregroundColor: Colors.black,
               ),
               child: const Text('COMMAND: RETRY'),

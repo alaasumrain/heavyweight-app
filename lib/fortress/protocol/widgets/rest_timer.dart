@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+import '../../../core/theme/heavyweight_theme.dart';
 import '../../../components/ui/warning_stripes.dart';
 
 /// Flexible Rest Timer - Smart skip/extend based on context
@@ -183,7 +185,7 @@ class _RestTimerState extends State<RestTimer> with SingleTickerProviderStateMix
                 child: CircularProgressIndicator(
                   value: _progress,
                   strokeWidth: 8,
-                  backgroundColor: Colors.grey.shade900,
+                  backgroundColor: HeavyweightTheme.secondary,
                   valueColor: AlwaysStoppedAnimation<Color>(timerColor),
                 ),
               ),
@@ -199,17 +201,16 @@ class _RestTimerState extends State<RestTimer> with SingleTickerProviderStateMix
                       children: [
                         Text(
                           _formatTime(_remainingSeconds),
-                          style: TextStyle(
+                          style: GoogleFonts.ibmPlexMono(
                             color: timerColor,
                             fontSize: 72,
                             fontWeight: FontWeight.bold,
-                            fontFamily: 'monospace',
                           ),
                         ),
                         Text(
                           'REMAINING',
                           style: TextStyle(
-                            color: Colors.grey.shade600,
+                            color: HeavyweightTheme.textSecondary,
                             fontSize: 14,
                             letterSpacing: 2,
                           ),
@@ -317,7 +318,7 @@ class _RestTimerState extends State<RestTimer> with SingleTickerProviderStateMix
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       border: Border.all(color: Colors.orange.shade800),
-                      color: Colors.orange.shade900.withOpacity(0.3),
+                      color: Colors.orange.shade900.withValues(alpha: 0.3),
                     ),
                     child: Text(
                       'REST EXTENDED',

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'logging.dart';
 
 /// Comprehensive authentication service following Supabase best practices
 /// Handles sign in, sign up, session management, and persistence
@@ -24,8 +25,19 @@ class AuthService extends ChangeNotifier {
   /// Initialize the auth service and set up listeners
   Future<void> initialize() async {
     try {
-      // Get initial session (Supabase handles persistence automatically)
-      _currentUser = Supabase.instance.client.auth.currentUser;
+      // Get current user with error handling following Supabase best practices
+      try {
+        _currentUser = Supabase.instance.client.auth.currentUser;
+      } catch (error) {
+        // Handle session recovery errors gracefully
+        _currentUser = null;
+        if (kDebugMode) {
+          debugPrint('Session recovery error: $error');
+        }
+        HWLog.event('auth_initialize_session_recovery_error', data: {
+          'error': error.toString(),
+        });
+      }
       
       // Set up auth state listener for real-time updates
       _authSubscription = Supabase.instance.client.auth.onAuthStateChange.listen((data) {
@@ -33,11 +45,23 @@ class AuthService extends ChangeNotifier {
         final Session? session = data.session;
         
         _handleAuthStateChange(event, session);
+      }, onError: (error) {
+        // Handle auth state change errors
+        _setError('Auth state error: $error');
+        HWLog.event('auth_listener_error', data: {
+          'error': error.toString(),
+        });
       });
       
+      HWLog.event('auth_initialize_done', data: {
+        'hasUser': _currentUser != null,
+      });
       notifyListeners();
     } catch (e) {
       _setError('Failed to initialize auth service: $e');
+      HWLog.event('auth_initialize_failed', data: {
+        'error': e.toString(),
+      });
     }
   }
   
@@ -57,6 +81,7 @@ class AuthService extends ChangeNotifier {
     _clearError();
     
     try {
+      HWLog.event('auth_sign_in_start');
       final AuthResponse response = await Supabase.instance.client.auth.signInWithPassword(
         email: email.trim(),
         password: password,
@@ -65,19 +90,27 @@ class AuthService extends ChangeNotifier {
       if (response.user != null) {
         // Session persistence is automatic with Supabase Flutter
         _setLoading(false);
+        HWLog.event('auth_sign_in_success');
         return true;
       } else {
         _setError('Sign in failed: No user returned');
         _setLoading(false);
+        HWLog.event('auth_sign_in_no_user');
         return false;
       }
     } on AuthException catch (e) {
       _setError(_getReadableAuthError(e));
       _setLoading(false);
+      HWLog.event('auth_sign_in_auth_exception', data: {
+        'message': e.message,
+      });
       return false;
     } catch (e) {
       _setError('Unexpected error: $e');
       _setLoading(false);
+      HWLog.event('auth_sign_in_error', data: {
+        'error': e.toString(),
+      });
       return false;
     }
   }
@@ -92,6 +125,7 @@ class AuthService extends ChangeNotifier {
     _clearError();
     
     try {
+      HWLog.event('auth_sign_up_start');
       final AuthResponse response = await Supabase.instance.client.auth.signUp(
         email: email.trim(),
         password: password,
@@ -101,19 +135,27 @@ class AuthService extends ChangeNotifier {
       if (response.user != null) {
         // Session persistence is automatic with Supabase Flutter
         _setLoading(false);
+        HWLog.event('auth_sign_up_success');
         return true;
       } else {
         _setError('Sign up failed: No user returned');
         _setLoading(false);
+        HWLog.event('auth_sign_up_no_user');
         return false;
       }
     } on AuthException catch (e) {
       _setError(_getReadableAuthError(e));
       _setLoading(false);
+      HWLog.event('auth_sign_up_auth_exception', data: {
+        'message': e.message,
+      });
       return false;
     } catch (e) {
       _setError('Unexpected error: $e');
       _setLoading(false);
+      HWLog.event('auth_sign_up_error', data: {
+        'error': e.toString(),
+      });
       return false;
     }
   }
@@ -124,12 +166,17 @@ class AuthService extends ChangeNotifier {
     _clearError();
     
     try {
+      HWLog.event('auth_sign_out_start');
       await Supabase.instance.client.auth.signOut();
       // Session cleanup is automatic with Supabase Flutter
       _setLoading(false);
+      HWLog.event('auth_sign_out_success');
     } catch (e) {
       _setError('Sign out failed: $e');
       _setLoading(false);
+      HWLog.event('auth_sign_out_error', data: {
+        'error': e.toString(),
+      });
     }
   }
   
@@ -139,19 +186,27 @@ class AuthService extends ChangeNotifier {
     _clearError();
     
     try {
+      HWLog.event('auth_reset_password_start');
       await Supabase.instance.client.auth.resetPasswordForEmail(
         email.trim(),
         redirectTo: 'io.heavyweight.app://reset-password', // Deep link for mobile
       );
       _setLoading(false);
+      HWLog.event('auth_reset_password_success');
       return true;
     } on AuthException catch (e) {
       _setError(_getReadableAuthError(e));
       _setLoading(false);
+      HWLog.event('auth_reset_password_auth_exception', data: {
+        'message': e.message,
+      });
       return false;
     } catch (e) {
       _setError('Password reset failed: $e');
       _setLoading(false);
+      HWLog.event('auth_reset_password_error', data: {
+        'error': e.toString(),
+      });
       return false;
     }
   }
@@ -159,21 +214,31 @@ class AuthService extends ChangeNotifier {
   /// Refresh the current session
   Future<bool> refreshSession() async {
     try {
+      HWLog.event('auth_refresh_session_start');
       final AuthResponse response = await Supabase.instance.client.auth.refreshSession();
       if (response.user != null) {
         _currentUser = response.user;
         notifyListeners();
+        HWLog.event('auth_refresh_session_success');
         return true;
       }
+      HWLog.event('auth_refresh_session_no_user');
       return false;
     } catch (e) {
       _setError('Session refresh failed: $e');
+      HWLog.event('auth_refresh_session_error', data: {
+        'error': e.toString(),
+      });
       return false;
     }
   }
   
   /// Handle auth state changes
   void _handleAuthStateChange(AuthChangeEvent event, Session? session) {
+    HWLog.event('auth_state_change', data: {
+      'event': event.name,
+      'hasUser': session?.user != null,
+    });
     switch (event) {
       case AuthChangeEvent.signedIn:
         _currentUser = session?.user;
@@ -209,17 +274,17 @@ class AuthService extends ChangeNotifier {
   String _getReadableAuthError(AuthException e) {
     switch (e.message.toLowerCase()) {
       case 'invalid login credentials':
-        return 'INVALID_CREDENTIALS: Check your email and password';
+        return 'INVALID_CREDENTIALS. VERIFY_INPUT.';
       case 'email not confirmed':
-        return 'EMAIL_NOT_CONFIRMED: Check your email for confirmation link';
+        return 'EMAIL_NOT_CONFIRMED. CHECK_INBOX.';
       case 'user not found':
-        return 'USER_NOT_FOUND: No account found with this email';
+        return 'USER_NOT_FOUND. EMAIL_UNREGISTERED.';
       case 'weak password':
-        return 'WEAK_PASSWORD: Password must be at least 6 characters';
+        return 'WEAK_PASSWORD. MIN_6_CHARS.';
       case 'email already registered':
-        return 'EMAIL_EXISTS: Account already exists with this email';
+        return 'EMAIL_EXISTS. USE_LOGIN.';
       case 'signup disabled':
-        return 'SIGNUP_DISABLED: New registrations are currently disabled';
+        return 'SIGNUP_DISABLED. CONTACT_ADMIN.';
       default:
         return 'AUTH_ERROR: ${e.message}';
     }

@@ -30,9 +30,8 @@ class _RepLoggerState extends State<RepLogger> with TickerProviderStateMixin {
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
   
-  // Visual zones for feedback
-  static const _failureZone = [0, 3];   // Red zone
-  static const _mandateZone = [4, 6];   // Green zone - THE MANDATE
+  // Visual zones for feedback - simplified
+  static const _failureZone = [0, 0];   // Only complete failure (0 reps)
   
   @override
   void initState() {
@@ -65,12 +64,8 @@ class _RepLoggerState extends State<RepLogger> with TickerProviderStateMixin {
   Color _getZoneColor() {
     if (_currentReps == 0) {
       return Colors.red.shade900; // Complete failure
-    } else if (_currentReps <= _failureZone[1]) {
-      return Colors.red.shade700; // Below mandate
-    } else if (_currentReps >= _mandateZone[0] && _currentReps <= _mandateZone[1]) {
-      return Colors.white; // Perfect - The Mandate
     } else {
-      return Colors.amber; // Above mandate
+      return Colors.white; // All other reps - neutral
     }
   }
 
@@ -85,12 +80,8 @@ class _RepLoggerState extends State<RepLogger> with TickerProviderStateMixin {
   String _getZoneText() {
     if (_currentReps == 0) {
       return 'COMPLETE FAILURE';
-    } else if (_currentReps <= _failureZone[1]) {
-      return 'BELOW MANDATE';
-    } else if (_currentReps >= _mandateZone[0] && _currentReps <= _mandateZone[1]) {
-      return 'WITHIN MANDATE';
     } else {
-      return 'EXCEEDED MANDATE';
+      return 'REPS LOGGED';
     }
   }
   
@@ -114,10 +105,7 @@ class _RepLoggerState extends State<RepLogger> with TickerProviderStateMixin {
   void _triggerLiveFeedback() {
     if (!widget.liveMode) return;
     
-    if (_currentReps >= _mandateZone[0] && _currentReps <= _mandateZone[1]) {
-      // In mandate zone - pulse green
-      _pulseController.repeat(reverse: true);
-    } else if (_currentReps == 0) {
+    if (_currentReps == 0) {
       // Complete failure - strong pulse
       _pulseController.repeat(reverse: true);
     } else {
@@ -286,48 +274,16 @@ class _RepLoggerState extends State<RepLogger> with TickerProviderStateMixin {
           
           const SizedBox(height: 20),
           
-          // Mandate zone indicator
-          Container(
-            height: 8,
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  Colors.red.shade900,    // 0
-                  Colors.red.shade700,    // 1-3
-                  Colors.white, // 4-6
-                  Colors.amber,           // 7+
-                ],
-                stops: const [0.0, 0.13, 0.5, 1.0],
-              ),
-            ),
-          ),
-          
-          const SizedBox(height: 8),
-          
-          // Scale labels
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('0', style: TextStyle(color: Colors.grey.shade600, fontSize: 10)),
-              Text('4-6', style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold)),
-              Text('30', style: TextStyle(color: Colors.grey.shade600, fontSize: 10)),
-            ],
-          ),
-          
           const SizedBox(height: 30),
           
           // Log button
           ElevatedButton(
             onPressed: () {
-              // Provide haptic feedback based on performance zone
+              // Provide haptic feedback based on performance
               if (_currentReps == 0) {
                 HapticFeedback.heavyImpact(); // Failure - strong haptic
-              } else if (_currentReps <= _failureZone[1]) {
-                HapticFeedback.mediumImpact(); // Below mandate - medium haptic
-              } else if (_currentReps >= _mandateZone[0] && _currentReps <= _mandateZone[1]) {
-                HapticFeedback.lightImpact(); // Perfect mandate - light success haptic
               } else {
-                HapticFeedback.selectionClick(); // Exceeded - subtle click
+                HapticFeedback.lightImpact(); // Success - light haptic
               }
               
               widget.onRepsLogged(_currentReps);

@@ -29,7 +29,7 @@ class WorkoutViewModel extends ChangeNotifier {
   bool get hasWorkout => _todaysWorkout != null && !_todaysWorkout!.isRestDay;
   
   /// Initialize the workout system
-  Future<void> initialize() async {
+  Future<void> initialize({String? preferredStartingDay}) async {
     _setLoading(true);
     _clearError();
     
@@ -42,7 +42,7 @@ class WorkoutViewModel extends ChangeNotifier {
       
       // Generate today's workout (handles Day 1 automatically)
       final history = await repository.getHistory();
-      final workout = await engine.generateDailyWorkout(history);
+      final workout = await engine.generateDailyWorkout(history, preferredStartingDay: preferredStartingDay);
       
       _todaysWorkout = workout;
       _setLoading(false);

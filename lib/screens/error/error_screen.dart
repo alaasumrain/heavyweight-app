@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import '../../core/theme/heavyweight_theme.dart';
 import 'package:go_router/go_router.dart';
-import '../../components/ui/system_banner.dart';
 import '../../components/ui/command_button.dart';
 import '../../components/layout/heavyweight_scaffold.dart';
+import '../../core/logging.dart';
 import '../../core/error_handler.dart';
 
 /// Generic error screen for unrecoverable errors
@@ -22,6 +23,7 @@ class ErrorScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    HWLog.screen('Error/Generic');
     final message = errorMessage ?? 
         (error != null ? HeavyweightErrorHandler.getErrorMessage(error!) : 'UNKNOWN_ERROR');
 
@@ -29,39 +31,37 @@ class ErrorScreen extends StatelessWidget {
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const SystemBanner(),
-          
           const Spacer(),
           
           // Error icon
           const Icon(
             Icons.error_outline,
-            color: Colors.red,
+            color: HeavyweightTheme.danger,
             size: 64,
           ),
           
-          const SizedBox(height: 24),
+          const SizedBox(height: HeavyweightTheme.spacingLg),
           
           // Error title
           const Text(
             'SYSTEM_FAULT',
             style: TextStyle(
-              color: Colors.white,
+              color: HeavyweightTheme.primary,
               fontSize: 20,
               fontWeight: FontWeight.bold,
               letterSpacing: 2,
             ),
           ),
           
-          const SizedBox(height: 16),
+          const SizedBox(height: HeavyweightTheme.spacingMd),
           
           // Error message
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 40),
+            padding: const EdgeInsets.symmetric(horizontal: HeavyweightTheme.spacingXxl),
             child: Text(
               message,
               style: const TextStyle(
-                color: Colors.grey,
+                color: HeavyweightTheme.textSecondary,
                 fontSize: 14,
                 letterSpacing: 1,
               ),
@@ -76,6 +76,10 @@ class ErrorScreen extends StatelessWidget {
             CommandButton(
               text: 'COMMAND: RETRY',
               onPressed: () {
+                HWLog.event('error_retry_tap', data: {
+                  'hasOnRetry': onRetry != null,
+                  'retryRoute': retryRoute ?? '',
+                });
                 if (onRetry != null) {
                   onRetry!();
                 } else if (retryRoute != null) {
@@ -83,16 +87,19 @@ class ErrorScreen extends StatelessWidget {
                 }
               },
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: HeavyweightTheme.spacingMd),
           ],
           
           CommandButton(
             text: 'COMMAND: HOME',
             variant: ButtonVariant.secondary,
-            onPressed: () => context.go('/assignment'),
+            onPressed: () {
+              HWLog.event('error_home_tap');
+              context.go('/assignment');
+            },
           ),
           
-          const SizedBox(height: 40),
+          const SizedBox(height: HeavyweightTheme.spacingXxl),
         ],
       ),
     );

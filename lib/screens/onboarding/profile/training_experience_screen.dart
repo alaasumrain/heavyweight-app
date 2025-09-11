@@ -1,64 +1,45 @@
 import 'package:flutter/material.dart';
-import '../../core/theme/heavyweight_theme.dart';
+import '../../../core/theme/heavyweight_theme.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../../../components/ui/system_banner.dart';
 import '../../../components/ui/command_button.dart';
 import '../../../components/ui/radio_selector.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../providers/app_state_provider.dart';
 import '../../../nav.dart';
+import '../../../components/layout/heavyweight_scaffold.dart';
+import '../../../core/logging.dart';
 
 class TrainingExperienceScreen extends StatelessWidget {
   const TrainingExperienceScreen({Key? key}) : super(key: key);
 
   @override
   Widget build(BuildContext context) {
+    HWLog.screen('Onboarding/Profile/Experience');
     // Determine if we're in profile editing mode (not onboarding)
     final isEditMode = GoRouterState.of(context).matchedLocation.contains('/profile/');
     
-    return Scaffold(
-      backgroundColor: HeavyweightTheme.background,
-      appBar: AppBar(
-        backgroundColor: HeavyweightTheme.background,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: HeavyweightTheme.primary),
-          onPressed: () {
-            if (Navigator.of(context).canPop()) {
-              Navigator.of(context).pop();
-            } else {
-              context.go('/manifesto');
-            }
-          },
-        ),
-        elevation: 0,
-      ),
-      body: SafeArea(
+    return HeavyweightScaffold(
+      title: 'SYSTEM CALIBRATION',
+      showBackButton: isEditMode,
+      fallbackRoute: '/manifesto',
+      body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
           child: Column(
             children: [
-              const SystemBanner(),
-              const SizedBox(height: 40),
-              
-              // Header
-              Text(
-                'SYSTEM CALIBRATION',
-                style: HeavyweightTheme.h3,
-              ),
-              const SizedBox(height: 10),
+              // Header with proper spacing
               Text(
                 'CALIBRATING LOAD PARAMETERS\nSELECT TRAINING PROTOCOL EXPERIENCE LEVEL',
                 textAlign: TextAlign.center,
                 style: HeavyweightTheme.bodyMedium,
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: HeavyweightTheme.spacingLg),
               
               // Experience options
-              Expanded(
-                child: Consumer<ProfileProvider>(
-                  builder: (context, provider, child) {
-                    return RadioSelector<ExperienceLevel>(
+              Consumer<ProfileProvider>(
+                builder: (context, provider, child) {
+                  return RadioSelector<ExperienceLevel>(
                       options: const [
                         RadioOption(
                           value: ExperienceLevel.beginner,
@@ -74,22 +55,27 @@ class TrainingExperienceScreen extends StatelessWidget {
                         ),
                       ],
                       selectedValue: provider.experience,
-                      onChanged: provider.setExperience,
+                      onChanged: (val) {
+                        HWLog.event('profile_experience_select', data: {'value': val.name});
+                        provider.setExperience(val);
+                      },
                     );
-                  },
-                ),
+                },
               ),
+              
+              const SizedBox(height: HeavyweightTheme.spacingXl),
               
               // Continue button
               Consumer<ProfileProvider>(
                 builder: (context, provider, child) {
                   return CommandButton(
-                    text: 'CALIBRATE',
+                    text: 'CONTINUE',
                     variant: ButtonVariant.primary,
                     isDisabled: provider.experience == null,
                     onPressed: provider.experience != null
                         ? () async {
-                            // Mark experience as set in AppState
+                          HWLog.event('profile_experience_continue');
+                          // Mark experience as set in AppState
                             final appState = context.read<AppStateProvider>().appState;
                             await appState.setExperience(provider.experience!.name);
                             

@@ -67,7 +67,7 @@ class HeavyweightCard extends StatelessWidget {
         return HeavyweightTheme.accentCardDecoration;
       case CardVariant.error:
         return BoxDecoration(
-          color: HeavyweightTheme.errorSurface.withOpacity(0.1),
+          color: HeavyweightTheme.errorSurface.withValues(alpha: 0.1),
           border: Border.all(color: HeavyweightTheme.error),
         );
     }

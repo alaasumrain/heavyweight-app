@@ -5,6 +5,7 @@ import '../../components/ui/command_button.dart';
 import '../../components/ui/selector_wheel.dart';
 import '../../components/ui/warning_stripes.dart';
 import '../../core/theme/heavyweight_theme.dart';
+import '../../core/logging.dart';
 
 class SessionActiveScreen extends StatefulWidget {
   const SessionActiveScreen({Key? key}) : super(key: key);
@@ -31,6 +32,7 @@ class _SessionActiveScreenState extends State<SessionActiveScreen> {
 
   @override
   Widget build(BuildContext context) {
+    HWLog.screen('Training/SessionActive');
     return HeavyweightScaffold(
       title: 'SESSION_ACTIVE',
       subtitle: 'EXERCISE_${currentExercise.toString().padLeft(2, '0')}_SET_${currentSet.toString().padLeft(2, '0')}',
@@ -99,6 +101,7 @@ class _SessionActiveScreenState extends State<SessionActiveScreen> {
               min: 0,
               max: 15,
               onChanged: (value) {
+                HWLog.event('session_active_reps_change', data: {'value': value});
                 setState(() {
                   repsCompleted = value;
                 });
@@ -113,7 +116,10 @@ class _SessionActiveScreenState extends State<SessionActiveScreen> {
           CommandButton(
             text: isLogging ? 'LOGGING...' : 'LOG_SET',
             variant: ButtonVariant.primary,
-            onPressed: isLogging ? null : _logSet,
+            onPressed: isLogging ? null : () {
+              HWLog.event('session_active_log_set', data: {'reps': repsCompleted, 'weight': currentWeight});
+              _logSet();
+            },
           ),
           
           const SizedBox(height: HeavyweightTheme.spacingLg),
@@ -194,7 +200,10 @@ class _SessionActiveScreenState extends State<SessionActiveScreen> {
                 child: CommandButton(
                   text: 'TERMINATE_SESSION',
                   variant: ButtonVariant.danger,
-                  onPressed: _terminateSession,
+                  onPressed: () {
+                    HWLog.event('session_active_terminate');
+                    _terminateSession();
+                  },
                 ),
               ),
             ],
@@ -322,24 +331,21 @@ class _SessionActiveScreenState extends State<SessionActiveScreen> {
           style: HeavyweightTheme.bodyMedium,
         ),
         actions: [
-          TextButton(
+          CommandButton(
+            text: 'CANCEL',
+            variant: ButtonVariant.secondary,
+            size: ButtonSize.medium,
             onPressed: () => context.pop(),
-            child: Text(
-              'CANCEL',
-              style: HeavyweightTheme.bodyMedium,
-            ),
           ),
-          TextButton(
+          const SizedBox(width: HeavyweightTheme.spacingMd),
+          CommandButton(
+            text: 'TERMINATE',
+            variant: ButtonVariant.danger,
+            size: ButtonSize.medium,
             onPressed: () {
               context.pop();
               context.pop(); // Return to assignment
             },
-            child: Text(
-              'TERMINATE',
-              style: HeavyweightTheme.bodyMedium.copyWith(
-                color: HeavyweightTheme.error,
-              ),
-            ),
           ),
         ],
       ),

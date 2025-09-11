@@ -4,6 +4,8 @@ import '../../components/ui/command_button.dart';
 import '../../core/theme/heavyweight_theme.dart';
 import '../../fortress/engine/models/set_data.dart';
 import '../../fortress/engine/models/exercise.dart';
+import '../../components/layout/heavyweight_scaffold.dart';
+import '../../core/logging.dart';
 
 class SessionDetailScreen extends StatelessWidget {
   final WorkoutSession session;
@@ -15,63 +17,20 @@ class SessionDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    HWLog.screen('Training/SessionDetail');
     final exerciseGroups = _groupSetsByExercise(session.sets);
     final totalVolume = session.sets.fold(0.0, (sum, set) => sum + (set.weight * set.actualReps));
     
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(20),
+    return HeavyweightScaffold(
+      title: 'SESSION_RECORD',
+      subtitle: _formatDateTime(session.date),
+      showBackButton: true,
+      fallbackRoute: '/training-log',
+      body: Padding(
+          padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Header
-              Row(
-                children: [
-                  InkWell(
-                    onTap: () {
-                      if (Navigator.of(context).canPop()) {
-                        Navigator.of(context).pop();
-                      } else {
-                        context.go('/training-log');
-                      }
-                    },
-                    child: Container(
-                      padding: const EdgeInsets.all(8),
-                      child: const Icon(
-                        Icons.arrow_back,
-                        color: Colors.white,
-                        size: 20,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'SESSION_RECORD',
-                          style: HeavyweightTheme.h3.copyWith(
-                            color: Colors.white,
-                            letterSpacing: 3,
-                          ),
-                        ),
-                        Text(
-                          _formatDateTime(session.date),
-                          style: HeavyweightTheme.bodySmall.copyWith(
-                            color: HeavyweightTheme.textSecondary,
-                            letterSpacing: 2,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              
-              const SizedBox(height: 32),
               
               // Session summary
               Container(
@@ -108,7 +67,7 @@ class SessionDetailScreen extends StatelessWidget {
                 ),
               ),
               
-              const SizedBox(height: 24),
+              const SizedBox(height: HeavyweightTheme.spacingLg),
               
               // Exercise details
               Expanded(
@@ -136,7 +95,7 @@ class SessionDetailScreen extends StatelessWidget {
                 ),
               ),
               
-              const SizedBox(height: 20),
+              const SizedBox(height: HeavyweightTheme.spacingMd),
               
               // Back button
               CommandButton(
@@ -153,8 +112,7 @@ class SessionDetailScreen extends StatelessWidget {
             ],
           ),
         ),
-      ),
-    );
+      );
   }
   
   Map<String, List<SetData>> _groupSetsByExercise(List<SetData> sets) {
@@ -196,7 +154,7 @@ class SessionDetailScreen extends StatelessWidget {
           Text(
             exercise.name.toUpperCase(),
             style: HeavyweightTheme.h4.copyWith(
-              color: Colors.white,
+              color: HeavyweightTheme.primary,
               letterSpacing: 1,
             ),
           ),
@@ -210,10 +168,10 @@ class SessionDetailScreen extends StatelessWidget {
           
           // Exercise totals
           Container(
-            padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+            padding: const EdgeInsets.symmetric(vertical: HeavyweightTheme.spacingSm, horizontal: HeavyweightTheme.spacingSm),
             decoration: BoxDecoration(
-              color: HeavyweightTheme.textSecondary.withOpacity(0.1),
-              border: Border.all(color: HeavyweightTheme.textSecondary.withOpacity(0.3)),
+              color: HeavyweightTheme.textSecondary.withValues(alpha: 0.1),
+              border: Border.all(color: HeavyweightTheme.textSecondary.withValues(alpha: 0.3)),
             ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -244,7 +202,7 @@ class SessionDetailScreen extends StatelessWidget {
     String statusText = 'UNKNOWN';
     
     if (set.actualReps == 0) {
-      statusColor = Colors.red;
+      statusColor = HeavyweightTheme.error;
       statusText = 'FAILURE';
     } else if (set.actualReps < 4) {
       statusColor = HeavyweightTheme.warning;
@@ -258,7 +216,7 @@ class SessionDetailScreen extends StatelessWidget {
     }
     
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: HeavyweightTheme.spacingSm),
       child: Row(
         children: [
           Text(
@@ -270,14 +228,14 @@ class SessionDetailScreen extends StatelessWidget {
           Text(
             '${set.actualReps} reps @ ${set.weight}kg',
             style: HeavyweightTheme.bodySmall.copyWith(
-              color: Colors.white,
+              color: HeavyweightTheme.primary,
             ),
           ),
           const Spacer(),
           Container(
-            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+            padding: const EdgeInsets.symmetric(horizontal: HeavyweightTheme.spacingXs, vertical: HeavyweightTheme.spacingXs),
             decoration: BoxDecoration(
-              color: statusColor.withOpacity(0.2),
+              color: statusColor.withValues(alpha: 0.2),
               border: Border.all(color: statusColor, width: 1),
             ),
             child: Text(

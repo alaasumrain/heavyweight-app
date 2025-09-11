@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:google_fonts/google_fonts.dart';
 import '../../components/layout/heavyweight_scaffold.dart';
 import '../../components/ui/command_button.dart';
 import '../../components/ui/warning_stripes.dart';
 import '../../core/theme/heavyweight_theme.dart';
+import '../../core/logging.dart';
 
 class EnforcedRestScreen extends StatefulWidget {
   const EnforcedRestScreen({Key? key}) : super(key: key);
@@ -22,6 +24,7 @@ class _EnforcedRestScreenState extends State<EnforcedRestScreen> {
   @override
   void initState() {
     super.initState();
+    HWLog.screen('Training/EnforcedRest');
     _startTimer();
   }
 
@@ -56,6 +59,10 @@ class _EnforcedRestScreenState extends State<EnforcedRestScreen> {
 
   @override
   Widget build(BuildContext context) {
+    HWLog.event('enforced_rest_build', data: {
+      'remaining': remainingSeconds,
+      'complete': isRestComplete,
+    });
     return HeavyweightScaffold(
       title: 'ENFORCED_REST',
       subtitle: isRestComplete ? 'STATUS: READY_TO_CONTINUE' : 'STATUS: REST_MANDATORY',
@@ -96,8 +103,7 @@ class _EnforcedRestScreenState extends State<EnforcedRestScreen> {
               children: [
                 Text(
                   _formattedTime,
-                  style: TextStyle(
-                    fontFamily: 'monospace',
+                  style: GoogleFonts.ibmPlexMono(
                     fontSize: 72,
                     fontWeight: FontWeight.bold,
                     color: remainingSeconds <= 30 
@@ -117,7 +123,7 @@ class _EnforcedRestScreenState extends State<EnforcedRestScreen> {
                   ),
                   child: LinearProgressIndicator(
                     value: _progressPercentage,
-                    backgroundColor: Colors.transparent,
+                    backgroundColor: HeavyweightTheme.background,
                     valueColor: AlwaysStoppedAnimation<Color>(
                       remainingSeconds <= 30 
                           ? HeavyweightTheme.error 
@@ -280,7 +286,7 @@ class _EnforcedRestScreenState extends State<EnforcedRestScreen> {
               text: 'CRITICAL_ACTION',
               animated: true,
             ),
-            const SizedBox(height: 16),
+            const SizedBox(height: HeavyweightTheme.spacingMd),
             Text(
               'TERMINATE_SESSION?',
               style: HeavyweightTheme.h4,
@@ -317,5 +323,4 @@ class _EnforcedRestScreenState extends State<EnforcedRestScreen> {
     );
   }
 }
-
 

@@ -1,13 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
 import '../../screens/training/assignment_screen.dart';
 import '../../screens/training/training_log_screen.dart';
 import '../../screens/settings/settings_main_screen.dart';
 import '../ui/navigation_bar.dart';
+import '../../core/logging.dart';
 
 /// Main app shell with sliding navigation between screens
 /// Provides smooth transitions without full page rebuilds
 class MainAppShell extends StatefulWidget {
-  const MainAppShell({Key? key}) : super(key: key);
+  final int initialIndex;
+  const MainAppShell({Key? key, this.initialIndex = 0}) : super(key: key);
 
   @override
   State<MainAppShell> createState() => _MainAppShellState();
@@ -21,6 +24,11 @@ class _MainAppShellState extends State<MainAppShell> with TickerProviderStateMix
   @override
   void initState() {
     super.initState();
+    _currentIndex = widget.initialIndex.clamp(0, 2);
+    HWLog.screen('MainAppShell');
+    HWLog.event('main_shell_init', data: {
+      'initialIndex': _currentIndex,
+    });
     _pageController = PageController(
       initialPage: _currentIndex,
       viewportFraction: 1.0, // Full screen for seamless feel
@@ -41,6 +49,10 @@ class _MainAppShellState extends State<MainAppShell> with TickerProviderStateMix
 
   void _onTabTapped(int index) {
     if (index != _currentIndex) {
+      HWLog.event('tab_tap', data: {
+        'from': _currentIndex,
+        'to': index,
+      });
       setState(() {
         _currentIndex = index;
       });
@@ -51,11 +63,20 @@ class _MainAppShellState extends State<MainAppShell> with TickerProviderStateMix
         duration: const Duration(milliseconds: 400), // Smooth carousel timing
         curve: Curves.easeInOutQuart, // More pronounced easing for carousel feel
       );
+      // Keep URL in sync
+      final routes = ['/assignment', '/training-log', '/settings'];
+      if (index >= 0 && index < routes.length) {
+        context.go('/app?tab=$index');
+      }
     }
   }
 
   void _onPageChanged(int index) {
     if (index != _currentIndex) {
+      HWLog.event('page_changed', data: {
+        'from': _currentIndex,
+        'to': index,
+      });
       setState(() {
         _currentIndex = index;
       });
@@ -64,11 +85,11 @@ class _MainAppShellState extends State<MainAppShell> with TickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        // Allow normal back navigation to work
-        return true;
-      },
+    HWLog.event('main_shell_build', data: {
+      'index': _currentIndex,
+    });
+    return PopScope(
+      canPop: true,
       child: Scaffold(
         backgroundColor: Colors.black,
         body: PageView(

@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import '../../core/logging.dart';
 import 'package:connectivity_plus/connectivity_plus.dart';
 import '/fortress/engine/models/exercise.dart';
 import '/fortress/engine/models/set_data.dart';
@@ -49,6 +50,7 @@ class SupabaseWorkoutRepository implements WorkoutRepositoryInterface {
     } catch (error) {
       // Log error but don't block UI
       print('Failed to save set: $error');
+      HWLog.event('repo_save_set_error', data: {'error': error.toString()});
       // Add to offline queue for retry when network available
       await _addToOfflineQueue('saveSet', set.toJson());
     }
@@ -83,6 +85,7 @@ class SupabaseWorkoutRepository implements WorkoutRepositoryInterface {
       }).toList();
     } catch (error) {
       print('Failed to get history: $error');
+      HWLog.event('repo_get_history_error', data: {'error': error.toString()});
       return [];
     }
   }
@@ -119,6 +122,7 @@ class SupabaseWorkoutRepository implements WorkoutRepositoryInterface {
       }).toList();
     } catch (error) {
       print('Failed to get exercise history: $error');
+      HWLog.event('repo_get_exercise_history_error', data: {'error': error.toString()});
       return [];
     }
   }
@@ -163,6 +167,7 @@ class SupabaseWorkoutRepository implements WorkoutRepositoryInterface {
       );
     } catch (error) {
       print('Failed to get last session: $error');
+      HWLog.event('repo_get_last_session_error', data: {'error': error.toString()});
       return null;
     }
   }
@@ -193,6 +198,7 @@ class SupabaseWorkoutRepository implements WorkoutRepositoryInterface {
       });
     } catch (error) {
       print('Failed to save exercise weights: $error');
+      HWLog.event('repo_save_exercise_weights_error', data: {'error': error.toString()});
     }
   }
 
@@ -214,6 +220,7 @@ class SupabaseWorkoutRepository implements WorkoutRepositoryInterface {
       return weights.map((key, value) => MapEntry(key, (value as num).toDouble()));
     } catch (error) {
       print('Failed to get exercise weights: $error');
+      HWLog.event('repo_get_exercise_weights_error', data: {'error': error.toString()});
       return {};
     }
   }
@@ -243,6 +250,7 @@ class SupabaseWorkoutRepository implements WorkoutRepositoryInterface {
       });
     } catch (error) {
       print('Failed to clear all data: $error');
+      HWLog.event('repo_clear_all_error', data: {'error': error.toString()});
     }
   }
 
@@ -298,6 +306,7 @@ class SupabaseWorkoutRepository implements WorkoutRepositoryInterface {
       return _exercisesCache!;
     } catch (error) {
       print('Failed to fetch exercises: $error');
+      HWLog.event('repo_fetch_exercises_error', data: {'error': error.toString()});
       // Return default big six if database fails
       return Exercise.bigSix;
     }
@@ -321,6 +330,7 @@ class SupabaseWorkoutRepository implements WorkoutRepositoryInterface {
       }).toList();
     } catch (error) {
       print('Failed to fetch workout days: $error');
+      HWLog.event('repo_fetch_workout_days_error', data: {'error': error.toString()});
       return [];
     }
   }
@@ -355,6 +365,7 @@ class SupabaseWorkoutRepository implements WorkoutRepositoryInterface {
       }).toList();
     } catch (error) {
       print('Failed to fetch day exercises: $error');
+      HWLog.event('repo_fetch_day_exercises_error', data: {'error': error.toString()});
       return [];
     }
   }
@@ -381,6 +392,7 @@ class SupabaseWorkoutRepository implements WorkoutRepositoryInterface {
       );
     } catch (error) {
       print('Failed to fetch complete workout day: $error');
+      HWLog.event('repo_fetch_complete_day_error', data: {'error': error.toString()});
       return null;
     }
   }
@@ -402,6 +414,7 @@ class SupabaseWorkoutRepository implements WorkoutRepositoryInterface {
       _currentWorkoutId = response['id'].toString();
     } catch (error) {
       print('Failed to create workout session: $error');
+      HWLog.event('repo_create_session_error', data: {'error': error.toString()});
       rethrow;
     }
   }
@@ -419,6 +432,7 @@ class SupabaseWorkoutRepository implements WorkoutRepositoryInterface {
       _currentWorkoutId = null;
     } catch (error) {
       print('Failed to end workout session: $error');
+      HWLog.event('repo_end_session_error', data: {'error': error.toString()});
     }
   }
 
@@ -442,6 +456,7 @@ class SupabaseWorkoutRepository implements WorkoutRepositoryInterface {
       return response['id'] as int;
     } catch (error) {
       print('Failed to get exercise DB ID: $error');
+      HWLog.event('repo_get_exercise_id_error', data: {'error': error.toString()});
       return null;
     }
   }
@@ -452,6 +467,7 @@ class SupabaseWorkoutRepository implements WorkoutRepositoryInterface {
     final exercise = Exercise.getById(set.exerciseId);
     if (exercise == null) {
       print('Warning: Unknown exercise ID ${set.exerciseId}, defaulting to squat');
+      HWLog.event('repo_unknown_exercise_id', data: {'id': set.exerciseId});
       return 1; // Default to squat
     }
     
@@ -492,6 +508,7 @@ class SupabaseWorkoutRepository implements WorkoutRepositoryInterface {
           // Network is available, process offline queue
           processOfflineQueue().catchError((error) {
             print('Failed to process offline queue on reconnect: $error');
+            HWLog.event('repo_offline_queue_reconnect_error', data: {'error': error.toString()});
           });
         }
       },
@@ -501,6 +518,7 @@ class SupabaseWorkoutRepository implements WorkoutRepositoryInterface {
     Future.delayed(Duration.zero, () {
       processOfflineQueue().catchError((error) {
         print('Failed to process offline queue on startup: $error');
+        HWLog.event('repo_offline_queue_startup_error', data: {'error': error.toString()});
       });
     });
   }
@@ -526,8 +544,10 @@ class SupabaseWorkoutRepository implements WorkoutRepositoryInterface {
       queue.add(jsonEncode(queueItem));
       await prefs.setStringList('offline_queue', queue);
       print('Added ${operation} to offline queue');
+      HWLog.event('repo_offline_queue_add', data: {'op': operation});
     } catch (e) {
       print('Failed to add to offline queue: $e');
+      HWLog.event('repo_offline_queue_add_error', data: {'error': e.toString()});
     }
   }
 
@@ -540,6 +560,7 @@ class SupabaseWorkoutRepository implements WorkoutRepositoryInterface {
       if (queue.isEmpty) return;
       
       print('Processing ${queue.length} items from offline queue');
+      HWLog.event('repo_offline_queue_process_start', data: {'count': queue.length});
       final processedItems = <String>[];
       
       for (final queueItemJson in queue) {
@@ -551,8 +572,10 @@ class SupabaseWorkoutRepository implements WorkoutRepositoryInterface {
           await _retryOperation(operation, data);
           processedItems.add(queueItemJson);
           print('Successfully processed queued ${operation}');
+          HWLog.event('repo_offline_queue_processed', data: {'op': operation});
         } catch (e) {
           print('Failed to process queued operation: $e');
+          HWLog.event('repo_offline_queue_process_error', data: {'error': e.toString()});
           // Leave the item in queue for next retry
         }
       }
@@ -562,9 +585,11 @@ class SupabaseWorkoutRepository implements WorkoutRepositoryInterface {
         final remainingQueue = queue.where((item) => !processedItems.contains(item)).toList();
         await prefs.setStringList('offline_queue', remainingQueue);
         print('Removed ${processedItems.length} processed items from queue');
+        HWLog.event('repo_offline_queue_removed', data: {'count': processedItems.length});
       }
     } catch (e) {
       print('Failed to process offline queue: $e');
+      HWLog.event('repo_offline_queue_process_error', data: {'error': e.toString()});
     }
   }
 

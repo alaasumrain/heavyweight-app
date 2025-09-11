@@ -1,8 +1,8 @@
 
 import 'models/exercise.dart';
 import 'models/set_data.dart';
-import 'models/workout_day.dart';
 import 'storage/workout_repository_interface.dart';
+import '../../core/logging.dart';
 
 /// The 4-6 Rep Workout Engine
 /// This is the brain of the Fortress system
@@ -23,6 +23,10 @@ class WorkoutEngine {
   /// Calculate the next prescribed weight based on actual performance
   /// This is the core algorithm - it uses TRUTH to make decisions
   double calculateNextWeight(double currentWeight, int actualReps) {
+    HWLog.event('engine_calc_next_weight_start', data: {
+      'currentWeight': currentWeight,
+      'actualReps': actualReps,
+    });
     double multiplier;
     
     if (actualReps == 0) {
@@ -42,7 +46,13 @@ class WorkoutEngine {
     double nextWeight = currentWeight * multiplier;
     
     // Round to nearest increment available in gym
-    return _roundToIncrement(nextWeight);
+    final rounded = _roundToIncrement(nextWeight);
+    HWLog.event('engine_calc_next_weight_done', data: {
+      'multiplier': multiplier,
+      'nextWeightRaw': nextWeight,
+      'nextWeight': rounded,
+    });
+    return rounded;
   }
   
   /// Round weight to nearest available increment
@@ -53,14 +63,23 @@ class WorkoutEngine {
   /// Calculate rest time based on performance
   /// Failure requires more recovery
   int calculateRestSeconds(int actualReps, int baseRest) {
+    HWLog.event('engine_calc_rest_start', data: {
+      'actualReps': actualReps,
+      'baseRest': baseRest,
+    });
     if (actualReps == 0) {
       // Complete failure - maximum rest
-      return 300; // 5 minutes
+      final s = 300;
+      HWLog.event('engine_calc_rest_done', data: {'rest': s});
+      return s; // 5 minutes
     } else if (actualReps < 4) {
       // Below mandate - extra rest
-      return 240; // 4 minutes
+      final s = 240;
+      HWLog.event('engine_calc_rest_done', data: {'rest': s});
+      return s; // 4 minutes
     } else {
       // Standard rest for mandate performance
+      HWLog.event('engine_calc_rest_done', data: {'rest': baseRest});
       return baseRest; // Usually 3 minutes
     }
   }
@@ -68,8 +87,12 @@ class WorkoutEngine {
   /// Determine next exercise based on rotation
   /// A/B split: Push/Pull alternation
   Exercise selectNextExercise(List<SetData> recentSets) {
+    HWLog.event('engine_select_next_exercise_start', data: {
+      'recentSetsCount': recentSets.length,
+    });
     if (recentSets.isEmpty) {
       // First exercise - start with squat
+      HWLog.event('engine_select_next_exercise_done', data: {'exercise': Exercise.bigSix[0].id});
       return Exercise.bigSix[0];
     }
     
@@ -84,7 +107,9 @@ class WorkoutEngine {
     final currentIndex = Exercise.bigSix.indexOf(lastExercise);
     final nextIndex = (currentIndex + 1) % Exercise.bigSix.length;
     
-    return Exercise.bigSix[nextIndex];
+    final next = Exercise.bigSix[nextIndex];
+    HWLog.event('engine_select_next_exercise_done', data: {'exercise': next.id});
+    return next;
   }
   
   /// Calculate prescribed weight for an exercise based on history
@@ -92,6 +117,10 @@ class WorkoutEngine {
     String exerciseId,
     List<SetData> history,
   ) {
+    HWLog.event('engine_calc_prescribed_weight_start', data: {
+      'exerciseId': exerciseId,
+      'historyCount': history.length,
+    });
     // Get most recent set for this exercise
     final recentSets = history
         .where((s) => s.exerciseId == exerciseId)
@@ -104,12 +133,23 @@ class WorkoutEngine {
         (e) => e.id == exerciseId,
         orElse: () => Exercise.bigSix[0],
       );
+      HWLog.event('engine_calc_prescribed_weight_default', data: {
+        'exerciseId': exercise.id,
+        'prescribed': exercise.prescribedWeight,
+      });
       return exercise.prescribedWeight;
     }
     
     // Use most recent performance to calculate next weight
     final lastSet = recentSets.first;
-    return calculateNextWeight(lastSet.weight, lastSet.actualReps);
+    final w = calculateNextWeight(lastSet.weight, lastSet.actualReps);
+    HWLog.event('engine_calc_prescribed_weight_done', data: {
+      'exerciseId': exerciseId,
+      'lastWeight': lastSet.weight,
+      'lastReps': lastSet.actualReps,
+      'prescribed': w,
+    });
+    return w;
   }
   
   /// Check if an exercise has been calibrated
@@ -153,29 +193,23 @@ class WorkoutEngine {
   }
   
   /// Generate today's workout based on history
-  Future<DailyWorkout> generateDailyWorkout(List<SetData> history) async {
+  Future<DailyWorkout> generateDailyWorkout(List<SetData> history, {String? preferredStartingDay}) async {
     // Check if this is Day 1 (no history)
     if (history.isEmpty) {
-      // Day 1: CHEST DAY with calibration
+      // Day 1: Use preferred starting day or default to CHEST
+      final startingDayName = _getStartingDayName(preferredStartingDay);
+      final startingExercises = _getExercisesForDay(startingDayName);
+      
       return DailyWorkout(
         date: DateTime.now(),
-        dayName: "CHEST",
-        exercises: [
-          PlannedExercise(
-            exercise: Exercise.bigSix[2], // Bench Press
-            prescribedWeight: 20.0, // Start with empty bar
-            targetSets: 1, // Finding 5RM is one "set"
-            restSeconds: 180,
-            needsCalibration: true,
-          ),
-          PlannedExercise(
-            exercise: Exercise.bigSix[3], // Overhead Press
-            prescribedWeight: 20.0, // Will be estimated after bench
-            targetSets: 3,
-            restSeconds: 180,
-            needsCalibration: true,
-          ),
-        ],
+        dayName: startingDayName.toUpperCase(),
+        exercises: startingExercises.map((exercise) => PlannedExercise(
+          exercise: exercise,
+          prescribedWeight: 20.0, // Start with empty bar for calibration
+          targetSets: exercise.id == 'bench' ? 1 : 3, // Bench gets 1 set for 5RM finding
+          restSeconds: 180,
+          needsCalibration: true,
+        )).toList(),
         isDay1: true,
       );
     }
@@ -340,6 +374,52 @@ class WorkoutEngine {
             ))
         .toSet();
     return uniqueDates.length;
+  }
+
+  /// Get starting day name from user preference
+  String _getStartingDayName(String? preferredStartingDay) {
+    switch (preferredStartingDay?.toLowerCase()) {
+      case 'chest': return 'chest';
+      case 'back': return 'back';
+      case 'arms': return 'arms';
+      case 'shoulders': return 'shoulders';
+      case 'legs': return 'legs';
+      default: return 'chest'; // Default fallback
+    }
+  }
+
+  /// Get exercises for a specific day
+  List<Exercise> _getExercisesForDay(String dayName) {
+    switch (dayName.toLowerCase()) {
+      case 'chest':
+        return [
+          Exercise.bigSix[2], // Bench Press
+          Exercise.bigSix[3], // Overhead Press (secondary chest)
+        ];
+      case 'back':
+        return [
+          Exercise.bigSix[1], // Deadlift
+          Exercise.bigSix[4], // Row
+          Exercise.bigSix[5], // Pull-up
+        ];
+      case 'arms':
+        return [
+          Exercise.bigSix[5], // Pull-up (biceps)
+          Exercise.bigSix[3], // Overhead Press (triceps)
+        ];
+      case 'shoulders':
+        return [
+          Exercise.bigSix[3], // Overhead Press
+          Exercise.bigSix[4], // Row (rear delts)
+        ];
+      case 'legs':
+        return [
+          Exercise.bigSix[0], // Squat
+          Exercise.bigSix[1], // Deadlift (posterior chain)
+        ];
+      default:
+        return [Exercise.bigSix[2]]; // Default to bench
+    }
   }
   
   /// Calibration protocol for new users

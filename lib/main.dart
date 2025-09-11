@@ -1,8 +1,9 @@
 // ignore_for_file: library_private_types_in_public_api, depend_on_referenced_packages
 
 import 'package:provider/provider.dart';
+import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:supabase_flutter/supabase_flutter.dart';
+import 'package:flutter/foundation.dart';
 import 'backend/supabase/supabase_workout_repository.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
@@ -16,36 +17,246 @@ import 'providers/app_state_provider.dart';
 import 'core/auth_service.dart';
 import 'core/error_handler.dart';
 import 'nav.dart';
+import 'core/logging.dart';
+import 'core/router_refresh.dart';
+
+// Diagnostic flag: run with --dart-define=HW_DIAG=1 to boot a minimal app
+const String _hwDiag = String.fromEnvironment('HW_DIAG', defaultValue: '');
+const String _hwSimple = String.fromEnvironment('HW_SIMPLE', defaultValue: '');
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   usePathUrlStrategy();
+  // Avoid runtime font fetching on iOS which can cause startup stalls
+  // if App Transport Security blocks external hosts.
+  try {
+    GoogleFonts.config.allowRuntimeFetching = false;
+  } catch (_) {
+    // Safe no-op if config is unavailable on this platform.
+  }
+
+  // If diagnostic mode is enabled, boot minimal app to validate rendering
+  if (_hwDiag == '1' || _hwDiag.toLowerCase() == 'true') {
+    debugPrint('🧪 HW DIAG MODE: Booting minimal app');
+    runApp(const _HwDiagApp());
+    return;
+  }
+
+  if (_hwSimple == '1' || _hwSimple.toLowerCase() == 'true') {
+    debugPrint('🧪 HW SIMPLE MODE: Booting app shell without router');
+    runApp(const _HwSimpleApp());
+    return;
+  }
 
   // Initialize global error handling
   HeavyweightErrorHandler.initialize();
 
-  // Initialize Supabase using the existing config
-  await SupabaseConfig.initialize();
+  try {
+    // Initialize Supabase using secure configuration (with timeout guard)
+    await SupabaseService
+        .initialize()
+        .timeout(const Duration(seconds: 10), onTimeout: () {
+      throw TimeoutException('Supabase initialization timed out');
+    });
+    if (kDebugMode) {
+      debugPrint('✅ HEAVYWEIGHT: Supabase initialized successfully');
+    }
 
-  // Initialize auth service
-  await AuthService().initialize();
+    // Initialize auth service (with timeout guard)
+    await AuthService().initialize().timeout(
+      const Duration(seconds: 10),
+      onTimeout: () => throw TimeoutException('Auth service initialization timed out'),
+    );
+    if (kDebugMode) {
+      debugPrint('✅ HEAVYWEIGHT: Auth service initialized');
+    }
 
-  // Initialize providers
-  final repositoryProvider = RepositoryProvider();
-  await repositoryProvider.initialize();
-  
-  final appStateProvider = AppStateProvider();
+    // Initialize providers
+    final repositoryProvider = RepositoryProvider();
+    await repositoryProvider
+        .initialize()
+        .timeout(const Duration(seconds: 10), onTimeout: () {
+      throw TimeoutException('Repository provider initialization timed out');
+    });
+    if (kDebugMode) {
+      debugPrint('✅ HEAVYWEIGHT: Repository provider initialized');
+    }
+    
+    final appStateProvider = AppStateProvider();
+    if (kDebugMode) {
+      debugPrint('✅ HEAVYWEIGHT: App state provider initialized');
+    }
 
-  runApp(MultiProvider(
-    providers: [
-      ChangeNotifierProvider(create: (context) => ProfileProvider()),
-      ChangeNotifierProvider(create: (context) => WorkoutEngineProvider()),
-      ChangeNotifierProvider.value(value: repositoryProvider),
-      ChangeNotifierProvider.value(value: appStateProvider),
-      ChangeNotifierProvider.value(value: AuthService()), // Add AuthService
-    ],
-    child: const MyApp(),
-  ));
+    runApp(MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (context) => ProfileProvider()),
+        ChangeNotifierProvider(create: (context) => WorkoutEngineProvider()),
+        ChangeNotifierProvider.value(value: repositoryProvider),
+        ChangeNotifierProvider.value(value: appStateProvider),
+        ChangeNotifierProvider.value(value: AuthService()), // Add AuthService
+      ],
+      child: const MyApp(),
+    ));
+    
+    if (kDebugMode) {
+      debugPrint('✅ HEAVYWEIGHT: App launched successfully');
+    }
+    
+  } catch (error, stackTrace) {
+    debugPrint('❌ HEAVYWEIGHT FATAL ERROR: $error');
+    debugPrint('📍 Stack trace: $stackTrace');
+    
+    // Show error screen instead of black screen
+    runApp(MaterialApp(
+      title: 'HEAVYWEIGHT - Error',
+      theme: ThemeData.dark(),
+      home: Scaffold(
+        backgroundColor: Colors.black,
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.all(24.0),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Icon(
+                  Icons.error_outline,
+                  color: Colors.red,
+                  size: 64,
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'HEAVYWEIGHT',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 24,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Text(
+                  'INITIALIZATION FAILED',
+                  style: TextStyle(
+                    color: Colors.red,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[900],
+                    border: Border.all(color: Colors.grey[700]!),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'ERROR DETAILS:',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        error.toString(),
+                        style: const TextStyle(
+                          color: Colors.red,
+                          fontFamily: 'IBM Plex Mono',
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                const Text(
+                  'Check the console logs for more details.\nThis usually indicates missing environment configuration.',
+                  style: TextStyle(
+                    color: Colors.grey,
+                    fontSize: 14,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    ));
+  }
+}
+
+/// Minimal diagnostic app used to verify Flutter view renders on iOS
+class _HwDiagApp extends StatefulWidget {
+  const _HwDiagApp();
+
+  @override
+  State<_HwDiagApp> createState() => _HwDiagAppState();
+}
+
+class _HwDiagAppState extends State<_HwDiagApp> {
+  int _ticks = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Animate a counter to ensure frames are presented
+    Future.doWhile(() async {
+      await Future.delayed(const Duration(milliseconds: 250));
+      if (!mounted) return false;
+      setState(() => _ticks++);
+      return _ticks < 40; // ~10 seconds
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        backgroundColor: Color(0xFFAA0000),
+        body: Center(
+          child: Text(
+            'HW DIAG OK',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 28,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 2,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Simple app to bypass GoRouter and theme; useful to validate rendering
+class _HwSimpleApp extends StatelessWidget {
+  const _HwSimpleApp();
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        backgroundColor: Color(0xFF111111),
+        body: Center(
+          child: Text(
+            'HEAVYWEIGHT SIMPLE',
+            style: TextStyle(
+              color: Colors.white,
+              fontSize: 24,
+              fontWeight: FontWeight.bold,
+              letterSpacing: 2,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 class MyApp extends StatefulWidget {
@@ -54,14 +265,16 @@ class MyApp extends StatefulWidget {
   @override
   State<MyApp> createState() => _MyAppState();
 
-  static _MyAppState of(BuildContext context) =>
-      context.findAncestorStateOfType<_MyAppState>()!;
+  static _MyAppState? of(BuildContext context) =>
+      context.findAncestorStateOfType<_MyAppState>();
 }
 
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   late AppStateNotifier _appStateNotifier;
   late GoRouter _router;
   ThemeMode _themeMode = ThemeMode.dark;
+  CombinedRefreshNotifier? _refreshNotifier;
+  bool _booted = false;
 
   @override
   void initState() {
@@ -69,18 +282,40 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
 
     _appStateNotifier = AppStateNotifier.instance;
-    _router = createRouter(_appStateNotifier);
+    // Combine router refresh signals from both AppStateNotifier and AppStateProvider
+    // so that changes in onboarding/auth immediately re-evaluate redirects.
+    final appStateProvider = context.read<AppStateProvider>();
+    _refreshNotifier = CombinedRefreshNotifier([
+      _appStateNotifier,
+      appStateProvider,
+    ]);
+    _refreshNotifier!.addListener(() {
+      debugPrint('🔄🔄🔄 REFRESH NOTIFIER FIRED! Router should rebuild');
+    });
+    _router = createRouter(_appStateNotifier, refresh: _refreshNotifier!);
+    HWLog.lifecycle('app_init');
+
+    // Ensure we present an immediate first frame before heavy router work.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        setState(() {
+          _booted = true;
+        });
+      }
+    });
   }
   
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _refreshNotifier?.dispose();
     super.dispose();
   }
   
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
+    HWLog.lifecycle('lifecycle', data: {'state': state.name});
     if (state == AppLifecycleState.resumed) {
       _processOfflineQueueIfNeeded();
     }
@@ -102,7 +337,34 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
+    debugPrint('🎯🎯🎯 MAIN APP BUILD() CALLED');
+    debugPrint('🎯🎯🎯 MAIN APP: context=$context');
+    debugPrint('🎯🎯🎯 MAIN APP: _router=$_router');
+    debugPrint('🎯🎯🎯 MAIN APP: About to create MaterialApp.router');
+    HWLog.event('build_material_app_router');
+    
+    if (!_booted) {
+      return const MaterialApp(
+        debugShowCheckedModeBanner: false,
+        home: ColoredBox(
+          color: Color(0xFFAA0000),
+          child: Center(
+            child: Text(
+              'BOOTING…',
+              style: TextStyle(
+                color: Colors.white,
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                letterSpacing: 2,
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return MaterialApp.router(
+      debugShowCheckedModeBanner: false,
       title: 'HEAVYWEIGHT',
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,
@@ -115,9 +377,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         useMaterial3: true,
         scaffoldBackgroundColor: const Color(0xFF111111),
         primaryColor: Colors.white,
-        textTheme: GoogleFonts.ibmPlexMonoTextTheme(
-          ThemeData.dark().textTheme,
-        ).apply(
+        // Avoid GoogleFonts during diagnosis to ensure first paint
+        textTheme: ThemeData.dark().textTheme.apply(
           bodyColor: Colors.white,
           displayColor: Colors.white,
         ),
@@ -125,11 +386,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           primary: Colors.white,
           secondary: Color(0xFF444444),
           surface: Color(0xFF111111),
-          background: Color(0xFF111111),
           onPrimary: Colors.black,
           onSecondary: Colors.white,
           onSurface: Colors.white,
-          onBackground: Colors.white,
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
@@ -151,7 +410,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             side: const BorderSide(color: Colors.white),
           ),
         ),
-        cardTheme: const CardTheme(
+        cardTheme: const CardThemeData(
           color: Color(0xFF111111),
           elevation: 0,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.zero),
@@ -160,7 +419,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           backgroundColor: const Color(0xFF111111),
           foregroundColor: Colors.white,
           elevation: 0,
-          titleTextStyle: GoogleFonts.ibmPlexMono(
+          titleTextStyle: const TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -188,11 +447,13 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       ),
       themeMode: _themeMode,
       routerConfig: _router,
+      // Ensure something paints even if routes misbehave
+      builder: (context, child) {
+        return ColoredBox(
+          color: const Color(0xFF000000),
+          child: child ?? const SizedBox.shrink(),
+        );
+      },
     );
   }
 }
-
-
-
-
-

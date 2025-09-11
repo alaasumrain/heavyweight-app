@@ -4,21 +4,21 @@
 
 abstract class S {
   // Core Terminology
-  static const ASSIGNMENT = 'ASSIGNMENT';
-  static const START_SESSION = 'START_SESSION';
-  static const SESSION = 'SESSION';
-  static const SESSION_ACTIVE = 'SESSION_ACTIVE';
-  static const SESSION_COMPLETE = 'SESSION_COMPLETE';
-  static const BASELINE = 'BASELINE';
-  static const TRAINING_LOG = 'TRAINING_LOG';
-  static const REST_TIMER = 'REST_TIMER';
-  static const ENFORCED_REST = 'ENFORCED_REST';
-  static const I_COMMIT = 'I_COMMIT';
-  static const NEW_MAX_RECORDED = 'NEW_MAX_RECORDED';
-  static const OPERATION = 'OPERATION';
-  static const ASSIGNMENT_TARGET = 'ASSIGNMENT_TARGET';
-  static const SCHEDULE = 'SCHEDULE';
-  static const SYSTEM_SETTINGS = 'SYSTEM_SETTINGS';
+  static const assignment = 'ASSIGNMENT';
+  static const startSession = 'START_SESSION';
+  static const session = 'SESSION';
+  static const sessionActive = 'SESSION_ACTIVE';
+  static const sessionComplete = 'SESSION_COMPLETE';
+  static const baseline = 'BASELINE';
+  static const trainingLog = 'TRAINING_LOG';
+  static const restTimer = 'REST_TIMER';
+  static const enforcedRest = 'ENFORCED_REST';
+  static const iCommit = 'I_COMMIT';
+  static const newMaxRecorded = 'NEW_MAX_RECORDED';
+  static const operation = 'OPERATION';
+  static const assignmentTarget = 'ASSIGNMENT_TARGET';
+  static const schedule = 'SCHEDULE';
+  static const systemSettings = 'SYSTEM_SETTINGS';
   
   // Screen Copy
   static const ASSIGNMENT_CHEST = 'ASSIGNMENT: CHEST';

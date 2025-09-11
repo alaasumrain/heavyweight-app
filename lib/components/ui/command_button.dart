@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import '../../core/theme/heavyweight_theme.dart';
 
 enum ButtonVariant { primary, secondary, accent, danger }
@@ -11,6 +12,7 @@ class CommandButton extends StatelessWidget {
   final ButtonSize size;
   final bool isDisabled;
   final bool isLoading;
+  final String? semanticLabel;
   
   const CommandButton({
     Key? key,
@@ -20,6 +22,7 @@ class CommandButton extends StatelessWidget {
     this.size = ButtonSize.large,
     this.isDisabled = false,
     this.isLoading = false,
+    this.semanticLabel,
   }) : super(key: key);
   
   // Legacy constructor for backward compatibility
@@ -29,6 +32,7 @@ class CommandButton extends StatelessWidget {
     this.onPressed,
     this.isDisabled = false,
     this.isLoading = false,
+    this.semanticLabel,
   }) : variant = ButtonVariant.primary,
        size = ButtonSize.large,
        super(key: key);
@@ -37,26 +41,42 @@ class CommandButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final isEffectivelyDisabled = isDisabled || isLoading || onPressed == null;
     
-    return GestureDetector(
-      onTap: isEffectivelyDisabled ? null : onPressed,
-      child: Container(
-        width: double.infinity,
-        height: _getHeight(),
-        decoration: _getDecoration(isEffectivelyDisabled),
-        child: Center(
-          child: isLoading 
-            ? SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(
-                  color: _getTextColor(isEffectivelyDisabled),
-                  strokeWidth: 2,
+    return Semantics(
+      button: true,
+      enabled: !isEffectivelyDisabled,
+      label: semanticLabel ?? text,
+      child: InkWell(
+        onTap: isEffectivelyDisabled ? null : () {
+          try {
+            HapticFeedback.lightImpact();
+            onPressed?.call();
+          } catch (error) {
+            // Log error but don't crash the app
+            debugPrint('CommandButton error: $error');
+          }
+        },
+        child: Container(
+          width: double.infinity,
+          height: _getHeight(),
+          decoration: _getDecoration(isEffectivelyDisabled),
+          child: Center(
+            child: isLoading 
+              ? SizedBox(
+                  width: 20,
+                  height: 20,
+                  child: CircularProgressIndicator(
+                    color: _getTextColor(isEffectivelyDisabled),
+                    strokeWidth: 2,
+                  ),
+                )
+              : Text(
+                  text,
+                  style: _getTextStyle(isEffectivelyDisabled),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
-              )
-            : Text(
-                text,
-                style: _getTextStyle(isEffectivelyDisabled),
-              ),
+          ),
         ),
       ),
     );
@@ -67,9 +87,9 @@ class CommandButton extends StatelessWidget {
       case ButtonSize.large:
         return HeavyweightTheme.buttonHeight;
       case ButtonSize.medium:
-        return HeavyweightTheme.buttonHeightSmall;
+        return HeavyweightTheme.buttonHeightMedium;
       case ButtonSize.small:
-        return 40.0;
+        return HeavyweightTheme.buttonHeightSmall;
     }
   }
   

@@ -2,13 +2,17 @@
 
 
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:go_router/go_router.dart';
 import '/providers/app_state_provider.dart';
 
 
 import '/components/navigation/navigation_shell.dart';
+import '/components/navigation/main_app_shell.dart';
+import '/screens/onboarding/splash_screen.dart';
 import '/screens/onboarding/legal_gate_screen.dart';
 import '/screens/profile/profile_screen.dart';
 import '/screens/onboarding/profile/training_experience_screen.dart';
@@ -16,26 +20,25 @@ import '/screens/onboarding/profile/training_frequency_screen.dart';
 import '/screens/onboarding/profile/unit_preference_screen.dart';
 import '/screens/onboarding/profile/physical_stats_screen.dart';
 import '/screens/onboarding/profile/training_objective_screen.dart';
+import '/screens/onboarding/profile/starting_day_screen.dart';
 import '/screens/onboarding/auth_screen.dart';
-import '/screens/training/assignment_screen.dart';
 import '/screens/training/session_active_screen.dart';
 import '/screens/training/enforced_rest_screen.dart';
-import '/screens/training/training_log_screen.dart';
 import '/screens/training/exercise_intel_screen.dart';
 import '/screens/training/session_detail_screen.dart';
 import '/fortress/engine/models/set_data.dart';
-import '/screens/settings/settings_main_screen.dart';
 import '/screens/paywall/paywall_screen.dart';
 import '/screens/paywall/subscription_plans_screen.dart';
 import '/screens/error/error_screen.dart';
-import '/fortress/manifesto/manifesto_screen.dart';
-import '/fortress/daily_workout/daily_workout_screen.dart';
-import '/fortress/protocol/protocol_screen.dart';
-import '/fortress/session_complete/session_complete_screen.dart';
+import '/screens/onboarding/manifesto_screen.dart';
+import '/screens/onboarding/terms_privacy_screen.dart';
+import '/screens/training/daily_workout_screen.dart';
+import '/screens/training/protocol_screen.dart';
+import '/screens/training/session_complete_screen.dart';
 import '/fortress/engine/workout_engine.dart';
 import '/core/page_transitions.dart';
 import '/core/error_handler.dart';
-import '/components/navigation/swipeable_screen.dart';
+import '/core/logging.dart';
 
 
 
@@ -46,50 +49,175 @@ class AppStateNotifier extends ChangeNotifier {
   static AppStateNotifier get instance => _instance ??= AppStateNotifier._();
   
   String? _previousRoute;
+  static bool _splashShown = false;
   String? get previousRoute => _previousRoute;
+  
+  static void setSplashShown(bool value) {
+    _splashShown = value;
+  }
   
   void updateRoute(String route) {
     _previousRoute = route;
-    notifyListeners();
+    // Avoid notifying listeners during the router's build phase.
+    // Schedule the notification after the current frame to prevent
+    // "setState() or markNeedsBuild() called during build" errors.
+    if (SchedulerBinding.instance.schedulerPhase == SchedulerPhase.idle ||
+        SchedulerBinding.instance.schedulerPhase == SchedulerPhase.postFrameCallbacks) {
+      notifyListeners();
+    } else {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        notifyListeners();
+      });
+    }
   }
 }
 
-GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
+GoRouter createRouter(AppStateNotifier appStateNotifier, {required Listenable refresh}) => GoRouter(
       initialLocation: '/', 
       debugLogDiagnostics: true,
-      refreshListenable: appStateNotifier,
+      refreshListenable: refresh,
+      redirectLimit: 10, // Increase redirect limit to debug
       errorBuilder: (context, state) => ErrorScreen(
         error: state.error,
         retryRoute: '/',
       ),
       redirect: (context, state) {
-        // Only protect training routes that require authentication
-        final protectedRoutes = ['/assignment', '/session-active', '/training-log'];
         final currentPath = state.matchedLocation;
+        debugPrint('🔀🔀🔀 TOP-LEVEL REDIRECT: $currentPath');
         
-        if (protectedRoutes.any((route) => currentPath.startsWith(route))) {
-          try {
-            final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
-            if (appStateProvider.isInitialized && !appStateProvider.appState.isAuthenticated) {
-              return '/auth';
-            }
-          } catch (e) {
-            // If provider not available, let it through (will be handled by NavigationShell)
-          }
-        }
+        // Only handle legacy redirects at top level
+        if (currentPath == '/assignment') return '/app?tab=0';
+        if (currentPath == '/training-log') return '/app?tab=1';
+        if (currentPath == '/settings') return '/app?tab=2';
         
-        return null; // Let everything else through
+        // All other redirects handled by individual routes
+        debugPrint('🔀🔀🔀 TOP-LEVEL REDIRECT: No redirect for $currentPath');
+        return null;
       },
       routes: [
         GoRoute(
-          name: 'splash',
+          name: 'root',
           path: '/',
-          builder: (context, state) => const NavigationShell(),
+          redirect: (context, state) {
+            debugPrint('🔀🔀🔀 ROOT REDIRECT DISPATCHER CALLED');
+            try {
+              // Always show splash screen first on app startup
+              if (!AppStateNotifier._splashShown) {
+                debugPrint('🔀🔀🔀 ROOT: Splash not shown yet, redirecting to splash');
+                return '/splash';
+              }
+
+              final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
+              if (!appStateProvider.isInitialized) {
+                debugPrint('🔀🔀🔀 ROOT: App not initialized, redirecting to splash');
+                return '/splash';
+              }
+
+              final appState = appStateProvider.appState;
+              debugPrint('🔀🔀🔀 ROOT: App initialized, checking onboarding state');
+              
+              if (!appState.legalAccepted) {
+                debugPrint('🔀🔀🔀 ROOT: Legal not accepted, redirecting to /legal');
+                return '/legal';
+              }
+              
+              if (!appState.manifestoCommitted) {
+                debugPrint('🔀🔀🔀 ROOT: Manifesto not committed, redirecting to /manifesto');
+                return '/manifesto';
+              }
+              
+              if (appState.trainingExperience == null) {
+                debugPrint('🔀🔀🔀 ROOT: Training experience missing, redirecting to /profile/experience');
+                return '/profile/experience';
+              }
+              
+              if (appState.trainingFrequency == null) {
+                debugPrint('🔀🔀🔀 ROOT: Training frequency missing, redirecting to /profile/frequency');
+                return '/profile/frequency';
+              }
+              
+              if (appState.unitPreference == null) {
+                debugPrint('🔀🔀🔀 ROOT: Unit preference missing, redirecting to /profile/units');
+                return '/profile/units';
+              }
+              
+              if (appState.physicalStats == null) {
+                debugPrint('🔀🔀🔀 ROOT: Physical stats missing, redirecting to /profile/stats');
+                return '/profile/stats';
+              }
+              
+              if (appState.trainingObjective == null) {
+                debugPrint('🔀🔀🔀 ROOT: Training objective missing, redirecting to /profile/objective');
+                return '/profile/objective';
+              }
+              
+              if (appState.preferredStartingDay == null) {
+                debugPrint('🔀🔀🔀 ROOT: Starting day missing, redirecting to /profile/starting-day');
+                return '/profile/starting-day';
+              }
+              
+              if (!appState.isAuthenticated) {
+                debugPrint('🔀🔀🔀 ROOT: Not authenticated, redirecting to /auth');
+                return '/auth';
+              }
+
+              debugPrint('🔀🔀🔀 ROOT: All onboarding complete, redirecting to /app');
+              return '/app?tab=0';
+            } catch (e) {
+              debugPrint('🔀🔀🔀 ROOT: Error in redirect, falling back to splash: $e');
+              return '/splash';
+            }
+          },
+          // NO BUILDER - redirect only
+        ),
+        
+        // Dedicated splash screen route
+        GoRoute(
+          name: 'splash',
+          path: '/splash',
+          builder: (context, state) {
+            debugPrint('💫💫💫 SPLASH ROUTE BUILDER CALLED');
+            return const SplashScreen();
+          },
+        ),
+        
+        // Unified app shell with tabs controlled via query param `tab`
+        GoRoute(
+          name: 'app_shell',
+          path: '/app',
+          pageBuilder: (context, state) {
+            debugPrint('🚀🚀🚀 APP SHELL ROUTE BUILDER CALLED: /app');
+            debugPrint('🚀🚀🚀 APP SHELL: context=$context');
+            debugPrint('🚀🚀🚀 APP SHELL: state=${state.matchedLocation}');
+            final tabStr = state.uri.queryParameters['tab'];
+            final initialIndex = int.tryParse(tabStr ?? '0') ?? 0;
+            debugPrint('🚀🚀🚀 APP SHELL: tab=$tabStr, index=$initialIndex');
+            appStateNotifier.updateRoute('/app');
+            debugPrint('🚀🚀🚀 APP SHELL: About to return MainAppShell');
+            return HeavyweightPageTransitions.noTransition(
+              context,
+              state,
+              ErrorBoundary(
+                child: MainAppShell(key: ValueKey('app_shell_$initialIndex'), initialIndex: initialIndex),
+              ),
+            );
+          },
         ),
         GoRoute(
           name: 'legal',
           path: '/legal',
-          builder: (context, state) => const LegalGateScreen(),
+          builder: (context, state) {
+            debugPrint('🔥🔥🔥 LEGAL ROUTE BUILDER CALLED');
+            debugPrint('🔥🔥🔥 LEGAL: context=$context');
+            debugPrint('🔥🔥🔥 LEGAL: state=${state.matchedLocation}');
+            debugPrint('🔥🔥🔥 LEGAL: About to return LegalGateScreen()');
+            return const LegalGateScreen();
+          },
+        ),
+        GoRoute(
+          name: 'terms_privacy',
+          path: '/legal/terms',
+          builder: (context, state) => const TermsPrivacyScreen(),
         ),
         GoRoute(
           name: 'manifesto',
@@ -127,36 +255,16 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
           builder: (context, state) => const TrainingObjectiveScreen(),
         ),
         GoRoute(
+          name: 'profile_starting_day',
+          path: '/profile/starting-day',
+          builder: (context, state) => const StartingDayScreen(),
+        ),
+        GoRoute(
           name: 'auth',
           path: '/auth',
           builder: (context, state) => const AuthScreen(),
         ),
-        GoRoute(
-          name: 'assignment',
-          path: '/assignment',
-          pageBuilder: (context, state) {
-            final fromIndex = NavigationHelper.getRouteIndex(appStateNotifier.previousRoute ?? '');
-            final toIndex = NavigationHelper.getRouteIndex('/assignment');
-            appStateNotifier.updateRoute('/assignment');
-            
-            final swipeRoutes = SwipeNavigation.getRoutes('/assignment');
-            final screen = SwipeableScreen(
-              previousRoute: swipeRoutes?.previous,
-              nextRoute: swipeRoutes?.next,
-              child: ErrorBoundary(
-                child: AssignmentScreen.withProvider(),
-              ),
-            );
-            
-            return HeavyweightPageTransitions.slideTransition(
-              context,
-              state,
-              screen,
-              fromIndex: fromIndex,
-              toIndex: toIndex,
-            );
-          },
-        ),
+        // legacy tab routes are redirected in `redirect`
         GoRoute(
           name: 'session_active',
           path: '/session-active',
@@ -198,58 +306,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier) => GoRouter(
             );
           },
         ),
-        GoRoute(
-          name: 'training_log',
-          path: '/training-log',
-          pageBuilder: (context, state) {
-            final fromIndex = NavigationHelper.getRouteIndex(appStateNotifier.previousRoute ?? '');
-            final toIndex = NavigationHelper.getRouteIndex('/training-log');
-            appStateNotifier.updateRoute('/training-log');
-            
-            final swipeRoutes = SwipeNavigation.getRoutes('/training-log');
-            final screen = SwipeableScreen(
-              previousRoute: swipeRoutes?.previous,
-              nextRoute: swipeRoutes?.next,
-              child: ErrorBoundary(
-                child: TrainingLogScreen.withProvider(),
-              ),
-            );
-            
-            return HeavyweightPageTransitions.slideTransition(
-              context,
-              state,
-              screen,
-              fromIndex: fromIndex,
-              toIndex: toIndex,
-            );
-          },
-        ),
-        GoRoute(
-          name: 'settings',
-          path: '/settings',
-          pageBuilder: (context, state) {
-            final fromIndex = NavigationHelper.getRouteIndex(appStateNotifier.previousRoute ?? '');
-            final toIndex = NavigationHelper.getRouteIndex('/settings');
-            appStateNotifier.updateRoute('/settings');
-            
-            final swipeRoutes = SwipeNavigation.getRoutes('/settings');
-            final screen = SwipeableScreen(
-              previousRoute: swipeRoutes?.previous,
-              nextRoute: swipeRoutes?.next,
-              child: ErrorBoundary(
-                child: const SettingsMainScreen(),
-              ),
-            );
-            
-            return HeavyweightPageTransitions.slideTransition(
-              context,
-              state,
-              screen,
-              fromIndex: fromIndex,
-              toIndex: toIndex,
-            );
-          },
-        ),
+        // other content routes remain
         GoRoute(
           name: 'exercise_intel',
           path: '/exercise-intel',

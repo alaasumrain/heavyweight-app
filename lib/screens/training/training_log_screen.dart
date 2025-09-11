@@ -7,6 +7,7 @@ import '../../fortress/viewmodels/logbook_viewmodel.dart';
 import '../../providers/logbook_viewmodel_provider.dart';
 import '../../fortress/engine/models/set_data.dart';
 import '../../fortress/engine/storage/workout_repository_interface.dart';
+import '../../core/logging.dart';
 
 class TrainingLogScreen extends StatefulWidget {
   const TrainingLogScreen({Key? key}) : super(key: key);
@@ -22,6 +23,7 @@ class TrainingLogScreen extends StatefulWidget {
 }
 
 class _TrainingLogScreenState extends State<TrainingLogScreen> {
+  bool _isLoading = true;
   @override
   void initState() {
     super.initState();
@@ -32,9 +34,11 @@ class _TrainingLogScreenState extends State<TrainingLogScreen> {
 
   @override
   Widget build(BuildContext context) {
+    HWLog.screen('Training/Logbook');
     return Consumer<LogbookViewModel>(
       builder: (context, viewModel, child) {
         if (viewModel.isLoading) {
+          HWLog.event('training_log_state', data: {'state': 'loading'});
           return HeavyweightScaffold(
             body: Center(
               child: CircularProgressIndicator(
@@ -45,12 +49,14 @@ class _TrainingLogScreenState extends State<TrainingLogScreen> {
         }
         
         if (viewModel.error != null) {
+          HWLog.event('training_log_state', data: {'state': 'error', 'error': viewModel.error.toString()});
           return _buildError(viewModel.error!);
         }
         
+        HWLog.event('training_log_state', data: {'state': 'ready', 'sessionCount': viewModel.sessions.length});
         return HeavyweightScaffold(
           title: 'LOGBOOK',
-          showBanner: true,
+          
           body: Column(
             children: [
                   
@@ -180,7 +186,7 @@ class _TrainingLogScreenState extends State<TrainingLogScreen> {
             // Exercises
             ...exercises.map<Widget>((exerciseText) {
               return Padding(
-                padding: const EdgeInsets.only(bottom: 4),
+                padding: const EdgeInsets.only(bottom: HeavyweightTheme.spacingXs),
                 child: Text(
                   '├─ $exerciseText',
                   style: HeavyweightTheme.bodySmall.copyWith(
@@ -219,7 +225,7 @@ class _TrainingLogScreenState extends State<TrainingLogScreen> {
               letterSpacing: 2,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: HeavyweightTheme.spacingMd),
           Text(
             'Complete your first workout to see history here.',
             style: HeavyweightTheme.bodySmall.copyWith(
@@ -266,4 +272,3 @@ class _TrainingLogScreenState extends State<TrainingLogScreen> {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }
 }
-

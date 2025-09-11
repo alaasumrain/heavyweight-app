@@ -2,7 +2,6 @@
 /// Provides form protocols, safety thresholds, and tactical guidance
 /// No fluff. No motivation. Just precise execution parameters.
 
-import 'models/exercise.dart';
 
 class ExerciseIntel {
   

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../fortress/viewmodels/logbook_viewmodel.dart';
-import '../fortress/engine/storage/workout_repository.dart';
 import 'repository_provider.dart';
 
 /// Provider for LogbookViewModel

@@ -8,8 +8,10 @@ import '../../core/theme/heavyweight_theme.dart';
 import '../../fortress/viewmodels/workout_viewmodel.dart';
 import '../../providers/workout_viewmodel_provider.dart';
 import '../../providers/repository_provider.dart';
+import '../../providers/app_state_provider.dart';
 import '../../fortress/engine/workout_engine.dart';
 import '../../fortress/engine/models/exercise.dart';
+import '../../core/logging.dart';
 
 class AssignmentScreen extends StatefulWidget {
   const AssignmentScreen({Key? key}) : super(key: key);
@@ -32,15 +34,21 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
   @override
   void initState() {
     super.initState();
-    _checkFirstVisit();
+    HWLog.screen('Training/Assignment');
+    // HUD tutorial disabled per UX feedback
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<WorkoutViewModel>().initialize();
+      HWLog.event('assignment_init_post_frame');
+      // Get preferred starting day from app state
+      final appState = context.read<AppStateProvider>().appState;
+      final preferredStartingDay = appState.preferredStartingDay;
+      context.read<WorkoutViewModel>().initialize(preferredStartingDay: preferredStartingDay);
       _loadSessionStats();
     });
   }
   
   Future<void> _loadSessionStats() async {
     try {
+      HWLog.event('assignment_load_stats_start');
       final viewModel = context.read<WorkoutViewModel>();
       final stats = await viewModel.getStats();
       
@@ -71,19 +79,24 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
             _streakText = streakDisplay;
           });
         }
+        HWLog.event('assignment_load_stats_done', data: {
+          'lastSession': _lastSessionText,
+          'streak': _streakText,
+        });
       }
     } catch (e) {
+      HWLog.event('assignment_load_stats_error', data: {'error': e.toString()});
       if (mounted) {
         setState(() {
-          _lastSessionText = 'ERROR_LOADING';
-          _streakText = 'ERROR_LOADING';
+          _lastSessionText = 'SYNC_FAILED';
+          _streakText = 'SYNC_FAILED';
         });
       }
     }
   }
   
   String _getBodyPartFocus(DailyWorkout? workout) {
-    if (workout == null) return 'LOADING';
+    if (workout == null) return 'INITIALIZING...';
     
     // Just show the day name without date
     return workout.dayName;
@@ -124,15 +137,16 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
   }
 
   void _showExerciseInfo(Exercise exercise) {
+    HWLog.event('assignment_show_exercise_info', data: {'exercise': exercise.id});
     showDialog(
       context: context,
       builder: (context) => Dialog(
-        backgroundColor: Colors.black,
+        backgroundColor: HeavyweightTheme.background,
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(HeavyweightTheme.spacingLg),
           decoration: BoxDecoration(
-            border: Border.all(color: Colors.white),
-            color: Colors.black,
+            border: Border.all(color: HeavyweightTheme.primary),
+            color: HeavyweightTheme.background,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -140,34 +154,23 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
             children: [
               Text(
                 exercise.name.toUpperCase(),
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  letterSpacing: 2,
-                ),
+                style: HeavyweightTheme.h4,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: HeavyweightTheme.spacingMd),
               Text(
                 'EXERCISE_INTEL:',
-                style: TextStyle(
-                  color: Colors.grey.shade400,
-                  fontSize: 12,
-                  letterSpacing: 1,
+                style: HeavyweightTheme.labelSmall.copyWith(
+                  color: HeavyweightTheme.textSecondary,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: HeavyweightTheme.spacingSm),
               Text(
                 (exercise.description?.isNotEmpty ?? false)
                     ? exercise.description! 
                     : 'COMPOUND_MOVEMENT. FOCUS_ON_FORM. PROGRESSIVE_OVERLOAD.',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 14,
-                  height: 1.4,
-                ),
+                style: HeavyweightTheme.bodyMedium,
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: HeavyweightTheme.spacingMd),
               CommandButton(
                 text: 'COMMAND: CLOSE',
                 variant: ButtonVariant.secondary,
@@ -184,24 +187,27 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
 
   @override
   Widget build(BuildContext context) {
+    HWLog.event('assignment_build');
     return Consumer<WorkoutViewModel>(
       builder: (context, viewModel, child) {
         if (viewModel.isLoading) {
-          return const Scaffold(
-            backgroundColor: Colors.black,
+          HWLog.event('assignment_state', data: {'state': 'loading'});
+          return HeavyweightScaffold(
             body: Center(
               child: CircularProgressIndicator(
-                color: Colors.white,
+                color: HeavyweightTheme.primary,
               ),
             ),
           );
         }
         
         if (viewModel.error != null) {
+          HWLog.event('assignment_state', data: {'state': 'error', 'error': viewModel.error.toString()});
           return _buildError(viewModel.error!);
         }
         
         if (!viewModel.hasWorkout) {
+          HWLog.event('assignment_state', data: {'state': 'rest_day'});
           return _buildRestDay();
         }
         
@@ -210,8 +216,7 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
             HeavyweightScaffold(
               title: _getBodyPartFocus(viewModel.todaysWorkout),
               subtitle: _getSubtitle(),
-              navIndex: 0,
-              showNavigation: true,
+              showNavigation: false,
               body: _buildWorkoutContent(viewModel.todaysWorkout!),
             ),
             
@@ -274,8 +279,7 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
   }
   
   Widget _buildError(String error) {
-    return Scaffold(
-      backgroundColor: Colors.black,
+    return HeavyweightScaffold(
       body: SafeArea(
         child: Center(
           child: Column(
@@ -283,26 +287,24 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
             children: [
               const Icon(
                 Icons.error_outline,
-                color: Colors.red,
+                color: HeavyweightTheme.danger,
                 size: 48,
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: HeavyweightTheme.spacingMd),
               Text(
                 'ERROR',
                 style: HeavyweightTheme.h3.copyWith(
-                  color: Colors.red,
+                  color: HeavyweightTheme.danger,
                   letterSpacing: 2,
                 ),
               ),
-              const SizedBox(height: 8),
+              const SizedBox(height: HeavyweightTheme.spacingSm),
               Text(
                 error,
-                style: HeavyweightTheme.bodyMedium.copyWith(
-                  color: Colors.white,
-                ),
+                style: HeavyweightTheme.bodyMedium,
                 textAlign: TextAlign.center,
               ),
-              const SizedBox(height: 24),
+              const SizedBox(height: HeavyweightTheme.spacingLg),
               CommandButton(
                 text: 'RETRY',
                 onPressed: () {
@@ -317,8 +319,7 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
   }
   
   Widget _buildRestDay() {
-    return Scaffold(
-      backgroundColor: Colors.black,
+    return HeavyweightScaffold(
       body: SafeArea(
         child: Center(
           child: Column(
@@ -326,18 +327,18 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
             children: [
               Icon(
                 Icons.block,
-                color: Colors.red.shade900,
+                color: HeavyweightTheme.danger,
                 size: 100,
               ),
-              const SizedBox(height: 30),
+              const SizedBox(height: HeavyweightTheme.spacingXl),
               Text(
                 'REST DAY ENFORCED',
                 style: HeavyweightTheme.h2.copyWith(
-                  color: Colors.red,
+                  color: HeavyweightTheme.danger,
                   letterSpacing: 3,
                 ),
               ),
-              const SizedBox(height: 20),
+              const SizedBox(height: HeavyweightTheme.spacingMd),
               Text(
                 'Recovery is mandatory.\\nYour muscles grow during rest.',
                 textAlign: TextAlign.center,
@@ -346,7 +347,7 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
                   height: 1.5,
                 ),
               ),
-              const SizedBox(height: 40),
+              const SizedBox(height: HeavyweightTheme.spacingXxl),
               Text(
                 'NEXT WORKOUT: TOMORROW',
                 style: HeavyweightTheme.labelSmall.copyWith(
@@ -362,18 +363,19 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
   }
   
   Widget _buildTerminalExerciseEntry(String number, String exercise, String weight, String unit, String progress, String lastPerformance, {VoidCallback? onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        margin: const EdgeInsets.only(bottom: HeavyweightTheme.spacingXs),
-        padding: const EdgeInsets.all(HeavyweightTheme.spacingXs),
-        decoration: BoxDecoration(
-          border: Border.all(color: HeavyweightTheme.textSecondary, width: 1),
-          color: onTap != null ? HeavyweightTheme.surface : HeavyweightTheme.background,
-        ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
+    return RepaintBoundary(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
+          margin: const EdgeInsets.only(bottom: HeavyweightTheme.spacingXs),
+          padding: const EdgeInsets.all(HeavyweightTheme.spacingXs),
+          decoration: BoxDecoration(
+            border: Border.all(color: HeavyweightTheme.textSecondary, width: 1),
+            color: onTap != null ? HeavyweightTheme.surface : HeavyweightTheme.background,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
           // Exercise line with ASCII-style formatting
           Row(
             children: [
@@ -450,20 +452,22 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
               ),
             ],
           ),
-        ],
+            ],
+          ),
+        ),
       ),
-    ));
+    );
   }
   
   Widget _buildHudTutorialOverlay() {
     return Container(
-      color: Colors.black.withOpacity(0.85),
+      color: HeavyweightTheme.background.withValues(alpha: 0.85),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.all(24),
+          padding: const EdgeInsets.all(HeavyweightTheme.spacingLg),
           child: Column(
             children: [
-              const SizedBox(height: 60),
+              const SizedBox(height: HeavyweightTheme.spacingXl),
               
               // Tutorial content
               Expanded(
@@ -473,26 +477,23 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
                     // HUD label
                     Text(
                       'HUD_ORIENTATION',
-                      style: HeavyweightTheme.h3.copyWith(
-                        color: Colors.white,
-                        letterSpacing: 3,
-                      ),
+                      style: HeavyweightTheme.h3,
                     ),
                     
-                    const SizedBox(height: 48),
+                    const SizedBox(height: HeavyweightTheme.spacingXxl),
                     
                     // Interface elements
                     Container(
-                      padding: const EdgeInsets.all(32),
+                      padding: const EdgeInsets.all(HeavyweightTheme.spacingXl),
                       decoration: BoxDecoration(
-                        border: Border.all(color: Colors.white.withOpacity(0.3)),
+                        border: Border.all(color: HeavyweightTheme.primary.withValues(alpha: 0.3)),
                       ),
                       child: Column(
                         children: [
                           _buildHudLabel('[1] YOUR WORKOUT', 'Today\'s assigned training protocol'),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: HeavyweightTheme.spacingLg),
                           _buildHudLabel('[2] YOUR LOGBOOK', 'Access via bottom navigation'),
-                          const SizedBox(height: 24),
+                          const SizedBox(height: HeavyweightTheme.spacingLg),
                           _buildHudLabel('[3] YOUR PROFILE', 'Settings & system configuration'),
                         ],
                       ),
@@ -525,13 +526,12 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
             letterSpacing: 1,
           ),
         ),
-        const SizedBox(width: 16),
+        const SizedBox(width: HeavyweightTheme.spacingMd),
         Expanded(
           child: Text(
             description,
             style: HeavyweightTheme.bodySmall.copyWith(
-              color: Colors.grey.shade300,
-              height: 1.4,
+              color: HeavyweightTheme.textSecondary,
             ),
           ),
         ),

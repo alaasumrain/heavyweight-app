@@ -1,6 +1,5 @@
 
 import '../models/set_data.dart';
-import '../models/exercise.dart';
 import '../models/workout_day.dart';
 
 /// Abstract interface for workout data persistence

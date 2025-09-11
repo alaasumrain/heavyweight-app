@@ -87,6 +87,7 @@ lcov.info
 .env
 .env.local
 .env.*.local
+env.json
 
 # Logs
 *.log
@@ -107,4 +108,3 @@ node_modules/
 
 # Exceptions to above rules.
 !/packages/flutter_tools/test/data/dart_dependencies_test/**/.packages
-.env

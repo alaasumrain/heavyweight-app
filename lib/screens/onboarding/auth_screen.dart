@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import '../../core/theme/heavyweight_theme.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
-import '../../components/ui/system_banner.dart';
 import '../../components/ui/command_button.dart';
+import '../../components/layout/heavyweight_scaffold.dart';
 import '../../providers/profile_provider.dart';
 import '../../providers/app_state_provider.dart';
 import '../../core/auth_service.dart';
+import '../../components/ui/toast.dart';
+import '../../core/logging.dart';
 
 class AuthScreen extends StatefulWidget {
   const AuthScreen({Key? key}) : super(key: key);
@@ -16,6 +18,7 @@ class AuthScreen extends StatefulWidget {
 }
 
 class _AuthScreenState extends State<AuthScreen> {
+  bool _isLoading = false;
   bool _isLogin = false;
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -25,6 +28,7 @@ class _AuthScreenState extends State<AuthScreen> {
   void initState() {
     super.initState();
     _authService.initialize();
+    HWLog.screen('Onboarding/Auth');
   }
 
   @override
@@ -35,19 +39,40 @@ class _AuthScreenState extends State<AuthScreen> {
   }
 
   void _handleAuth() async {
-    // Validation
+    HWLog.event('auth_submit_tap', data: {
+      'mode': _isLogin ? 'login' : 'signup',
+    });
+    setState(() {
+      _isLoading = true;
+    });
+    // Validation with proper loading state cleanup
     if (_emailController.text.isEmpty || _passwordController.text.isEmpty) {
-      _showError('FIELDS_REQUIRED: Please fill in all fields');
+      _showError('FIELDS_REQUIRED. COMPLETE_ALL_INPUTS.');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
       return;
     }
     
     if (!AuthService.isValidEmail(_emailController.text)) {
-      _showError('INVALID_EMAIL: Please enter a valid email address');
+      _showError('INVALID_EMAIL. CHECK_FORMAT.');
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
       return;
     }
     
     if (!_isLogin && !AuthService.isValidPassword(_passwordController.text)) {
       _showError(AuthService.getPasswordFeedback(_passwordController.text));
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
       return;
     }
     
@@ -69,56 +94,36 @@ class _AuthScreenState extends State<AuthScreen> {
       final appState = context.read<AppStateProvider>().appState;
       appState.onAuthStateChanged();
       
-      // Navigate to assignment
-      context.go('/assignment');
+      // Navigate to app shell (Assignment tab)
+      HWLog.event('auth_success_navigate', data: {'to': '/app?tab=0'});
+      context.go('/app?tab=0');
     } else if (mounted && _authService.error != null) {
+      HWLog.event('auth_failed', data: {'error': _authService.error!});
       _showError(_authService.error!);
+    }
+    
+    if (mounted) {
+      setState(() {
+        _isLoading = false;
+      });
     }
   }
   
   void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red.shade900,
-      ),
-    );
+    HeavyweightToast.show(context, message: message, variant: ToastVariant.error);
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: HeavyweightTheme.background,
-      appBar: AppBar(
-        backgroundColor: HeavyweightTheme.background,
-        leading: IconButton(
-          icon: const Icon(Icons.arrow_back, color: HeavyweightTheme.primary),
-          onPressed: () {
-            if (Navigator.of(context).canPop()) {
-              Navigator.of(context).pop();
-            } else {
-              context.go('/'); // Go back to main app
-            }
-          },
-        ),
-        elevation: 0,
-      ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(
-                minHeight: MediaQuery.of(context).size.height - 
-                          MediaQuery.of(context).padding.top - 
-                          MediaQuery.of(context).padding.bottom - 40,
-              ),
-              child: IntrinsicHeight(
-                child: Column(
-                  children: [
-              const SystemBanner(),
-              const SizedBox(height: 40),
-              
+    HWLog.event('auth_screen_build', data: {'mode': _isLogin ? 'login' : 'signup'});
+    return HeavyweightScaffold(
+      title: 'AUTH',
+      subtitle: _isLogin ? 'LOGIN' : 'SIGNUP',
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
+          child: Column(
+            children: [
               // Toggle between LOGIN/SIGNUP
               Container(
                 width: double.infinity,
@@ -131,12 +136,14 @@ class _AuthScreenState extends State<AuthScreen> {
                       child: GestureDetector(
                         onTap: () => setState(() => _isLogin = true),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(vertical: HeavyweightTheme.spacingMd),
                           color: _isLogin ? HeavyweightTheme.primary : Colors.transparent,
                           child: Text(
                             'LOGIN',
                             textAlign: TextAlign.center,
-                            style: HeavyweightTheme.bodyMedium,
+                            style: HeavyweightTheme.bodyMedium.copyWith(
+                              color: _isLogin ? HeavyweightTheme.background : HeavyweightTheme.primary,
+                            ),
                           ),
                         ),
                       ),
@@ -145,12 +152,14 @@ class _AuthScreenState extends State<AuthScreen> {
                       child: GestureDetector(
                         onTap: () => setState(() => _isLogin = false),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          padding: const EdgeInsets.symmetric(vertical: HeavyweightTheme.spacingMd),
                           color: !_isLogin ? HeavyweightTheme.primary : Colors.transparent,
                           child: Text(
                             'SIGNUP',
                             textAlign: TextAlign.center,
-                            style: HeavyweightTheme.bodyMedium,
+                            style: HeavyweightTheme.bodyMedium.copyWith(
+                              color: !_isLogin ? HeavyweightTheme.background : HeavyweightTheme.primary,
+                            ),
                           ),
                         ),
                       ),
@@ -159,7 +168,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
               ),
               
-              const SizedBox(height: 40),
+              const SizedBox(height: HeavyweightTheme.spacingLg),
               
               // Email field
               TextField(
@@ -168,6 +177,8 @@ class _AuthScreenState extends State<AuthScreen> {
                 decoration: InputDecoration(
                   labelText: 'EMAIL',
                   labelStyle: HeavyweightTheme.bodyMedium,
+                  filled: true,
+                  fillColor: HeavyweightTheme.background,
                   enabledBorder: const OutlineInputBorder(
                     borderRadius: BorderRadius.zero,
                     borderSide: BorderSide(color: HeavyweightTheme.primary),
@@ -180,7 +191,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 keyboardType: TextInputType.emailAddress,
               ),
               
-              const SizedBox(height: 20),
+              const SizedBox(height: HeavyweightTheme.spacingMd),
               
               // Password field
               TextField(
@@ -190,6 +201,8 @@ class _AuthScreenState extends State<AuthScreen> {
                 decoration: InputDecoration(
                   labelText: 'PASSWORD',
                   labelStyle: HeavyweightTheme.bodyMedium,
+                  filled: true,
+                  fillColor: HeavyweightTheme.background,
                   enabledBorder: const OutlineInputBorder(
                     borderRadius: BorderRadius.zero,
                     borderSide: BorderSide(color: HeavyweightTheme.primary),
@@ -201,7 +214,7 @@ class _AuthScreenState extends State<AuthScreen> {
                 ),
               ),
               
-              const SizedBox(height: 40),
+              const SizedBox(height: HeavyweightTheme.spacingLg),
               
               // Profile summary (for signup only)
               if (!_isLogin) ...[
@@ -218,10 +231,10 @@ class _AuthScreenState extends State<AuthScreen> {
                       if (provider.objective == null) missing.add('OBJECTIVE');
                       
                       return Container(
-                        padding: const EdgeInsets.all(16),
+                        padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
                         decoration: BoxDecoration(
-                          border: Border.all(color: Colors.red.shade800),
-                          color: Colors.red.shade900.withOpacity(0.3),
+                          border: Border.all(color: HeavyweightTheme.error),
+                          color: HeavyweightTheme.errorSurface,
                         ),
                         child: Column(
                           children: [
@@ -230,13 +243,13 @@ class _AuthScreenState extends State<AuthScreen> {
                               textAlign: TextAlign.center,
                               style: HeavyweightTheme.bodyMedium,
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: HeavyweightTheme.spacingSm),
                             Text(
                               'MISSING: ${missing.join(', ')}',
                               textAlign: TextAlign.center,
                               style: HeavyweightTheme.bodyMedium,
                             ),
-                            const SizedBox(height: 8),
+                            const SizedBox(height: HeavyweightTheme.spacingSm),
                             GestureDetector(
                               onTap: () => context.go('/profile'),
                               child: Text(
@@ -251,9 +264,9 @@ class _AuthScreenState extends State<AuthScreen> {
                     }
                     
                     return Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
                       decoration: BoxDecoration(
-                        border: Border.all(color: HeavyweightTheme.secondary.shade800),
+                        border: Border.all(color: HeavyweightTheme.secondary),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -274,36 +287,29 @@ class _AuthScreenState extends State<AuthScreen> {
                     );
                   },
                 ),
-                const SizedBox(height: 40),
+              const SizedBox(height: HeavyweightTheme.spacingLg),
               ],
               
-              const Spacer(),
+              const SizedBox(height: HeavyweightTheme.spacingXl),
               
               // Action button
               ListenableBuilder(
                 listenable: _authService,
                 builder: (context, child) {
-                  if (_authService.isLoading) {
-                    return Container(
-                      height: 60,
-                      child: const Center(
-                        child: CircularProgressIndicator(color: HeavyweightTheme.primary),
-                      ),
-                    );
-                  }
-                  
                   return CommandButton(
                     text: _isLogin ? 'LOGIN' : 'CREATE ACCOUNT',
                     variant: ButtonVariant.primary,
-                    onPressed: _handleAuth,
+                    isLoading: _authService.isLoading || _isLoading,
+                    onPressed: (_authService.isLoading || _isLoading) ? null : _handleAuth,
                   );
                 },
               ),
               
               if (_isLogin) ...[
-                const SizedBox(height: 16),
+                const SizedBox(height: HeavyweightTheme.spacingMd),
                 CommandButton(
                   text: 'FORGOT PASSWORD',
+                  variant: ButtonVariant.secondary,
                   onPressed: () async {
                     if (_emailController.text.isEmpty) {
                       _showError('EMAIL_REQUIRED_FOR_RESET');
@@ -311,29 +317,28 @@ class _AuthScreenState extends State<AuthScreen> {
                     }
                     
                     if (!AuthService.isValidEmail(_emailController.text)) {
-                      _showError('INVALID_EMAIL: Please enter a valid email');
+                      _showError('INVALID_EMAIL. CHECK_FORMAT.');
                       return;
                     }
                     
                     final success = await _authService.resetPassword(_emailController.text);
                     
-                    if (success && mounted) {
+                    if (!mounted) return;
+                    
+                    if (success) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('PASSWORD_RESET_SENT: Check your email'),
-                          backgroundColor: Colors.green,
+                          content: Text('RESET_SENT. CHECK_EMAIL.'),
+                          backgroundColor: HeavyweightTheme.success,
                         ),
                       );
-                    } else if (mounted && _authService.error != null) {
+                    } else if (_authService.error != null) {
                       _showError(_authService.error!);
                     }
                   },
                 ),
               ],
-                  ],
-                ),
-              ),
-            ),
+            ],
           ),
         ),
       ),
