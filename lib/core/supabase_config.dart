@@ -43,43 +43,52 @@ class SupabaseConfig {
   }
 
   /// Validates that all required credentials are loaded
-  static Future<void> validate() async {
-    await _loadConfig();
-    
-    if (kDebugMode) {
-      debugPrint('🔍 HEAVYWEIGHT: Validating Supabase configuration...');
-      debugPrint('📊 SUPABASE_URL: ${_url!.isNotEmpty ? "✅ Set (${_url!.substring(0, 20)}...)" : "❌ Empty"}');
-      debugPrint('📊 SUPABASE_ANON_KEY: ${_anonKey!.isNotEmpty ? "✅ Set (${_anonKey!.length} chars)" : "❌ Empty"}');
-    }
-    
-    if (_url!.isEmpty) {
-      throw StateError('SUPABASE_URL not found in env.json');
-    }
-    
-    if (_anonKey!.isEmpty) {
-      throw StateError('SUPABASE_ANON_KEY not found in env.json');
-    }
+  /// Returns true if valid, false if invalid (non-throwing)
+  static Future<bool> validate() async {
+    try {
+      await _loadConfig();
+      
+      if (kDebugMode) {
+        debugPrint('🔍 HEAVYWEIGHT: Validating Supabase configuration...');
+        debugPrint('📊 SUPABASE_URL: ${_url!.isNotEmpty ? "✅ Set (${_url!.substring(0, 20)}...)" : "❌ Empty"}');
+        debugPrint('📊 SUPABASE_ANON_KEY: ${_anonKey!.isNotEmpty ? "✅ Set (${_anonKey!.length} chars)" : "❌ Empty"}');
+      }
+      
+      if (_url!.isEmpty) {
+        if (kDebugMode) debugPrint('❌ SUPABASE_URL not found in env.json');
+        return false;
+      }
+      
+      if (_anonKey!.isEmpty) {
+        if (kDebugMode) debugPrint('❌ SUPABASE_ANON_KEY not found in env.json');
+        return false;
+      }
 
-    if (!_url!.startsWith('https://')) {
-      throw StateError('SUPABASE_URL must start with https://');
-    }
+      if (!_url!.startsWith('https://')) {
+        if (kDebugMode) debugPrint('❌ SUPABASE_URL must start with https://');
+        return false;
+      }
 
-    if (_anonKey!.length < 10) {
-      throw StateError('SUPABASE_ANON_KEY appears to be invalid (too short)');
-    }
-    
-    if (kDebugMode) {
-      debugPrint('✅ HEAVYWEIGHT: Supabase configuration valid');
+      if (_anonKey!.length < 10) {
+        if (kDebugMode) debugPrint('❌ SUPABASE_ANON_KEY appears to be invalid (too short)');
+        return false;
+      }
+      
+      if (kDebugMode) {
+        debugPrint('✅ HEAVYWEIGHT: Supabase configuration valid');
+      }
+      return true;
+      
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('❌ HEAVYWEIGHT: Config validation error: $e');
+      }
+      return false;
     }
   }
 
   /// Returns true if configuration appears valid
   static Future<bool> get isValid async {
-    try {
-      await validate();
-      return true;
-    } catch (_) {
-      return false;
-    }
+    return await validate();
   }
 }

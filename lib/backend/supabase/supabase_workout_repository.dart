@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:async';
+import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/logging.dart';
@@ -373,27 +374,46 @@ class SupabaseWorkoutRepository implements WorkoutRepositoryInterface {
   /// Fetch complete workout day with exercises
   @override
   Future<WorkoutDay?> fetchCompleteWorkoutDay(int workoutDayId) async {
+    // Check if Supabase is available
+    if (!SupabaseService.isAvailable) {
+      HWLog.event('repo_fetch_day_supabase_unavailable', data: {'dayId': workoutDayId});
+      return null; // Let caller handle fallback
+    }
+    
     try {
-      // Get workout day
+      // Add timeout to prevent hanging
       final dayResponse = await _supabase
           .from('workout_days')
           .select('*')
           .eq('id', workoutDayId)
-          .single();
+          .single()
+          .timeout(const Duration(seconds: 5));
 
       // Get exercises for this day
       final exercises = await fetchDayExercises(workoutDayId);
 
-      return WorkoutDay.fromDatabase(
+      final workoutDay = WorkoutDay.fromDatabase(
         id: dayResponse['id'],
         name: dayResponse['name'],
         dayOrder: dayResponse['day_order'],
         exercises: exercises,
       );
+      
+      HWLog.event('repo_fetch_complete_day_success', data: {
+        'dayId': workoutDayId,
+        'exerciseCount': exercises.length
+      });
+      
+      return workoutDay;
     } catch (error) {
-      print('Failed to fetch complete workout day: $error');
-      HWLog.event('repo_fetch_complete_day_error', data: {'error': error.toString()});
-      return null;
+      HWLog.event('repo_fetch_complete_day_error', data: {
+        'dayId': workoutDayId,
+        'error': error.toString()
+      });
+      if (kDebugMode) {
+        debugPrint('Failed to fetch complete workout day $workoutDayId: $error');
+      }
+      return null; // Let caller handle fallback
     }
   }
 

@@ -23,43 +23,71 @@ class Exercise {
     this.description,
   });
   
-  /// The Big Six compound movements
+  /// The Big Six compound movements - Starting weights for serious lifters
   static const List<Exercise> bigSix = [
     Exercise(
       id: 'squat',
       name: 'Barbell Squat',
       muscleGroup: 'Legs',
-      prescribedWeight: 60.0, // Starting weight for calibration
+      prescribedWeight: 80.0, // Bar + 30kg per side (serious starting point)
     ),
     Exercise(
       id: 'deadlift',
       name: 'Deadlift',
       muscleGroup: 'Back/Legs',
-      prescribedWeight: 80.0,
+      prescribedWeight: 100.0, // Bar + 40kg per side (lifters can handle this)
     ),
     Exercise(
       id: 'bench',
       name: 'Bench Press',
       muscleGroup: 'Chest',
-      prescribedWeight: 50.0,
+      prescribedWeight: 60.0, // Bar + 20kg per side (1 plate each side)
     ),
     Exercise(
       id: 'overhead',
       name: 'Overhead Press',
       muscleGroup: 'Shoulders',
-      prescribedWeight: 30.0,
+      prescribedWeight: 40.0, // Bar + 10kg per side (reasonable for OHP)
     ),
     Exercise(
       id: 'row',
       name: 'Barbell Row',
       muscleGroup: 'Back',
-      prescribedWeight: 40.0,
+      prescribedWeight: 50.0, // Bar + 15kg per side (solid starting row)
     ),
     Exercise(
       id: 'pullup',
       name: 'Weighted Pull-up',
       muscleGroup: 'Back/Biceps',
-      prescribedWeight: 0.0, // Bodyweight to start
+      prescribedWeight: 0.0, // Bodyweight to start (proper progression)
+    ),
+  ];
+
+  /// Chest day exercises - matches database exactly
+  static const List<Exercise> chestExercises = [
+    Exercise(
+      id: 'bench',
+      name: 'Bench Press',
+      muscleGroup: 'Chest',
+      prescribedWeight: 60.0, // Bar + 20kg per side
+    ),
+    Exercise(
+      id: 'incline_db',
+      name: 'DB Incline Bench Press',
+      muscleGroup: 'Chest',
+      prescribedWeight: 25.0, // Per hand
+    ),
+    Exercise(
+      id: 'chest_fly',
+      name: 'Chest Flies',
+      muscleGroup: 'Chest',
+      prescribedWeight: 15.0, // Per hand - isolation
+    ),
+    Exercise(
+      id: 'close_grip_bench',
+      name: 'Close Grip Bench Press',
+      muscleGroup: 'Chest/Triceps',
+      prescribedWeight: 50.0, // Close grip bench weight
     ),
   ];
   
@@ -152,6 +180,15 @@ class Exercise {
         return 'overhead';
       case 'row':
         return 'row';
+      case 'pull-ups':
+        return 'pullup';
+      // Chest exercise mappings
+      case 'db incline bench press':
+        return 'incline_db';
+      case 'chest flies':
+        return 'chest_fly';
+      case 'close grip bench press':
+        return 'close_grip_bench';
       default:
         return name.toLowerCase().replaceAll(' ', '_');
     }
@@ -159,6 +196,23 @@ class Exercise {
 
   /// Public method for external use of exercise name mapping
   static String mapNameToId(String name) => _mapExerciseNameToId(name);
+
+  /// Get starting weight for exercise to prevent 0.0kg
+  static double startingWeightFor(String id) {
+    switch (id) {
+      case 'bench': return 60.0;           // Bar + 20kg per side
+      case 'squat': return 80.0;           // Bar + 30kg per side  
+      case 'deadlift': return 100.0;       // Bar + 40kg per side
+      case 'overhead': return 40.0;        // Bar + 10kg per side
+      case 'row': return 50.0;             // Bar + 15kg per side
+      case 'incline_db': return 25.0;      // Per hand
+      case 'chest_fly': return 15.0;       // Per hand - isolation
+      case 'close_grip_bench': return 50.0; // Close grip bench
+      case 'pullup': return 0.0;           // Bodyweight
+      case 'dips': return 0.0;             // Bodyweight
+      default: return 20.0;                // Safe minimum
+    }
+  }
 
   /// Get exercise by ID from the Big Six
   static Exercise? getById(String id) {

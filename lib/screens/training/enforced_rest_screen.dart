@@ -307,9 +307,7 @@ class _EnforcedRestScreenState extends State<EnforcedRestScreen> {
           ),
           TextButton(
             onPressed: () {
-              context.pop();
-              context.pop(); // Return to assignment
-              context.pop(); // Exit session active too
+              context.go('/app');
             },
             child: Text(
               'TERMINATE',

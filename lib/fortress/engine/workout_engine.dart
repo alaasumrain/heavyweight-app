@@ -1,4 +1,5 @@
 
+import 'package:flutter/foundation.dart';
 import 'models/exercise.dart';
 import 'models/set_data.dart';
 import 'storage/workout_repository_interface.dart';
@@ -252,26 +253,46 @@ class WorkoutEngine {
   Future<List<Exercise>> _selectTodaysExercisesFromDatabase(List<SetData> history) async {
     // If no repository, fall back to hardcoded exercises
     if (repository == null) {
-      print('WorkoutEngine: No repository available, using fallback exercises');
+      HWLog.event('workout_engine_no_repo');
+      if (kDebugMode) {
+        debugPrint('WorkoutEngine: No repository available, using fallback exercises');
+      }
       return _selectTodaysExercises(history);
     }
     
     if (history.isEmpty) {
       // Day 1: CHEST - get from database
       try {
-        print('WorkoutEngine: Fetching CHEST day from database (ID: 1)');
+        HWLog.event('workout_engine_fetch_chest_start');
+        if (kDebugMode) {
+          debugPrint('WorkoutEngine: Fetching CHEST day from database (ID: 1)');
+        }
         final chestDay = await repository!.fetchCompleteWorkoutDay(1); // Assuming CHEST is ID 1
         if (chestDay != null && chestDay.exercises.isNotEmpty) {
-          print('WorkoutEngine: Found ${chestDay.exercises.length} exercises for CHEST day');
+          HWLog.event('workout_engine_fetch_chest_success', data: {
+            'exerciseCount': chestDay.exercises.length
+          });
+          if (kDebugMode) {
+            debugPrint('WorkoutEngine: Found ${chestDay.exercises.length} exercises for CHEST day');
+          }
           return chestDay.exercises.map((de) => de.exercise).toList();
         } else {
-          print('WorkoutEngine: No exercises found for CHEST day in database');
+          HWLog.event('workout_engine_fetch_chest_empty');
+          if (kDebugMode) {
+            debugPrint('WorkoutEngine: No exercises found for CHEST day in database');
+          }
         }
       } catch (e) {
-        print('WorkoutEngine: Failed to fetch chest day from database: $e');
+        HWLog.event('workout_engine_fetch_chest_error', data: {'error': e.toString()});
+        if (kDebugMode) {
+          debugPrint('WorkoutEngine: Failed to fetch chest day from database: $e');
+        }
       }
       // Fallback to hardcoded
-      print('WorkoutEngine: Using fallback exercises for CHEST day');
+      HWLog.event('workout_engine_fallback_chest');
+      if (kDebugMode) {
+        debugPrint('WorkoutEngine: Using fallback exercises for CHEST day');
+      }
       return _selectTodaysExercises(history);
     }
     
@@ -292,19 +313,38 @@ class WorkoutEngine {
     final workoutDayId = dayInCycle + 1; // Assuming IDs are 1-5
     
     try {
-      print('WorkoutEngine: Fetching workout day $workoutDayId from database');
+      HWLog.event('workout_engine_fetch_day_start', data: {'dayId': workoutDayId});
+      if (kDebugMode) {
+        debugPrint('WorkoutEngine: Fetching workout day $workoutDayId from database');
+      }
       final workoutDay = await repository!.fetchCompleteWorkoutDay(workoutDayId);
       if (workoutDay != null && workoutDay.exercises.isNotEmpty) {
-        print('WorkoutEngine: Found ${workoutDay.exercises.length} exercises for workout day $workoutDayId');
+        HWLog.event('workout_engine_fetch_day_success', data: {
+          'dayId': workoutDayId,
+          'exerciseCount': workoutDay.exercises.length
+        });
+        if (kDebugMode) {
+          debugPrint('WorkoutEngine: Found ${workoutDay.exercises.length} exercises for workout day $workoutDayId');
+        }
         return workoutDay.exercises.map((de) => de.exercise).toList();
       } else {
-        print('WorkoutEngine: No exercises found for workout day $workoutDayId in database');
+        HWLog.event('workout_engine_fetch_day_empty', data: {'dayId': workoutDayId});
+        if (kDebugMode) {
+          debugPrint('WorkoutEngine: No exercises found for workout day $workoutDayId in database');
+        }
       }
     } catch (e) {
-      print('WorkoutEngine: Failed to fetch workout day $workoutDayId from database: $e');
+      HWLog.event('workout_engine_fetch_day_error', data: {
+        'dayId': workoutDayId,
+        'error': e.toString()
+      });
+      if (kDebugMode) {
+        debugPrint('WorkoutEngine: Failed to fetch workout day $workoutDayId from database: $e');
+      }
     }
     
     // Fallback to hardcoded exercises if database fails
+    HWLog.event('workout_engine_fallback_day', data: {'dayId': workoutDayId});
     return _selectTodaysExercises(history);
   }
 
@@ -334,10 +374,7 @@ class WorkoutEngine {
     
     switch (dayInCycle) {
       case 0: // CHEST DAY
-        return [
-          Exercise.bigSix[2], // Bench Press
-          Exercise.bigSix[3], // Overhead Press (secondary)
-        ];
+        return Exercise.chestExercises;
       case 1: // BACK DAY
         return [
           Exercise.bigSix[1], // Deadlift
@@ -392,10 +429,7 @@ class WorkoutEngine {
   List<Exercise> _getExercisesForDay(String dayName) {
     switch (dayName.toLowerCase()) {
       case 'chest':
-        return [
-          Exercise.bigSix[2], // Bench Press
-          Exercise.bigSix[3], // Overhead Press (secondary chest)
-        ];
+        return Exercise.chestExercises;
       case 'back':
         return [
           Exercise.bigSix[1], // Deadlift
