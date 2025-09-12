@@ -43,10 +43,12 @@ class HeavyweightScaffold extends StatelessWidget {
       'showBackButton': showBackButton,
       'showNavigation': showNavigation,
     });
-    
+
     try {
       final scaffold = Scaffold(
         backgroundColor: HeavyweightTheme.background,
+        // Add explicit key so we can see rebuilds distinctly in logs
+        key: ValueKey('HWScaffold_${title ?? 'untitled'}'),
         body: SafeArea(
           child: Column(
             children: [
@@ -124,7 +126,6 @@ class HeavyweightScaffold extends StatelessWidget {
     }
   }
 }
-
 
 
 

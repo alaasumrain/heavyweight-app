@@ -88,6 +88,7 @@ class _MainAppShellState extends State<MainAppShell> with TickerProviderStateMix
     HWLog.event('main_shell_build', data: {
       'index': _currentIndex,
     });
+    debugPrint('🚀 MainAppShell.build: index=$_currentIndex');
     return PopScope(
       canPop: true,
       child: Scaffold(

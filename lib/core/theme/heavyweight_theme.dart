@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+// Removed GoogleFonts to simplify iOS startup; using bundled Rubik font
 
 /// HEAVYWEIGHT theme constants and styles
 /// Embodies the mandate philosophy: brutal, honest, uncompromising
@@ -38,7 +38,8 @@ class HeavyweightTheme {
   static const double buttonHeightSmall = 44.0;   // Small buttons - meets iOS standard
   
   // Typography
-  static final TextStyle h1 = GoogleFonts.ibmPlexMono(
+  static final TextStyle h1 = const TextStyle(
+    fontFamily: 'Rubik',
     fontSize: 32,
     fontWeight: FontWeight.bold,
     color: primary,
@@ -46,7 +47,8 @@ class HeavyweightTheme {
     height: 1.2,
   );
   
-  static final TextStyle h2 = GoogleFonts.ibmPlexMono(
+  static final TextStyle h2 = const TextStyle(
+    fontFamily: 'Rubik',
     fontSize: 24,
     fontWeight: FontWeight.bold,
     color: primary,
@@ -54,64 +56,72 @@ class HeavyweightTheme {
     height: 1.3,
   );
   
-  static final TextStyle h3 = GoogleFonts.ibmPlexMono(
-        fontSize: 20,
+  static final TextStyle h3 = const TextStyle(
+    fontFamily: 'Rubik',
+    fontSize: 20,
     fontWeight: FontWeight.bold,
     color: primary,
     letterSpacing: 1.5,
     height: 1.4,
   );
   
-  static final TextStyle h4 = GoogleFonts.ibmPlexMono(
-        fontSize: 18,
+  static final TextStyle h4 = const TextStyle(
+    fontFamily: 'Rubik',
+    fontSize: 18,
     fontWeight: FontWeight.bold,
     color: primary,
     letterSpacing: 1.25,
     height: 1.4,
   );
   
-  static final TextStyle bodyLarge = GoogleFonts.ibmPlexMono(
-        fontSize: 18,
+  static final TextStyle bodyLarge = const TextStyle(
+    fontFamily: 'Rubik',
+    fontSize: 18,
     fontWeight: FontWeight.normal,
     color: primary,
     letterSpacing: 1,
     height: 1.5,
   );
   
-  static final TextStyle bodyMedium = GoogleFonts.ibmPlexMono(
-        fontSize: 16,
+  static final TextStyle bodyMedium = const TextStyle(
+    fontFamily: 'Rubik',
+    fontSize: 16,
     fontWeight: FontWeight.normal,
     color: primary,
     letterSpacing: 0.75,
     height: 1.5,
   );
   
-  static final TextStyle bodySmall = GoogleFonts.ibmPlexMono(
-        fontSize: 14,
+  static final TextStyle bodySmall = const TextStyle(
+    fontFamily: 'Rubik',
+    fontSize: 14,
     fontWeight: FontWeight.normal,
     color: secondary,
     letterSpacing: 0.25,
     height: 1.4,
   );
   
-  static final TextStyle labelLarge = GoogleFonts.ibmPlexMono(
-        fontSize: 16,
+  static final TextStyle labelLarge = const TextStyle(
+    fontFamily: 'Rubik',
+    fontSize: 16,
     fontWeight: FontWeight.bold,
     color: primary,
     letterSpacing: 1.5,
     height: 1.2,
   );
   
-  static final TextStyle labelMedium = GoogleFonts.ibmPlexMono(
-        fontSize: 14,
+  static final TextStyle labelMedium = const TextStyle(
+    fontFamily: 'Rubik',
+    fontSize: 14,
     fontWeight: FontWeight.bold,
     color: primary,
     letterSpacing: 0.75,
     height: 1.2,
   );
   
-  static final TextStyle labelSmall = GoogleFonts.ibmPlexMono(
-        fontSize: 12,
+  static final TextStyle labelSmall = const TextStyle(
+    fontFamily: 'Rubik',
+    fontSize: 12,
     fontWeight: FontWeight.normal,
     color: secondary,
     letterSpacing: 1,
@@ -164,7 +174,6 @@ class HeavyweightTheme {
     color: surface,
   );
 }
-
 
 
 

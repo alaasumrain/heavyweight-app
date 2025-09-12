@@ -7,7 +7,8 @@ import 'package:flutter/foundation.dart';
 import 'backend/supabase/supabase_workout_repository.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:flutter/foundation.dart' show kIsWeb;
+// import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'backend/supabase/supabase.dart';
 import 'providers/profile_provider.dart';
@@ -19,6 +20,7 @@ import 'core/error_handler.dart';
 import 'nav.dart';
 import 'core/logging.dart';
 import 'core/router_refresh.dart';
+import 'core/nav_logging.dart';
 
 // Diagnostic flag: run with --dart-define=HW_DIAG=1 to boot a minimal app
 const String _hwDiag = String.fromEnvironment('HW_DIAG', defaultValue: '');
@@ -26,14 +28,12 @@ const String _hwSimple = String.fromEnvironment('HW_SIMPLE', defaultValue: '');
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  usePathUrlStrategy();
+  if (kIsWeb) {
+    usePathUrlStrategy();
+  }
   // Avoid runtime font fetching on iOS which can cause startup stalls
   // if App Transport Security blocks external hosts.
-  try {
-    GoogleFonts.config.allowRuntimeFetching = false;
-  } catch (_) {
-    // Safe no-op if config is unavailable on this platform.
-  }
+  // GoogleFonts runtime fetching disabled during iOS diagnosis (using bundled fonts instead)
 
   // If diagnostic mode is enabled, boot minimal app to validate rendering
   if (_hwDiag == '1' || _hwDiag.toLowerCase() == 'true') {
@@ -274,7 +274,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   late GoRouter _router;
   ThemeMode _themeMode = ThemeMode.dark;
   CombinedRefreshNotifier? _refreshNotifier;
-  bool _booted = false;
+  // We will always render MaterialApp.router; the builder shows a visible
+  // fallback if the child is null to guarantee first paint.
+  bool _booted = true;
 
   @override
   void initState() {
@@ -292,17 +294,47 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     _refreshNotifier!.addListener(() {
       debugPrint('🔄🔄🔄 REFRESH NOTIFIER FIRED! Router should rebuild');
     });
-    _router = createRouter(_appStateNotifier, refresh: _refreshNotifier!);
+    // Decide initial path: on mobile prefer resolved nextRoute if available.
+    String initialPath = kIsWeb ? '/' : '/splash';
+    try {
+      final sp = context.read<AppStateProvider>();
+      if (!kIsWeb && sp.isInitialized) {
+        final next = sp.appState.nextRoute;
+        if (next.isNotEmpty) initialPath = next;
+      }
+    } catch (_) {}
+    debugPrint('🧭 MyApp.initState: initialPath=$initialPath');
+    _router = createRouter(
+      _appStateNotifier,
+      refresh: _refreshNotifier!,
+      initialLocation: initialPath,
+    );
     HWLog.lifecycle('app_init');
 
-    // Ensure we present an immediate first frame before heavy router work.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        setState(() {
-          _booted = true;
-        });
-      }
-    });
+    // Lightweight watchdog to sample router status shortly after boot
+    for (var i = 1; i <= 5; i++) {
+      Future.delayed(Duration(seconds: i), () {
+        if (!mounted) return;
+        final nav = NavLogging.navigatorKey.currentState;
+        String location = '(unknown)';
+        if (nav != null) {
+          try {
+            final ctx = NavLogging.navigatorKey.currentContext!;
+            final rip = GoRouter.of(ctx).routeInformationProvider;
+            final dynamic dv = rip.value; // RouteInformation
+            String? loc;
+            try { loc = dv.uri?.toString(); } catch (_) {}
+            loc ??= (dv.location as String?);
+            location = loc ?? '(unknown)';
+          } catch (e) {
+            location = 'unavailable: $e';
+          }
+        } else {
+          location = 'navigatorKey not mounted (yet)';
+        }
+        debugPrint('🕰️ Watchdog +${i}s: router.location=$location, nav=$nav, canPop=${nav?.canPop() ?? false}');
+      });
+    }
   }
   
   @override
@@ -342,26 +374,6 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     debugPrint('🎯🎯🎯 MAIN APP: _router=$_router');
     debugPrint('🎯🎯🎯 MAIN APP: About to create MaterialApp.router');
     HWLog.event('build_material_app_router');
-    
-    if (!_booted) {
-      return const MaterialApp(
-        debugShowCheckedModeBanner: false,
-        home: ColoredBox(
-          color: Color(0xFFAA0000),
-          child: Center(
-            child: Text(
-              'BOOTING…',
-              style: TextStyle(
-                color: Colors.white,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                letterSpacing: 2,
-              ),
-            ),
-          ),
-        ),
-      );
-    }
 
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
@@ -396,7 +408,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             foregroundColor: Colors.black,
             shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
             elevation: 0,
-            textStyle: GoogleFonts.ibmPlexMono(
+            textStyle: const TextStyle(
+              fontFamily: 'Rubik',
               fontSize: 14,
               fontWeight: FontWeight.bold,
               letterSpacing: 1,
@@ -441,17 +454,66 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
             borderRadius: BorderRadius.zero,
             borderSide: BorderSide(color: Colors.white),
           ),
-          labelStyle: GoogleFonts.ibmPlexMono(color: const Color(0xFF444444)),
-          hintStyle: GoogleFonts.ibmPlexMono(color: const Color(0xFF444444)),
+          labelStyle: const TextStyle(
+            fontFamily: 'Rubik',
+            color: Color(0xFF444444),
+          ),
+          hintStyle: const TextStyle(
+            fontFamily: 'Rubik',
+            color: Color(0xFF444444),
+          ),
         ),
       ),
       themeMode: _themeMode,
       routerConfig: _router,
       // Ensure something paints even if routes misbehave
       builder: (context, child) {
-        return ColoredBox(
-          color: const Color(0xFF000000),
-          child: child ?? const SizedBox.shrink(),
+        final isNull = child == null;
+        final size = MediaQuery.maybeOf(context)?.size;
+        debugPrint('🧭 MaterialApp.router.builder: child=${isNull ? 'NULL' : child.runtimeType}, size=$size');
+        if (isNull) {
+          return const Scaffold(
+            backgroundColor: Color(0xFF8A0000),
+            body: Center(
+              child: Text(
+                'ROUTER CHILD NULL',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          );
+        }
+        // Debug HUD overlay to prove frames are painting and show route/size
+        String location = '(unknown)';
+        try {
+          final rip = GoRouter.of(context).routeInformationProvider;
+          final dynamic dv = rip.value; // RouteInformation
+          String? loc;
+          try { loc = dv.uri?.toString(); } catch (_) {}
+          loc ??= (dv.location as String?);
+          location = loc ?? '(unknown)';
+        } catch (_) {}
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            const ColoredBox(color: Color(0xFF000000)),
+            child!,
+            Positioned(
+              left: 8,
+              top: 8,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                color: const Color(0x88000088),
+                child: Text(
+                  'HUD route=$location size=$size',
+                  style: const TextStyle(color: Colors.white, fontSize: 12),
+                ),
+              ),
+            ),
+          ],
         );
       },
     );

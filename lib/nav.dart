@@ -39,6 +39,7 @@ import '/fortress/engine/workout_engine.dart';
 import '/core/page_transitions.dart';
 import '/core/error_handler.dart';
 import '/core/logging.dart';
+import '/core/nav_logging.dart';
 
 
 
@@ -72,15 +73,30 @@ class AppStateNotifier extends ChangeNotifier {
   }
 }
 
-GoRouter createRouter(AppStateNotifier appStateNotifier, {required Listenable refresh}) => GoRouter(
-      initialLocation: '/', 
+GoRouter createRouter(
+  AppStateNotifier appStateNotifier, {
+  required Listenable refresh,
+  String initialLocation = '/',
+}) {
+  debugPrint('🧭 createRouter(): initialLocation=$initialLocation');
+  return GoRouter(
+      // Diagnostic line to verify initial location
+      // (go_router will also log initial location later)
+      initialLocation: initialLocation,
       debugLogDiagnostics: true,
+      navigatorKey: NavLogging.navigatorKey,
+      observers: [NavLogging.observer],
       refreshListenable: refresh,
       redirectLimit: 10, // Increase redirect limit to debug
-      errorBuilder: (context, state) => ErrorScreen(
-        error: state.error,
-        retryRoute: '/',
-      ),
+      errorBuilder: (context, state) {
+        debugPrint('🧭 GoRouter.errorBuilder: ${state.error}');
+        return ErrorScreen(
+          error: state.error,
+          retryRoute: '/',
+        );
+      },
+      // Log top-level router build/fallback
+      // Note: errorBuilder will be used when state.error is non-null
       redirect: (context, state) {
         final currentPath = state.matchedLocation;
         debugPrint('🔀🔀🔀 TOP-LEVEL REDIRECT: $currentPath');
@@ -175,6 +191,26 @@ GoRouter createRouter(AppStateNotifier appStateNotifier, {required Listenable re
         GoRoute(
           name: 'splash',
           path: '/splash',
+          redirect: (context, state) {
+            debugPrint('💫💫💫 SPLASH REDIRECT DISPATCHER CALLED');
+            try {
+              if (!AppStateNotifier._splashShown) {
+                debugPrint('💫💫💫 SPLASH: first show -> stay');
+                return null; // show splash once
+              }
+              final appStateProvider = Provider.of<AppStateProvider>(context, listen: false);
+              if (!appStateProvider.isInitialized) {
+                debugPrint('💫💫💫 SPLASH: app not initialized -> stay');
+                return null;
+              }
+              final next = appStateProvider.appState.nextRoute;
+              debugPrint('💫💫💫 SPLASH: redirecting to $next');
+              return next;
+            } catch (e) {
+              debugPrint('💫💫💫 SPLASH: redirect error: $e');
+              return null;
+            }
+          },
           builder: (context, state) {
             debugPrint('💫💫💫 SPLASH ROUTE BUILDER CALLED');
             return const SplashScreen();
@@ -375,6 +411,7 @@ GoRouter createRouter(AppStateNotifier appStateNotifier, {required Listenable re
         ),
       ],
     );
+}
 
 extension NavigationExtensions on BuildContext {
   void safePop() {
