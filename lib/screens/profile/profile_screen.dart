@@ -15,6 +15,8 @@ class ProfileScreen extends StatelessWidget {
       builder: (context, profileProvider, child) {
         return HeavyweightScaffold(
           title: 'PROFILE',
+          showBackButton: true,
+          fallbackRoute: '/app?tab=2',
           body: SingleChildScrollView(
             padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
             child: Column(
@@ -30,19 +32,19 @@ class ProfileScreen extends StatelessWidget {
                   _buildProfileItem(
                     'Experience Level',
                     _getExperienceText(profileProvider.experience),
-                    () => context.go('/profile/experience'),
+                    () => context.go('/profile/experience?edit=1'),
                   ),
                   _buildProfileItem(
                     'Training Frequency',
                     profileProvider.frequency != null 
                         ? '${profileProvider.frequency} days/week'
                         : 'Not set',
-                    () => context.go('/profile/frequency'),
+                    () => context.go('/profile/frequency?edit=1'),
                   ),
                   _buildProfileItem(
                     'Training Objective',
                     _getObjectiveText(profileProvider.objective),
-                    () => context.go('/profile/objective'),
+                    () => context.go('/profile/objective?edit=1'),
                   ),
                 ]),
                 
@@ -55,19 +57,19 @@ class ProfileScreen extends StatelessWidget {
                     profileProvider.age != null 
                         ? '${profileProvider.age} years'
                         : 'Not set',
-                    () => context.go('/profile/stats'),
+                    () => context.go('/profile/stats?edit=1'),
                   ),
                   _buildProfileItem(
                     'Weight',
                     _getWeightText(profileProvider),
-                    () => context.go('/profile/stats'),
+                    () => context.go('/profile/stats?edit=1'),
                   ),
                   _buildProfileItem(
                     'Height',
                     profileProvider.height != null 
                         ? '${profileProvider.height} cm'
                         : 'Not set',
-                    () => context.go('/profile/stats'),
+                    () => context.go('/profile/stats?edit=1'),
                   ),
                 ]),
                 
@@ -78,7 +80,7 @@ class ProfileScreen extends StatelessWidget {
                   _buildProfileItem(
                     'Units',
                     profileProvider.unit == Unit.kg ? 'Metric (kg)' : 'Imperial (lb)',
-                    () => context.go('/profile/units'),
+                    () => context.go('/profile/units?edit=1'),
                   ),
                 ]),
                 

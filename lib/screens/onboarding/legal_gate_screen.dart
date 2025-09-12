@@ -14,51 +14,6 @@ class LegalGateScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     HWLog.screen('LegalGate');
-    // iOS debug minimal UI to rule out theme/scaffold issues causing black screen
-    if (kDebugMode && defaultTargetPlatform == TargetPlatform.iOS) {
-      final appState = context.read<AppStateProvider>().appState;
-      final size = MediaQuery.maybeOf(context)?.size;
-      debugPrint('🔥🔥🔥 LEGAL DEBUG: MediaQuery.size=$size');
-      return Scaffold(
-        backgroundColor: const Color(0xFF00AA00), // bright to confirm paint
-        body: SafeArea(
-          child: Center(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const Text(
-                  'LEGAL DEBUG',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 2,
-                  ),
-                ),
-                if (size != null)
-                  Text(
-                    'SIZE ${size.width.toStringAsFixed(0)}x${size.height.toStringAsFixed(0)}',
-                    style: const TextStyle(color: Colors.white),
-                  ),
-                const SizedBox(height: 24),
-                ElevatedButton(
-                  onPressed: () async {
-                    await appState.acceptLegal();
-                    if (context.mounted) context.go(appState.nextRoute);
-                  },
-                  child: const Text('ACCEPT'),
-                ),
-                const SizedBox(height: 12),
-                OutlinedButton(
-                  onPressed: () => context.go('/legal/terms'),
-                  child: const Text('TERMS'),
-                ),
-              ],
-            ),
-          ),
-        ),
-      );
-    }
 
     return HeavyweightScaffold(
       title: 'LEGAL DISCLAIMER',

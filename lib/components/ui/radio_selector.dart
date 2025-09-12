@@ -59,34 +59,20 @@ class RadioSelector<T> extends StatelessWidget {
                       : null,
                 ),
                 child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(
-                      width: 24,
-                      height: 24,
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: isSelected ? HeavyweightTheme.primary : HeavyweightTheme.secondary,
-                          width: 2,
-                        ),
-                        shape: BoxShape.circle,
+                    Text(
+                      isSelected ? '[X]' : '[ ]',
+                      style: HeavyweightTheme.bodyLarge.copyWith(
+                        color: isSelected ? HeavyweightTheme.primary : HeavyweightTheme.textSecondary,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 1,
                       ),
-                      child: isSelected
-                          ? Center(
-                              child: Container(
-                                width: 12,
-                                height: 12,
-                                decoration: const BoxDecoration(
-                                  color: HeavyweightTheme.primary,
-                                  shape: BoxShape.circle,
-                                ),
-                              ),
-                            )
-                          : null,
                     ),
                     const SizedBox(width: HeavyweightTheme.spacingMd),
                     Expanded(
                       child: Text(
-                        option.label,
+                        option.label.toUpperCase(),
                         style: HeavyweightTheme.bodyLarge.copyWith(
                           color: isSelected ? HeavyweightTheme.primary : HeavyweightTheme.textSecondary,
                           fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,

@@ -27,7 +27,6 @@ class _AuthScreenState extends State<AuthScreen> {
   @override
   void initState() {
     super.initState();
-    _authService.initialize();
     HWLog.screen('Onboarding/Auth');
   }
 
@@ -328,8 +327,11 @@ class _AuthScreenState extends State<AuthScreen> {
                     if (success) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content: Text('RESET_SENT. CHECK_EMAIL.'),
-                          backgroundColor: HeavyweightTheme.success,
+                          backgroundColor: HeavyweightTheme.primary,
+                          content: Text(
+                            'RESET_SENT. CHECK_EMAIL.',
+                            style: TextStyle(color: HeavyweightTheme.onPrimary),
+                          ),
                         ),
                       );
                     } else if (_authService.error != null) {

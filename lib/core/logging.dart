@@ -4,6 +4,18 @@ import 'package:flutter/foundation.dart';
 /// Lightweight structured logging helper for debug builds.
 /// Prints single-line JSON to make logs easy to scan and share.
 class HWLog {
+  // Rate-limiter to avoid flooding logs on rapid rebuilds
+  static final Map<String, DateTime> _lastPrint = {};
+
+  static bool _allow(String key, Duration interval) {
+    final now = DateTime.now();
+    final last = _lastPrint[key];
+    if (last != null && now.difference(last) < interval) {
+      return false;
+    }
+    _lastPrint[key] = now;
+    return true;
+  }
   static void _print(Map<String, Object?> payload) {
     if (!kDebugMode) return;
     try {
@@ -17,6 +29,8 @@ class HWLog {
   }
 
   static void event(String name, {Map<String, Object?> data = const {}}) {
+    // Throttle rapid-fire events with the same name to reduce console noise
+    if (!_allow('event:$name', const Duration(milliseconds: 400))) return;
     _print({
       'type': 'event',
       'name': name,
@@ -26,6 +40,8 @@ class HWLog {
   }
 
   static void screen(String name, {Map<String, Object?> data = const {}}) {
+    // Throttle identical screen logs within 1s to reduce noise
+    if (!_allow('screen:$name', const Duration(seconds: 1))) return;
     _print({
       'type': 'screen',
       'name': name,
@@ -65,4 +81,3 @@ class HWLog {
     });
   }
 }
-

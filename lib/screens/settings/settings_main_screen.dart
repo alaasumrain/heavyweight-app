@@ -27,8 +27,8 @@ class SettingsMainScreen extends StatelessWidget {
                       _buildSettingsSection('PROFILE', [
                         _buildSettingsItem(
                           icon: Icons.person_outline,
-                          label: 'Profile Management',
-                          subtitle: 'Edit training profile and physical stats',
+                          label: 'PROFILE_MANAGEMENT',
+                          subtitle: 'EDIT PROFILE.',
                           onTap: () => context.go('/profile'),
                         ),
                       ]),
@@ -38,16 +38,16 @@ class SettingsMainScreen extends StatelessWidget {
                       _buildSettingsSection('DATA', [
                         _buildSettingsItem(
                           icon: Icons.storage_outlined,
-                          label: 'Training Data',
-                          subtitle: 'Export or manage workout history',
+                          label: 'TRAINING_DATA',
+                          subtitle: 'EXPORT / MANAGE.',
                           onTap: () => _showDataOptions(context),
                         ),
                         _buildSettingsItem(
                           icon: Icons.refresh_outlined,
-                          label: 'Reset Application',
-                          subtitle: 'Clear all data and start fresh',
+                          label: 'COMMAND: RESET_APPLICATION',
+                          subtitle: 'CLEAR ALL DATA AND RESTART.',
                           onTap: () => _showResetDialog(context),
-                          isDestructive: true,
+                          isDestructive: false,
                         ),
                       ]),
                       
@@ -56,14 +56,14 @@ class SettingsMainScreen extends StatelessWidget {
                       _buildSettingsSection('ABOUT', [
                         _buildSettingsItem(
                           icon: Icons.info_outline,
-                          label: 'Version',
-                          subtitle: 'v1.0.0 - HEAVYWEIGHT Protocol',
+                          label: 'VERSION',
+                          subtitle: 'V1.0.0 – HEAVYWEIGHT_PROTOCOL.',
                           onTap: () => _showAbout(context),
                         ),
                         _buildSettingsItem(
                           icon: Icons.description_outlined,
-                          label: 'Philosophy',
-                          subtitle: 'The 4-6 rep mandate explained',
+                          label: 'PHILOSOPHY',
+                          subtitle: '4-6 REP MANDATE.',
                           onTap: () => context.go('/manifesto'),
                         ),
                       ]),
@@ -197,7 +197,7 @@ class SettingsMainScreen extends StatelessWidget {
               subtitle: const Text('Detailed training analytics', style: TextStyle(color: HeavyweightTheme.textSecondary)),
               onTap: () {
                 Navigator.pop(context);
-                context.go('/training-log');
+                context.go('/app?tab=1');
               },
             ),
           ],
@@ -210,11 +210,16 @@ class SettingsMainScreen extends StatelessWidget {
     HWLog.event('settings_export_data');
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: const Text('DATA EXPORT: FEATURE_COMING_SOON'),
         backgroundColor: HeavyweightTheme.primary,
+        content: const Text(
+          'DATA EXPORT: FEATURE_COMING_SOON',
+          style: TextStyle(color: HeavyweightTheme.onPrimary),
+        ),
       ),
     );
   }
+  
+  // removed screenshot capture utility
   
   void _resetAllData(BuildContext context) {
     HWLog.event('settings_reset_all_open');

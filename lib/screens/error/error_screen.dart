@@ -95,7 +95,7 @@ class ErrorScreen extends StatelessWidget {
             variant: ButtonVariant.secondary,
             onPressed: () {
               HWLog.event('error_home_tap');
-              context.go('/assignment');
+              context.go('/app?tab=0');
             },
           ),
           
@@ -117,7 +117,7 @@ class NetworkErrorScreen extends StatelessWidget {
     return ErrorScreen(
       errorMessage: 'CONNECTION_LOST.\nCHECK_NETWORK_AND_RETRY.',
       onRetry: onRetry,
-      retryRoute: '/assignment',
+      retryRoute: '/app?tab=0',
     );
   }
 }

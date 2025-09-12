@@ -16,7 +16,7 @@ class HeavyweightNavigationBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     const tabs = ['ASSIGNMENT', 'LOGBOOK', 'SETTINGS'];
-    const routes = ['/assignment', '/training-log', '/settings'];
+    const routes = ['/app?tab=0', '/app?tab=1', '/app?tab=2'];
     
     return Container(
       height: 70, // Optimized height for aesthetic

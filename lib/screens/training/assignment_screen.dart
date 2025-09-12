@@ -193,6 +193,8 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
         if (viewModel.isLoading) {
           HWLog.event('assignment_state', data: {'state': 'loading'});
           return HeavyweightScaffold(
+            title: 'ASSIGNMENT: LOADING',
+            showBackButton: false,
             body: Center(
               child: CircularProgressIndicator(
                 color: HeavyweightTheme.primary,
@@ -216,6 +218,7 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
             HeavyweightScaffold(
               title: _getBodyPartFocus(viewModel.todaysWorkout),
               subtitle: _getSubtitle(),
+              showBackButton: false,
               showNavigation: false,
               body: _buildWorkoutContent(viewModel.todaysWorkout!),
             ),
@@ -233,6 +236,19 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        // Collapsible system panel for meta info
+        _SystemPanel(
+          lastSessionText: _lastSessionText,
+          streakText: _streakText,
+        ),
+        // Headline: ASSIGNMENT: DAY
+        Padding(
+          padding: const EdgeInsets.only(bottom: HeavyweightTheme.spacingMd),
+          child: Text(
+            'ASSIGNMENT: ${workout.dayName.toUpperCase()}',
+            style: HeavyweightTheme.h1.copyWith(fontSize: 28),
+          ),
+        ),
         
         // Terminal-style exercise list
         Text(
@@ -266,10 +282,10 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
         
         // Begin Protocol button  
         CommandButton(
-          text: 'BEGIN_WORKOUT',
+          text: 'COMMAND: START_SESSION',
           variant: ButtonVariant.primary,
           onPressed: () {
-            context.go('/daily-workout');
+            context.push('/daily-workout');
           },
         ),
         
@@ -280,6 +296,7 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
   
   Widget _buildError(String error) {
     return HeavyweightScaffold(
+      showBackButton: false,
       body: SafeArea(
         child: Center(
           child: Column(
@@ -320,6 +337,7 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
   
   Widget _buildRestDay() {
     return HeavyweightScaffold(
+      showBackButton: false,
       body: SafeArea(
         child: Center(
           child: Column(
@@ -340,7 +358,7 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
               ),
               const SizedBox(height: HeavyweightTheme.spacingMd),
               Text(
-                'Recovery is mandatory.\\nYour muscles grow during rest.',
+                'Recovery is mandatory.\nYour muscles grow during rest.',
                 textAlign: TextAlign.center,
                 style: HeavyweightTheme.bodyMedium.copyWith(
                   color: HeavyweightTheme.textSecondary,
@@ -392,12 +410,22 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
                   style: HeavyweightTheme.h4,
                 ),
               ),
-              Text(
-                '[$progress]',
-                style: HeavyweightTheme.bodyMedium.copyWith(
-                  color: HeavyweightTheme.textSecondary,
-                ),
-              ),
+              Builder(builder: (_) {
+                final parts = progress.split('/');
+                int done = 0;
+                int total = 0;
+                if (parts.length == 2) {
+                  done = int.tryParse(parts[0]) ?? 0;
+                  total = int.tryParse(parts[1]) ?? 0;
+                }
+                final symbols = List.generate(total, (i) => i < done ? '■' : '□').join('');
+                return Text(
+                  symbols.isEmpty ? '[$progress]' : symbols,
+                  style: HeavyweightTheme.bodyMedium.copyWith(
+                    color: HeavyweightTheme.textSecondary,
+                  ),
+                );
+              }),
             ],
           ),
           
@@ -448,7 +476,9 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
               ),
               Text(
                 lastPerformance,
-                style: HeavyweightTheme.bodySmall,
+                style: HeavyweightTheme.bodySmall.copyWith(
+                  color: HeavyweightTheme.textSecondary,
+                ),
               ),
             ],
           ),
@@ -536,6 +566,74 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _SystemPanel extends StatefulWidget {
+  final String lastSessionText;
+  final String streakText;
+  const _SystemPanel({required this.lastSessionText, required this.streakText});
+
+  @override
+  State<_SystemPanel> createState() => _SystemPanelState();
+}
+
+class _SystemPanelState extends State<_SystemPanel> {
+  bool _expanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        border: Border.all(color: HeavyweightTheme.secondary),
+      ),
+      margin: const EdgeInsets.only(bottom: HeavyweightTheme.spacingMd),
+      child: InkWell(
+        onTap: () => setState(() => _expanded = !_expanded),
+        child: Padding(
+          padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Text(
+                    'SYSTEM_PANEL',
+                    style: HeavyweightTheme.labelMedium,
+                  ),
+                  Icon(
+                    _expanded ? Icons.expand_less : Icons.expand_more,
+                    color: HeavyweightTheme.textSecondary,
+                  ),
+                ],
+              ),
+              if (_expanded) ...[
+                const SizedBox(height: HeavyweightTheme.spacingSm),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'LAST_SESSION: ${widget.lastSessionText}',
+                        style: HeavyweightTheme.bodySmall.copyWith(color: HeavyweightTheme.textSecondary),
+                      ),
+                    ),
+                    Expanded(
+                      child: Text(
+                        'STREAK: ${widget.streakText}',
+                        style: HeavyweightTheme.bodySmall.copyWith(color: HeavyweightTheme.textSecondary),
+                        textAlign: TextAlign.end,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

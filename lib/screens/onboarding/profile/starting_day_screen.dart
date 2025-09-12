@@ -29,8 +29,12 @@ class _StartingDayScreenState extends State<StartingDayScreen> {
   @override
   Widget build(BuildContext context) {
     HWLog.screen('Onboarding/Profile/StartingDay');
+    final state = GoRouterState.of(context);
+    final isEditMode = state.uri.queryParameters['edit'] == '1';
     return HeavyweightScaffold(
       title: 'STARTING POINT',
+      showBackButton: isEditMode,
+      fallbackRoute: isEditMode ? '/profile' : null,
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
@@ -92,7 +96,7 @@ class _StartingDayScreenState extends State<StartingDayScreen> {
               
               // Continue button
               CommandButton(
-                text: 'LOCK_STARTING_POINT',
+                text: 'COMMAND: CONFIRM',
                 variant: ButtonVariant.primary,
                 isDisabled: selectedDay == null,
                 onPressed: selectedDay != null
@@ -102,8 +106,10 @@ class _StartingDayScreenState extends State<StartingDayScreen> {
                         final appState = context.read<AppStateProvider>().appState;
                         await appState.setPreferredStartingDay(selectedDay!.name);
                         
-                        if (context.mounted) {
-                          // Let the centralized flow controller decide where to go next
+                        if (!context.mounted) return;
+                        if (isEditMode) {
+                          context.go('/profile');
+                        } else {
                           final nextRoute = appState.nextRoute;
                           context.go(nextRoute);
                         }

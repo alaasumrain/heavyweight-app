@@ -199,12 +199,16 @@ class _RestTimerState extends State<RestTimer> with SingleTickerProviderStateMix
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        Text(
-                          _formatTime(_remainingSeconds),
-                          style: GoogleFonts.ibmPlexMono(
-                            color: timerColor,
-                            fontSize: 72,
-                            fontWeight: FontWeight.bold,
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            _formatTime(_remainingSeconds),
+                            style: GoogleFonts.ibmPlexMono(
+                              color: timerColor,
+                              fontSize: 64,
+                              fontWeight: FontWeight.bold,
+                            ),
+                            maxLines: 1,
                           ),
                         ),
                         Text(
@@ -223,18 +227,18 @@ class _RestTimerState extends State<RestTimer> with SingleTickerProviderStateMix
             ],
           ),
           
-          const SizedBox(height: 40),
+          const SizedBox(height: 24),
           
           // Recovery message
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 40),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 24),
             child: Text(
               _getRecoveryMessage(),
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: Colors.grey.shade400,
-                fontSize: 16,
-                height: 1.5,
+                fontSize: 14,
+                height: 1.4,
               ),
             ),
           ),

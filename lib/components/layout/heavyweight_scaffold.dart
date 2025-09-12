@@ -33,16 +33,7 @@ class HeavyweightScaffold extends StatelessWidget {
   
   @override
   Widget build(BuildContext context) {
-    if (kDebugMode) {
-      debugPrint('🏗️ HeavyweightScaffold: build() START - title=$title, showBackButton=$showBackButton');
-      debugPrint('🏗️ HeavyweightScaffold: context=$context');
-      debugPrint('🏗️ HeavyweightScaffold: About to create Scaffold with background=${HeavyweightTheme.background}');
-    }
-    HWLog.event('scaffold_build', data: {
-      'title': title ?? '',
-      'showBackButton': showBackButton,
-      'showNavigation': showNavigation,
-    });
+    // Quiet build; avoid verbose logging in production
 
     try {
       final scaffold = Scaffold(
@@ -81,10 +72,6 @@ class HeavyweightScaffold extends StatelessWidget {
             : null,
         floatingActionButton: floatingActionButton,
       );
-      
-      if (kDebugMode) {
-        debugPrint('🏗️ HeavyweightScaffold: build() SUCCESS - Scaffold created and returned');
-      }
       
       return scaffold;
     } catch (e) {
@@ -126,7 +113,6 @@ class HeavyweightScaffold extends StatelessWidget {
     }
   }
 }
-
 
 
 

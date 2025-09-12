@@ -32,7 +32,7 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
   int _currentExerciseIndex = 0;
   int _currentSet = 1;
   bool _isResting = false;
-  int _restSeconds = 5; // 5 seconds rest for testing
+  int _restSeconds = 180; // 3 minutes - THE MANDATE
   
   // Calibration mode tracking
   bool _isCalibrating = false;
@@ -69,8 +69,11 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
           context.pop();
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('No workout mandate available'),
               backgroundColor: HeavyweightTheme.error,
+              content: Text(
+                'No workout mandate available',
+                style: TextStyle(color: HeavyweightTheme.primary),
+              ),
             ),
           );
         }
@@ -120,6 +123,19 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
       _currentCalibrationWeight,
       actualReps,
     );
+    // Success toast for calibration attempt
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: HeavyweightTheme.primary,
+          content: Text(
+            'CALIBRATION SET LOGGED',
+            style: TextStyle(color: HeavyweightTheme.onPrimary),
+          ),
+          duration: Duration(milliseconds: 800),
+        ),
+      );
+    }
     
     if (actualReps == 5) {
       // Found the 5RM!
@@ -175,7 +191,7 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
         _currentCalibrationWeight = nextWeight;
         _calibrationAttempt++;
         _isResting = true;
-        _restSeconds = 5; // 5 seconds rest for testing calibration
+        _restSeconds = 180; // 3 minutes - THE MANDATE
       });
     }
   }
@@ -197,6 +213,19 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
     setState(() {
       _showSaveSuccess = true;
     });
+    // Also show a brief toast
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          backgroundColor: Colors.green.shade700,
+          content: const Text(
+            'SET LOGGED',
+            style: TextStyle(color: Colors.white),
+          ),
+          duration: const Duration(milliseconds: 700),
+        ),
+      );
+    }
     
     // Save to repository (fire and forget)
     _repository.saveSet(setData).then((_) {
@@ -227,7 +256,7 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
         // More sets remaining for this exercise
         _currentSet++;
         _isResting = true;
-        _restSeconds = 5; // Always 5 seconds for testing
+        _restSeconds = 180; // 3 minutes - THE MANDATE
       } else {
         // Move to next exercise
         if (widget.workout != null && _currentExerciseIndex < widget.workout!.exercises.length - 1) {
@@ -365,7 +394,7 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
         body: RestTimer(
           restSeconds: _restSeconds,
           onComplete: _onRestComplete,
-          canSkip: true,
+          canSkip: false,
           canExtend: true,
           lastSetPerformance: _getLastSetPerformance(),
         ),
@@ -380,13 +409,7 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                const Padding(
-                  padding: EdgeInsets.only(left: HeavyweightTheme.spacingSm, top: HeavyweightTheme.spacingSm),
-                  child: Align(
-                    alignment: Alignment.centerLeft,
-                    child: BackButton(color: HeavyweightTheme.primary),
-                  ),
-                ),
+                // Header back button is provided by HeavyweightScaffold; avoid extra back button here
                 Padding(
                   padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
                   child: Column(

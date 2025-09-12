@@ -10,7 +10,7 @@ class TermsPrivacyScreen extends StatelessWidget {
     return HeavyweightScaffold(
       title: 'TERMS & PRIVACY',
       showBackButton: true,
-      fallbackRoute: '/legal',
+      fallbackRoute: '/app?tab=2',
       body: Padding(
         padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
         child: Column(
@@ -29,4 +29,3 @@ class TermsPrivacyScreen extends StatelessWidget {
     );
   }
 }
-

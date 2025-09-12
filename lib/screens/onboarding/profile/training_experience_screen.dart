@@ -16,13 +16,13 @@ class TrainingExperienceScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     HWLog.screen('Onboarding/Profile/Experience');
-    // Determine if we're in profile editing mode (not onboarding)
-    final isEditMode = GoRouterState.of(context).matchedLocation.contains('/profile/');
+    final state = GoRouterState.of(context);
+    final isEditMode = state.uri.queryParameters['edit'] == '1';
     
     return HeavyweightScaffold(
       title: 'SYSTEM CALIBRATION',
       showBackButton: isEditMode,
-      fallbackRoute: '/manifesto',
+      fallbackRoute: isEditMode ? '/profile' : '/manifesto',
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
@@ -69,7 +69,7 @@ class TrainingExperienceScreen extends StatelessWidget {
               Consumer<ProfileProvider>(
                 builder: (context, provider, child) {
                   return CommandButton(
-                    text: 'CONTINUE',
+                    text: 'COMMAND: CONFIRM',
                     variant: ButtonVariant.primary,
                     isDisabled: provider.experience == null,
                     onPressed: provider.experience != null
@@ -79,7 +79,10 @@ class TrainingExperienceScreen extends StatelessWidget {
                             final appState = context.read<AppStateProvider>().appState;
                             await appState.setExperience(provider.experience!.name);
                             
-                            if (context.mounted) {
+                            if (!context.mounted) return;
+                            if (isEditMode) {
+                              context.go('/profile');
+                            } else {
                               context.go('/profile/frequency');
                             }
                           }

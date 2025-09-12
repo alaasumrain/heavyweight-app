@@ -64,8 +64,7 @@ class _MainAppShellState extends State<MainAppShell> with TickerProviderStateMix
         curve: Curves.easeInOutQuart, // More pronounced easing for carousel feel
       );
       // Keep URL in sync
-      final routes = ['/assignment', '/training-log', '/settings'];
-      if (index >= 0 && index < routes.length) {
+      if (index >= 0 && index < 3) {
         context.go('/app?tab=$index');
       }
     }
@@ -85,10 +84,6 @@ class _MainAppShellState extends State<MainAppShell> with TickerProviderStateMix
 
   @override
   Widget build(BuildContext context) {
-    HWLog.event('main_shell_build', data: {
-      'index': _currentIndex,
-    });
-    debugPrint('🚀 MainAppShell.build: index=$_currentIndex');
     return PopScope(
       canPop: true,
       child: Scaffold(

@@ -53,13 +53,19 @@ void main() async {
 
   try {
     // Initialize Supabase using secure configuration (with timeout guard)
-    await SupabaseService
+    final supabaseInitialized = await SupabaseService
         .initialize()
-        .timeout(const Duration(seconds: 10), onTimeout: () {
-      throw TimeoutException('Supabase initialization timed out');
-    });
-    if (kDebugMode) {
-      debugPrint('✅ HEAVYWEIGHT: Supabase initialized successfully');
+        .timeout(const Duration(seconds: 10), onTimeout: () => false);
+    
+    if (supabaseInitialized) {
+      if (kDebugMode) {
+        debugPrint('✅ HEAVYWEIGHT: Supabase initialized successfully');
+      }
+    } else {
+      if (kDebugMode) {
+        debugPrint('⚠️ HEAVYWEIGHT: Supabase not available - running in offline mode');
+      }
+      // Continue with app initialization - Supabase failure is not fatal
     }
 
     // Initialize auth service (with timeout guard)
@@ -217,7 +223,7 @@ class _HwDiagAppState extends State<_HwDiagApp> {
     return const MaterialApp(
       debugShowCheckedModeBanner: false,
       home: Scaffold(
-        backgroundColor: Color(0xFFAA0000),
+        backgroundColor: Color(0xFF111111),
         body: Center(
           child: Text(
             'HW DIAG OK',
@@ -291,19 +297,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       _appStateNotifier,
       appStateProvider,
     ]);
-    _refreshNotifier!.addListener(() {
-      debugPrint('🔄🔄🔄 REFRESH NOTIFIER FIRED! Router should rebuild');
-    });
-    // Decide initial path: on mobile prefer resolved nextRoute if available.
+    // Listener used previously for debug logging; removed to reduce log noise.
+    // Start on the in-app splash to show initialization progress
     String initialPath = kIsWeb ? '/' : '/splash';
-    try {
-      final sp = context.read<AppStateProvider>();
-      if (!kIsWeb && sp.isInitialized) {
-        final next = sp.appState.nextRoute;
-        if (next.isNotEmpty) initialPath = next;
-      }
-    } catch (_) {}
-    debugPrint('🧭 MyApp.initState: initialPath=$initialPath');
+    if (kDebugMode) debugPrint('🧭 MyApp.initState: initialPath=$initialPath');
     _router = createRouter(
       _appStateNotifier,
       refresh: _refreshNotifier!,
@@ -311,30 +308,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
     );
     HWLog.lifecycle('app_init');
 
-    // Lightweight watchdog to sample router status shortly after boot
-    for (var i = 1; i <= 5; i++) {
-      Future.delayed(Duration(seconds: i), () {
-        if (!mounted) return;
-        final nav = NavLogging.navigatorKey.currentState;
-        String location = '(unknown)';
-        if (nav != null) {
-          try {
-            final ctx = NavLogging.navigatorKey.currentContext!;
-            final rip = GoRouter.of(ctx).routeInformationProvider;
-            final dynamic dv = rip.value; // RouteInformation
-            String? loc;
-            try { loc = dv.uri?.toString(); } catch (_) {}
-            loc ??= (dv.location as String?);
-            location = loc ?? '(unknown)';
-          } catch (e) {
-            location = 'unavailable: $e';
-          }
-        } else {
-          location = 'navigatorKey not mounted (yet)';
-        }
-        debugPrint('🕰️ Watchdog +${i}s: router.location=$location, nav=$nav, canPop=${nav?.canPop() ?? false}');
-      });
-    }
+    // Watchdog removed to avoid build/runtime noise and API differences.
   }
   
   @override
@@ -369,11 +343,10 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('🎯🎯🎯 MAIN APP BUILD() CALLED');
-    debugPrint('🎯🎯🎯 MAIN APP: context=$context');
-    debugPrint('🎯🎯🎯 MAIN APP: _router=$_router');
-    debugPrint('🎯🎯🎯 MAIN APP: About to create MaterialApp.router');
-    HWLog.event('build_material_app_router');
+    if (kDebugMode) {
+      debugPrint('🎯 MAIN APP BUILD()');
+      HWLog.event('build_material_app_router');
+    }
 
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
@@ -469,51 +442,26 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       // Ensure something paints even if routes misbehave
       builder: (context, child) {
         final isNull = child == null;
-        final size = MediaQuery.maybeOf(context)?.size;
-        debugPrint('🧭 MaterialApp.router.builder: child=${isNull ? 'NULL' : child.runtimeType}, size=$size');
+        if (kDebugMode) debugPrint('🧭 MaterialApp.router.builder: child=${isNull ? 'NULL' : child.runtimeType}');
         if (isNull) {
           return const Scaffold(
-            backgroundColor: Color(0xFF8A0000),
+            backgroundColor: Color(0xFF111111),
             body: Center(
               child: Text(
-                'ROUTER CHILD NULL',
+                'BOOTING…',
                 style: TextStyle(
                   color: Colors.white,
                   fontSize: 18,
                   fontWeight: FontWeight.bold,
+                  letterSpacing: 2,
                 ),
               ),
             ),
           );
         }
-        // Debug HUD overlay to prove frames are painting and show route/size
-        String location = '(unknown)';
-        try {
-          final rip = GoRouter.of(context).routeInformationProvider;
-          final dynamic dv = rip.value; // RouteInformation
-          String? loc;
-          try { loc = dv.uri?.toString(); } catch (_) {}
-          loc ??= (dv.location as String?);
-          location = loc ?? '(unknown)';
-        } catch (_) {}
-        return Stack(
-          fit: StackFit.expand,
-          children: [
-            const ColoredBox(color: Color(0xFF000000)),
-            child!,
-            Positioned(
-              left: 8,
-              top: 8,
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                color: const Color(0x88000088),
-                child: Text(
-                  'HUD route=$location size=$size',
-                  style: const TextStyle(color: Colors.white, fontSize: 12),
-                ),
-              ),
-            ),
-          ],
+        return ColoredBox(
+          color: const Color(0xFF000000),
+          child: child!,
         );
       },
     );

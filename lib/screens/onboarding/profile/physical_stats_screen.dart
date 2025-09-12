@@ -15,9 +15,12 @@ class PhysicalStatsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     HWLog.screen('Onboarding/Profile/PhysicalStats');
+    final state = GoRouterState.of(context);
+    final isEditMode = state.uri.queryParameters['edit'] == '1';
     return HeavyweightScaffold(
       title: 'OPERATOR SPECIFICATIONS',
-      showBackButton: false,
+      showBackButton: isEditMode,
+      fallbackRoute: isEditMode ? '/profile' : null,
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
@@ -152,7 +155,7 @@ class PhysicalStatsScreen extends StatelessWidget {
                                    provider.height != null;
                   
                   return CommandButton(
-                    text: 'CONFIRM_SPECS',
+                    text: 'COMMAND: CONFIRM',
                     variant: ButtonVariant.primary,
                     isDisabled: !isComplete,
                     onPressed: isComplete
@@ -163,8 +166,10 @@ class PhysicalStatsScreen extends StatelessWidget {
                             final appState = context.read<AppStateProvider>().appState;
                             await appState.setPhysicalStats(statsData);
                             
-                            if (context.mounted) {
-                              // Let the centralized flow controller decide where to go next
+                            if (!context.mounted) return;
+                            if (isEditMode) {
+                              context.go('/profile');
+                            } else {
                               final nextRoute = appState.nextRoute;
                               context.go(nextRoute);
                             }

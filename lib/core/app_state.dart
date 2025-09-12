@@ -58,7 +58,7 @@ class AppState extends ChangeNotifier {
     if (_trainingObjective == null) return '/profile/objective';
     if (_preferredStartingDay == null) return '/profile/starting-day';
     if (!_isAuthenticated) return '/auth';
-    return '/assignment';
+    return '/app?tab=0';
   }
 
   /// Initialize the app state - load from persistent storage and check auth

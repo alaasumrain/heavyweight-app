@@ -189,7 +189,8 @@ class AuthService extends ChangeNotifier {
       HWLog.event('auth_reset_password_start');
       await Supabase.instance.client.auth.resetPasswordForEmail(
         email.trim(),
-        redirectTo: 'io.heavyweight.app://reset-password', // Deep link for mobile
+        // Align with app URL scheme configured on iOS/Android
+        redirectTo: 'heavyweight://heavyweight.app/reset-password',
       );
       _setLoading(false);
       HWLog.event('auth_reset_password_success');

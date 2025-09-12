@@ -123,11 +123,12 @@ class _TrainingLogScreenState extends State<TrainingLogScreen> {
               Expanded(child: Text('TOTAL_SETS: ${stats.totalSets}', style: HeavyweightTheme.bodySmall, textAlign: TextAlign.end)),
             ],
           ),
+          const SizedBox(height: HeavyweightTheme.spacingXs),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Expanded(child: Text('MANDATE_ADHERENCE: ${stats.mandateAdherence.toStringAsFixed(0)}%', style: HeavyweightTheme.bodySmall)),
-              Expanded(child: Text('TOTAL_VOLUME: ${stats.totalVolume.toStringAsFixed(0)} KG', style: HeavyweightTheme.bodySmall, textAlign: TextAlign.end)),
+              Expanded(child: Text('ADHERENCE: ${stats.mandateAdherence.toStringAsFixed(0)}%', style: HeavyweightTheme.bodySmall)),
+              Expanded(child: Text('VOLUME: ${stats.totalVolume.toStringAsFixed(0)} KG', style: HeavyweightTheme.bodySmall, textAlign: TextAlign.end)),
             ],
           ),
         ],
@@ -200,7 +201,7 @@ class _TrainingLogScreenState extends State<TrainingLogScreen> {
             
             // Tap indicator
             Text(
-              'TAP FOR DETAILS →',
+              'COMMAND: VIEW_SESSION',
               style: HeavyweightTheme.bodySmall.copyWith(
                 color: HeavyweightTheme.textSecondary,
                 fontSize: 10,

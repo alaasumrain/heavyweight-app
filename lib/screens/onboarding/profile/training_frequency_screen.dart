@@ -31,13 +31,13 @@ class _TrainingFrequencyScreenState extends State<TrainingFrequencyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Determine if we're in profile editing mode (not onboarding)
-    final isEditMode = GoRouterState.of(context).matchedLocation.contains('/profile/');
+    final state = GoRouterState.of(context);
+    final isEditMode = state.uri.queryParameters['edit'] == '1';
     
     return HeavyweightScaffold(
       title: 'FREQUENCY CALIBRATION',
       showBackButton: isEditMode,
-      fallbackRoute: '/profile/experience',
+      fallbackRoute: isEditMode ? '/profile' : '/profile/experience',
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
@@ -72,10 +72,19 @@ class _TrainingFrequencyScreenState extends State<TrainingFrequencyScreen> {
                           decoration: BoxDecoration(
                             border: Border.all(color: HeavyweightTheme.secondary),
                           ),
-                          child: Text(
-                            _getFrequencyDescription(provider.frequency ?? 3),
-                            textAlign: TextAlign.center,
-                            style: HeavyweightTheme.bodyMedium,
+                          child: Column(
+                            children: [
+                              Text(
+                                'FREQUENCY: ${(provider.frequency ?? 3)}_DAYS',
+                                style: HeavyweightTheme.labelMedium,
+                              ),
+                              const SizedBox(height: HeavyweightTheme.spacingSm),
+                              Text(
+                                _getFrequencyDescription(provider.frequency ?? 3),
+                                textAlign: TextAlign.center,
+                                style: HeavyweightTheme.bodySmall.copyWith(color: HeavyweightTheme.textSecondary),
+                              ),
+                            ],
                           ),
                         ),
                       ],
@@ -89,7 +98,7 @@ class _TrainingFrequencyScreenState extends State<TrainingFrequencyScreen> {
               Consumer<ProfileProvider>(
                 builder: (context, provider, child) {
                   return CommandButton(
-                    text: 'CONTINUE',
+                    text: 'COMMAND: CONFIRM',
                     variant: ButtonVariant.primary,
                     isDisabled: provider.frequency == null,
                     onPressed: provider.frequency != null
@@ -99,7 +108,10 @@ class _TrainingFrequencyScreenState extends State<TrainingFrequencyScreen> {
                             final appState = context.read<AppStateProvider>().appState;
                             await appState.setFrequency(provider.frequency.toString());
                             
-                            if (context.mounted) {
+                            if (!context.mounted) return;
+                            if (isEditMode) {
+                              context.go('/profile');
+                            } else {
                               context.go('/profile/units');
                             }
                           }

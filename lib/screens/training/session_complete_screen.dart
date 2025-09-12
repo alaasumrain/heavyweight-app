@@ -331,7 +331,7 @@ class _SessionCompleteScreenState extends State<SessionCompleteScreen>
           semanticLabel: 'View your complete training log',
           onPressed: () {
             HWLog.event('session_complete_action', data: {'action': 'view_log'});
-            context.go('/training-log');
+            context.go('/app?tab=1');
           },
         ),
         
@@ -344,7 +344,7 @@ class _SessionCompleteScreenState extends State<SessionCompleteScreen>
           semanticLabel: 'Return to workout assignment screen',
           onPressed: () {
             HWLog.event('session_complete_action', data: {'action': 'return_assignment'});
-            context.go('/assignment');
+            context.go('/app?tab=0');
           },
         ),
       ],

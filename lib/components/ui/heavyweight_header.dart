@@ -33,14 +33,15 @@ class HeavyweightHeader extends StatelessWidget {
                 icon: const Icon(Icons.arrow_back, color: HeavyweightTheme.primary),
                 onPressed: () {
                   try {
-                    if (Navigator.of(context).canPop()) {
-                      Navigator.of(context).pop();
+                    if (context.canPop()) {
+                      context.pop();
                     } else if (fallbackRoute != null) {
                       context.go(fallbackRoute!);
                     }
-                  } catch (e) {
-                    // Handle navigation errors gracefully
-                    debugPrint('Navigation error: $e');
+                  } catch (_) {
+                    if (fallbackRoute != null) {
+                      context.go(fallbackRoute!);
+                    }
                   }
                 },
                 padding: EdgeInsets.zero,

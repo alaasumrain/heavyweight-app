@@ -35,13 +35,13 @@ class _UnitPreferenceScreenState extends State<UnitPreferenceScreen> {
   @override
   Widget build(BuildContext context) {
     HWLog.screen('Onboarding/Profile/Units');
-    // Determine if we're in profile editing mode (not onboarding)
-    final isEditMode = GoRouterState.of(context).matchedLocation.contains('/profile/');
+    final state = GoRouterState.of(context);
+    final isEditMode = state.uri.queryParameters['edit'] == '1';
     
     return HeavyweightScaffold(
       title: 'MEASUREMENT PROTOCOL',
-      showBackButton: true,
-      fallbackRoute: '/profile/frequency',
+      showBackButton: isEditMode,
+      fallbackRoute: isEditMode ? '/profile' : '/profile/frequency',
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
@@ -86,7 +86,7 @@ class _UnitPreferenceScreenState extends State<UnitPreferenceScreen> {
               
               // Continue button
               CommandButton(
-                text: 'SET_UNITS',
+                text: 'COMMAND: CONFIRM',
                 variant: ButtonVariant.primary,
                 isDisabled: _selectedUnit == null,
                 onPressed: _selectedUnit != null
@@ -96,9 +96,11 @@ class _UnitPreferenceScreenState extends State<UnitPreferenceScreen> {
                         final appState = context.read<AppStateProvider>().appState;
                         await appState.setUnitPreference(_selectedUnit!.name);
 
-                        if (context.mounted) {
-                          final nextRoute = appState.nextRoute;
-                          context.go(nextRoute);
+                        if (!context.mounted) return;
+                        if (isEditMode) {
+                          context.go('/profile');
+                        } else {
+                          context.go('/profile/stats');
                         }
                       }
                     : null,

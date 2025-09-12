@@ -83,31 +83,21 @@ GoRouter createRouter(
       // Diagnostic line to verify initial location
       // (go_router will also log initial location later)
       initialLocation: initialLocation,
-      debugLogDiagnostics: true,
+      debugLogDiagnostics: false,
       navigatorKey: NavLogging.navigatorKey,
-      observers: [NavLogging.observer],
+      observers: const [],
       refreshListenable: refresh,
-      redirectLimit: 10, // Increase redirect limit to debug
-      errorBuilder: (context, state) {
-        debugPrint('🧭 GoRouter.errorBuilder: ${state.error}');
-        return ErrorScreen(
-          error: state.error,
-          retryRoute: '/',
-        );
-      },
-      // Log top-level router build/fallback
-      // Note: errorBuilder will be used when state.error is non-null
+      redirectLimit: 10,
+      errorBuilder: (context, state) => ErrorScreen(
+        error: state.error,
+        retryRoute: '/',
+      ),
       redirect: (context, state) {
-        final currentPath = state.matchedLocation;
-        debugPrint('🔀🔀🔀 TOP-LEVEL REDIRECT: $currentPath');
-        
         // Only handle legacy redirects at top level
+        final currentPath = state.matchedLocation;
         if (currentPath == '/assignment') return '/app?tab=0';
         if (currentPath == '/training-log') return '/app?tab=1';
         if (currentPath == '/settings') return '/app?tab=2';
-        
-        // All other redirects handled by individual routes
-        debugPrint('🔀🔀🔀 TOP-LEVEL REDIRECT: No redirect for $currentPath');
         return null;
       },
       routes: [
@@ -211,10 +201,7 @@ GoRouter createRouter(
               return null;
             }
           },
-          builder: (context, state) {
-            debugPrint('💫💫💫 SPLASH ROUTE BUILDER CALLED');
-            return const SplashScreen();
-          },
+          builder: (context, state) => const SplashScreen(),
         ),
         
         // Unified app shell with tabs controlled via query param `tab`
@@ -222,14 +209,9 @@ GoRouter createRouter(
           name: 'app_shell',
           path: '/app',
           pageBuilder: (context, state) {
-            debugPrint('🚀🚀🚀 APP SHELL ROUTE BUILDER CALLED: /app');
-            debugPrint('🚀🚀🚀 APP SHELL: context=$context');
-            debugPrint('🚀🚀🚀 APP SHELL: state=${state.matchedLocation}');
             final tabStr = state.uri.queryParameters['tab'];
             final initialIndex = int.tryParse(tabStr ?? '0') ?? 0;
-            debugPrint('🚀🚀🚀 APP SHELL: tab=$tabStr, index=$initialIndex');
             appStateNotifier.updateRoute('/app');
-            debugPrint('🚀🚀🚀 APP SHELL: About to return MainAppShell');
             return HeavyweightPageTransitions.noTransition(
               context,
               state,
@@ -242,13 +224,7 @@ GoRouter createRouter(
         GoRoute(
           name: 'legal',
           path: '/legal',
-          builder: (context, state) {
-            debugPrint('🔥🔥🔥 LEGAL ROUTE BUILDER CALLED');
-            debugPrint('🔥🔥🔥 LEGAL: context=$context');
-            debugPrint('🔥🔥🔥 LEGAL: state=${state.matchedLocation}');
-            debugPrint('🔥🔥🔥 LEGAL: About to return LegalGateScreen()');
-            return const LegalGateScreen();
-          },
+          builder: (context, state) => const LegalGateScreen(),
         ),
         GoRoute(
           name: 'terms_privacy',
@@ -395,7 +371,7 @@ GoRouter createRouter(
             final error = state.extra;
             return ErrorScreen(
               error: error,
-              retryRoute: '/assignment',
+              retryRoute: '/app?tab=0',
             );
           },
         ),

@@ -15,8 +15,12 @@ class TrainingObjectiveScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     HWLog.screen('Onboarding/Profile/Objective');
+    final state = GoRouterState.of(context);
+    final isEditMode = state.uri.queryParameters['edit'] == '1';
     return HeavyweightScaffold(
       title: 'MISSION PARAMETERS',
+      showBackButton: isEditMode,
+      fallbackRoute: isEditMode ? '/profile' : null,
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
@@ -74,7 +78,7 @@ class TrainingObjectiveScreen extends StatelessWidget {
               Consumer<ProfileProvider>(
                 builder: (context, provider, child) {
                   return CommandButton(
-                    text: 'LOCK_PARAMETERS',
+                    text: 'COMMAND: CONFIRM',
                     variant: ButtonVariant.primary,
                     isDisabled: provider.objective == null,
                     onPressed: provider.objective != null
@@ -84,8 +88,10 @@ class TrainingObjectiveScreen extends StatelessWidget {
                             final appState = context.read<AppStateProvider>().appState;
                             await appState.setTrainingObjective(provider.objective!.name);
                             
-                            if (context.mounted) {
-                              // Let the centralized flow controller decide where to go next
+                            if (!context.mounted) return;
+                            if (isEditMode) {
+                              context.go('/profile');
+                            } else {
                               final nextRoute = appState.nextRoute;
                               context.go(nextRoute);
                             }

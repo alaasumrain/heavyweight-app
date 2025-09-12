@@ -7,20 +7,13 @@ class CombinedRefreshNotifier extends ChangeNotifier {
 
   CombinedRefreshNotifier(this._sources) {
     for (final src in _sources) {
-      void cb() {
-        debugPrint('🔄 CombinedRefreshNotifier: source fired -> notifyListeners');
-        notifyListeners();
-      }
+      void cb() => notifyListeners();
       src.addListener(cb);
       _callbacks.add(cb);
     }
   }
 
-  @override
-  void notifyListeners() {
-    debugPrint('🔄 CombinedRefreshNotifier: notifyListeners()');
-    super.notifyListeners();
-  }
+  // Use default notifyListeners without extra logging
 
   @override
   void dispose() {

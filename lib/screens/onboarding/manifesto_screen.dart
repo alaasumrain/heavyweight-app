@@ -54,9 +54,12 @@ class _ManifestoScreenState extends State<ManifestoScreen> {
   @override
   Widget build(BuildContext context) {
     HWLog.screen('Onboarding/Manifesto');
+    final appState = context.read<AppStateProvider>().appState;
+    final committed = appState.manifestoCommitted;
     return HeavyweightScaffold(
       title: 'MANIFESTO',
-      showBackButton: false,
+      showBackButton: committed, // allow back when accessed from Settings
+      fallbackRoute: '/app?tab=2',
       body: SingleChildScrollView(
         child: Padding(
           padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
