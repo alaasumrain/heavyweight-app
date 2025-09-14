@@ -63,7 +63,7 @@ class SettingsMainScreen extends StatelessWidget {
                         _buildSettingsItem(
                           icon: Icons.description_outlined,
                           label: 'PHILOSOPHY',
-                          subtitle: '4-6 REP MANDATE.',
+                          subtitle: 'ADAPTIVE LOAD CONTROL.',
                           onTap: () => context.go('/manifesto'),
                         ),
                       ]),
@@ -348,7 +348,7 @@ class SettingsMainScreen extends StatelessWidget {
             ),
             const SizedBox(height: HeavyweightTheme.spacingMd),
             Text(
-              'Built on the principle that 4-6 reps per set is non-negotiable for optimal strength development.',
+              'Built for strength-focused sets. The system adjusts loads based on your recorded performance.',
               style: HeavyweightTheme.bodySmall.copyWith(
                 color: HeavyweightTheme.textSecondary,
               ),

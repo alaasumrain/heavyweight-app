@@ -14,7 +14,7 @@ import '../../fortress/engine/models/exercise.dart';
 import '../../core/logging.dart';
 
 class AssignmentScreen extends StatefulWidget {
-  const AssignmentScreen({Key? key}) : super(key: key);
+  const AssignmentScreen({super.key});
   
   static Widget withProvider() {
     return const WorkoutViewModelProvider(
@@ -174,6 +174,7 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
               CommandButton(
                 text: 'COMMAND: CLOSE',
                 variant: ButtonVariant.secondary,
+                semanticLabel: 'Close exercise information',
                 onPressed: () {
                   Navigator.of(context, rootNavigator: true).pop();
                 },
@@ -284,6 +285,7 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
         CommandButton(
           text: 'COMMAND: START_SESSION',
           variant: ButtonVariant.primary,
+          semanticLabel: 'Start training session',
           onPressed: () {
             context.push('/daily-workout');
           },
@@ -306,6 +308,7 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
                 Icons.error_outline,
                 color: HeavyweightTheme.danger,
                 size: 48,
+                semanticLabel: 'Error',
               ),
               const SizedBox(height: HeavyweightTheme.spacingMd),
               Text(
@@ -324,6 +327,7 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
               const SizedBox(height: HeavyweightTheme.spacingLg),
               CommandButton(
                 text: 'RETRY',
+                semanticLabel: 'Retry loading workout',
                 onPressed: () {
                   context.read<WorkoutViewModel>().initialize();
                 },
@@ -343,10 +347,11 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(
+              const Icon(
                 Icons.block,
                 color: HeavyweightTheme.danger,
                 size: 100,
+                semanticLabel: 'Rest day enforced',
               ),
               const SizedBox(height: HeavyweightTheme.spacingXl),
               Text(
@@ -491,7 +496,7 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
   
   Widget _buildHudTutorialOverlay() {
     return Container(
-      color: HeavyweightTheme.background.withValues(alpha: 0.85),
+      color: HeavyweightTheme.background.withOpacity(0.85),
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(HeavyweightTheme.spacingLg),
@@ -516,7 +521,7 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
                     Container(
                       padding: const EdgeInsets.all(HeavyweightTheme.spacingXl),
                       decoration: BoxDecoration(
-                        border: Border.all(color: HeavyweightTheme.primary.withValues(alpha: 0.3)),
+                        border: Border.all(color: HeavyweightTheme.primary.withOpacity(0.3)),
                       ),
                       child: Column(
                         children: [
@@ -535,6 +540,7 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
               // Dismiss button
               CommandButton(
                 text: 'INTERFACE_UNDERSTOOD',
+                semanticLabel: 'Dismiss tutorial',
                 onPressed: _dismissTutorial,
               ),
             ],
@@ -573,7 +579,7 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
 class _SystemPanel extends StatefulWidget {
   final String lastSessionText;
   final String streakText;
-  const _SystemPanel({required this.lastSessionText, required this.streakText});
+  const _SystemPanel({super.key, required this.lastSessionText, required this.streakText});
 
   @override
   State<_SystemPanel> createState() => _SystemPanelState();

@@ -112,6 +112,9 @@ flutter:
     - assets/lottie_animations/
     - assets/rive_animations/
     - assets/pdfs/
+    - assets/workout_config.json
+    - assets/calibration_config.json
+    - assets/system_config.json
   fonts:
     - family: 'Rubik'
       fonts:
@@ -157,4 +160,3 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/custom-fonts/#from-packages
-

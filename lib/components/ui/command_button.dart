@@ -15,7 +15,7 @@ class CommandButton extends StatelessWidget {
   final String? semanticLabel;
   
   const CommandButton({
-    Key? key,
+    super.key,
     required this.text,
     this.onPressed,
     this.variant = ButtonVariant.primary,
@@ -23,19 +23,18 @@ class CommandButton extends StatelessWidget {
     this.isDisabled = false,
     this.isLoading = false,
     this.semanticLabel,
-  }) : super(key: key);
+  });
   
   // Legacy constructor for backward compatibility
   const CommandButton.inverse({
-    Key? key,
+    super.key,
     required this.text,
     this.onPressed,
     this.isDisabled = false,
     this.isLoading = false,
     this.semanticLabel,
   }) : variant = ButtonVariant.primary,
-       size = ButtonSize.large,
-       super(key: key);
+       size = ButtonSize.large;
   
   @override
   Widget build(BuildContext context) {

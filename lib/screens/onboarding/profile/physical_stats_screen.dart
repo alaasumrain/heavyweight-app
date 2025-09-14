@@ -5,12 +5,13 @@ import 'package:provider/provider.dart';
 import '../../../components/ui/command_button.dart';
 import '../../../components/ui/selector_wheel.dart';
 import '../../../providers/profile_provider.dart';
+import '../../../core/units.dart';
 import '../../../providers/app_state_provider.dart';
 import '../../../components/layout/heavyweight_scaffold.dart';
 import '../../../core/logging.dart';
 
 class PhysicalStatsScreen extends StatelessWidget {
-  const PhysicalStatsScreen({Key? key}) : super(key: key);
+  const PhysicalStatsScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -61,16 +62,25 @@ class PhysicalStatsScreen extends StatelessWidget {
                             'MASS_SPECIFICATION',
                             Column(
                               children: [
-                                SelectorWheel(
-                                  value: provider.weight?.round() ?? 70,
-                                  min: provider.unit == Unit.kg ? 40 : 88,
-                                  max: provider.unit == Unit.kg ? 200 : 440,
-                                  suffix: provider.unit == Unit.kg ? 'KG' : 'LBS',
-                                  onChanged: (value) {
-                                    HWLog.event('profile_physical_weight', data: {'value': value});
-                                    provider.setWeight(value.toDouble());
-                                  },
-                                ),
+                                Builder(builder: (context) {
+                                  // Always store weight internally as KG; display in chosen unit
+                                  final unit = provider.unit == Unit.kg ? HWUnit.kg : HWUnit.lb;
+                                  final displayWeight = provider.weight == null
+                                      ? (unit == HWUnit.kg ? 70.0 : kgToLb(70.0))
+                                      : (unit == HWUnit.kg ? provider.weight! : kgToLb(provider.weight!));
+
+                                  return SelectorWheel(
+                                    value: displayWeight.round(),
+                                    min: unit == HWUnit.kg ? 40 : 88,
+                                    max: unit == HWUnit.kg ? 200 : 440,
+                                    suffix: unit == HWUnit.kg ? 'KG' : 'LBS',
+                                    onChanged: (value) {
+                                      HWLog.event('profile_physical_weight', data: {'value': value, 'unit': unit.name});
+                                      final kg = unit == HWUnit.kg ? value.toDouble() : lbToKg(value.toDouble());
+                                      provider.setWeight(kg);
+                                    },
+                                  );
+                                }),
                                 const SizedBox(height: HeavyweightTheme.spacingSm),
                                 Row(
                                   mainAxisAlignment: MainAxisAlignment.center,

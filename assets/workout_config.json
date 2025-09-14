@@ -1,0 +1,316 @@
+{
+  "exercise_alternatives": {
+    "chest": {
+      "bench": [
+        {
+          "id": "bench",
+          "name": "Bench Press",
+          "muscleGroup": "Chest",
+          "prescribedWeight": 80.0,
+          "description": "Standard barbell bench press - King of upper body",
+          "difficulty": "intermediate"
+        },
+        {
+          "id": "db_bench",
+          "name": "DB Bench Press",
+          "muscleGroup": "Chest",
+          "prescribedWeight": 30.0,
+          "description": "Dumbbell bench press - Better range of motion",
+          "difficulty": "beginner"
+        },
+        {
+          "id": "decline_bench",
+          "name": "Decline Bench Press",
+          "muscleGroup": "Chest",
+          "prescribedWeight": 85.0,
+          "description": "Decline barbell bench - Lower chest focus",
+          "difficulty": "intermediate"
+        }
+      ],
+      "incline_db": [
+        {
+          "id": "incline_db",
+          "name": "DB Incline Bench Press",
+          "muscleGroup": "Chest",
+          "prescribedWeight": 25.0,
+          "description": "Dumbbell incline press - Upper chest builder",
+          "difficulty": "beginner"
+        },
+        {
+          "id": "incline_bb",
+          "name": "Incline Barbell Press",
+          "muscleGroup": "Chest",
+          "prescribedWeight": 60.0,
+          "description": "Incline barbell press - Heavy upper chest",
+          "difficulty": "intermediate"
+        },
+        {
+          "id": "landmine_press",
+          "name": "Landmine Press",
+          "muscleGroup": "Chest",
+          "prescribedWeight": 20.0,
+          "description": "Single arm landmine press - Functional strength",
+          "difficulty": "advanced"
+        }
+      ],
+      "chest_fly": [
+        {
+          "id": "chest_fly",
+          "name": "Chest Flies",
+          "muscleGroup": "Chest",
+          "prescribedWeight": 30.0,
+          "description": "Cable chest flies - Perfect isolation",
+          "difficulty": "beginner"
+        },
+        {
+          "id": "pec_deck",
+          "name": "Pec Deck",
+          "muscleGroup": "Chest",
+          "prescribedWeight": 35.0,
+          "description": "Machine pec deck - Controlled movement",
+          "difficulty": "beginner"
+        },
+        {
+          "id": "db_fly",
+          "name": "Dumbbell Flies",
+          "muscleGroup": "Chest",
+          "prescribedWeight": 15.0,
+          "description": "DB flies - Classic chest stretch",
+          "difficulty": "intermediate"
+        }
+      ],
+      "dips": [
+        {
+          "id": "dips",
+          "name": "Dips",
+          "muscleGroup": "Chest/Triceps",
+          "prescribedWeight": 0.0,
+          "description": "Bodyweight dips - Compound chest destroyer",
+          "difficulty": "intermediate"
+        },
+        {
+          "id": "weighted_dips",
+          "name": "Weighted Dips",
+          "muscleGroup": "Chest/Triceps",
+          "prescribedWeight": 10.0,
+          "description": "Weighted dips - Next level strength",
+          "difficulty": "advanced"
+        },
+        {
+          "id": "machine_dips",
+          "name": "Machine Dips",
+          "muscleGroup": "Chest/Triceps",
+          "prescribedWeight": 40.0,
+          "description": "Assisted dip machine - Controlled progression",
+          "difficulty": "beginner"
+        }
+      ]
+    },
+    "back": {
+      "deadlift": [
+        {
+          "id": "deadlift",
+          "name": "Deadlift",
+          "muscleGroup": "Back/Legs",
+          "prescribedWeight": 100.0,
+          "description": "Conventional deadlift - King of all lifts",
+          "difficulty": "intermediate"
+        },
+        {
+          "id": "sumo_deadlift",
+          "name": "Sumo Deadlift",
+          "muscleGroup": "Back/Legs",
+          "prescribedWeight": 90.0,
+          "description": "Sumo stance deadlift - Hip dominant",
+          "difficulty": "intermediate"
+        },
+        {
+          "id": "trap_bar_deadlift",
+          "name": "Trap Bar Deadlift",
+          "muscleGroup": "Back/Legs",
+          "prescribedWeight": 80.0,
+          "description": "Hex bar deadlift - Easier on lower back",
+          "difficulty": "beginner"
+        }
+      ],
+      "row": [
+        {
+          "id": "row",
+          "name": "Barbell Row",
+          "muscleGroup": "Back",
+          "prescribedWeight": 50.0,
+          "description": "Bent-over barbell row - Classic back builder",
+          "difficulty": "intermediate"
+        },
+        {
+          "id": "t_bar_row",
+          "name": "T-Bar Row",
+          "muscleGroup": "Back",
+          "prescribedWeight": 40.0,
+          "description": "T-bar row - Thick back developer",
+          "difficulty": "intermediate"
+        },
+        {
+          "id": "seated_cable_row",
+          "name": "Seated Cable Row",
+          "muscleGroup": "Back",
+          "prescribedWeight": 45.0,
+          "description": "Seated cable row - Controlled movement",
+          "difficulty": "beginner"
+        }
+      ],
+      "pullup": [
+        {
+          "id": "pullup",
+          "name": "Weighted Pull-up",
+          "muscleGroup": "Back/Biceps",
+          "prescribedWeight": 0.0,
+          "description": "Pull-ups - Ultimate bodyweight back exercise",
+          "difficulty": "intermediate"
+        },
+        {
+          "id": "lat_pulldown",
+          "name": "Lat Pulldown",
+          "muscleGroup": "Back/Biceps",
+          "prescribedWeight": 50.0,
+          "description": "Lat pulldown - Assisted pulling movement",
+          "difficulty": "beginner"
+        },
+        {
+          "id": "chin_up",
+          "name": "Chin-ups",
+          "muscleGroup": "Back/Biceps",
+          "prescribedWeight": 0.0,
+          "description": "Underhand chin-ups - Bicep emphasis",
+          "difficulty": "intermediate"
+        }
+      ]
+    },
+    "legs": {
+      "squat": [
+        {
+          "id": "squat",
+          "name": "Barbell Squat",
+          "muscleGroup": "Legs",
+          "prescribedWeight": 80.0,
+          "description": "Back squat - King of leg exercises",
+          "difficulty": "intermediate"
+        },
+        {
+          "id": "front_squat",
+          "name": "Front Squat",
+          "muscleGroup": "Legs",
+          "prescribedWeight": 60.0,
+          "description": "Front squat - Quad dominant, core intensive",
+          "difficulty": "advanced"
+        },
+        {
+          "id": "goblet_squat",
+          "name": "Goblet Squat",
+          "muscleGroup": "Legs",
+          "prescribedWeight": 20.0,
+          "description": "Goblet squat - Perfect form teacher",
+          "difficulty": "beginner"
+        }
+      ]
+    },
+    "shoulders": {
+      "overhead": [
+        {
+          "id": "overhead",
+          "name": "Overhead Press",
+          "muscleGroup": "Shoulders",
+          "prescribedWeight": 40.0,
+          "description": "Standing military press - Total body strength",
+          "difficulty": "intermediate"
+        },
+        {
+          "id": "seated_press",
+          "name": "Seated DB Press",
+          "muscleGroup": "Shoulders",
+          "prescribedWeight": 20.0,
+          "description": "Seated dumbbell press - Isolated shoulders",
+          "difficulty": "beginner"
+        },
+        {
+          "id": "arnold_press",
+          "name": "Arnold Press",
+          "muscleGroup": "Shoulders",
+          "prescribedWeight": 15.0,
+          "description": "Arnold press - Full ROM shoulder builder",
+          "difficulty": "intermediate"
+        }
+      ]
+    }
+  },
+  "warm_up_templates": {
+    "chest": [
+      {
+        "name": "Arm Circles",
+        "duration": 30,
+        "description": "Forward and backward arm circles"
+      },
+      {
+        "name": "Band Pull-Aparts",
+        "reps": 15,
+        "description": "Light resistance band pull-aparts"
+      },
+      {
+        "name": "Push-up Progression",
+        "reps": 10,
+        "description": "Bodyweight push-ups to activate chest"
+      }
+    ],
+    "back": [
+      {
+        "name": "Cat-Cow Stretch",
+        "reps": 10,
+        "description": "Spinal mobility warm-up"
+      },
+      {
+        "name": "Band Face Pulls",
+        "reps": 15,
+        "description": "Light resistance band face pulls"
+      },
+      {
+        "name": "Bodyweight Rows",
+        "reps": 8,
+        "description": "Inverted rows or assisted pull-ups"
+      }
+    ],
+    "legs": [
+      {
+        "name": "Leg Swings",
+        "reps": 10,
+        "description": "Forward/back and side-to-side leg swings"
+      },
+      {
+        "name": "Bodyweight Squats",
+        "reps": 15,
+        "description": "Deep bodyweight squats"
+      },
+      {
+        "name": "Walking Lunges",
+        "reps": 10,
+        "description": "Dynamic walking lunges"
+      }
+    ],
+    "shoulders": [
+      {
+        "name": "Arm Circles",
+        "duration": 30,
+        "description": "Small to large arm circles"
+      },
+      {
+        "name": "Band External Rotations",
+        "reps": 12,
+        "description": "Light band external rotations"
+      },
+      {
+        "name": "Pike Push-ups",
+        "reps": 8,
+        "description": "Pike position push-ups for shoulders"
+      }
+    ]
+  }
+}

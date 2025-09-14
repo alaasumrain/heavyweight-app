@@ -12,14 +12,14 @@ class SelectorWheel extends StatefulWidget {
   final String? semanticLabel;
   
   const SelectorWheel({
-    Key? key,
+    super.key,
     required this.value,
     required this.min,
     required this.max,
     required this.onChanged,
     this.suffix = '',
     this.semanticLabel,
-  }) : super(key: key);
+  });
   
   @override
   State<SelectorWheel> createState() => _SelectorWheelState();

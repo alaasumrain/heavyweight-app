@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import '/fortress/engine/workout_engine.dart';
 import '/fortress/engine/storage/workout_repository_interface.dart';
+import '/fortress/engine/models/set_data.dart';
 import '/core/logging.dart';
+import '../viewmodels/exercise_viewmodel.dart';
 
 /// Provider for the WorkoutEngine singleton
 /// Ensures single instance across the app
@@ -32,4 +34,18 @@ class WorkoutEngineProvider extends ChangeNotifier {
   
   /// Check if engine is initialized with repository
   bool get isInitialized => _engine != null;
+
+  /// Generate daily workout with exercise alternatives applied
+  Future<DailyWorkout> generateWorkoutWithAlternatives(
+    List<SetData> history, 
+    ExerciseViewModel? exerciseViewModel, {
+    String? preferredStartingDay
+  }) async {
+    final baseWorkout = await engine.generateDailyWorkout(
+      history,
+      preferredStartingDay: preferredStartingDay,
+    );
+    
+    return engine.applyExerciseAlternatives(baseWorkout, exerciseViewModel);
+  }
 }

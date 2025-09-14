@@ -20,7 +20,7 @@ class _SplashScreenState extends State<SplashScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-  bool _shouldNavigate = false;
+  bool _navigated = false;
 
   @override
   void initState() {
@@ -38,90 +38,25 @@ class _SplashScreenState extends State<SplashScreen>
     );
     _animationController.forward();
 
-    // Navigate quickly to avoid perceived hang; splash can be revisited if needed.
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      debugPrint('💫 Splash: scheduling quick navigate to nextRoute');
-      setState(() {
-        _shouldNavigate = true;
-      });
-      _checkAndNavigate();
-    });
+    // Navigate once after first frame
+    WidgetsBinding.instance.addPostFrameCallback((_) => _goNextOnce());
   }
   
-  void _checkAndNavigate() {
-    // Mark splash as shown and navigate away
+  void _goNextOnce() {
+    if (_navigated || !mounted) return;
+    _navigated = true;
     AppStateNotifier.setSplashShown(true);
-    // Nudge router to re-evaluate redirects
-    try {
-      AppStateNotifier.instance.updateRoute('/splash_shown');
-    } catch (_) {}
-    // Decide next route directly from AppState to avoid redirect loops
+    try { AppStateNotifier.instance.updateRoute('/splash_shown'); } catch (_) {}
     final appStateProvider = context.read<AppStateProvider>();
-    String target = '/';
-    if (appStateProvider.isInitialized) {
-      target = appStateProvider.appState.nextRoute;
+    final target = appStateProvider.isInitialized
+        ? appStateProvider.appState.nextRoute
+        : '/';
+    try { context.go(target); } catch (_) {
+      final rootCtx = NavLogging.navigatorKey.currentContext;
+      if (rootCtx != null) {
+        try { GoRouter.of(rootCtx).go(target); } catch (_) {}
+      }
     }
-    debugPrint('💫 Splash: navigating directly to "$target"');
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      debugPrint('💫 Splash: context.go($target)');
-      try {
-        context.go(target);
-      } catch (e) {
-        debugPrint('💫 Splash: context.go failed: $e');
-      }
-      // Fallback: use root navigator context if available
-      try {
-        final rootCtx = NavLogging.navigatorKey.currentContext;
-        if (rootCtx != null) {
-          debugPrint('💫 Splash: fallback rootCtx.go($target)');
-          GoRouter.of(rootCtx).go(target);
-        } else {
-          debugPrint('💫 Splash: fallback rootCtx is null');
-        }
-      } catch (e) {
-        debugPrint('💫 Splash: fallback rootCtx.go failed: $e');
-      }
-      // Ensure navigation eventually happens even if initial go() was too early
-      _ensureNavigated(target, attempts: 8, intervalMs: 200);
-    });
-  }
-
-  void _ensureNavigated(String target, {int attempts = 6, int intervalMs = 250}) {
-    if (!mounted || attempts <= 0) return;
-    Future.delayed(Duration(milliseconds: intervalMs), () {
-      if (!mounted) return;
-      try {
-        final nav = NavLogging.navigatorKey.currentState;
-        final rootCtx = NavLogging.navigatorKey.currentContext;
-        String current = '(unknown)';
-        if (rootCtx != null) {
-          try {
-            final rip = GoRouter.of(rootCtx).routeInformationProvider;
-            final dynamic dv = rip.value; // RouteInformation
-            String? loc;
-            try { loc = dv.uri?.toString(); } catch (_) {}
-            loc ??= (dv.location as String?);
-            current = loc ?? '(unknown)';
-          } catch (e) {
-            current = 'unavailable: $e';
-          }
-        }
-        debugPrint('💫 Splash.ensureNavigated: attempts=$attempts nav=$nav current=$current target=$target');
-        if (current == target) return; // done
-        if (rootCtx != null) {
-          try {
-            GoRouter.of(rootCtx).go(target);
-            debugPrint('💫 Splash.ensureNavigated: forced go($target)');
-          } catch (e) {
-            debugPrint('💫 Splash.ensureNavigated: forced go failed: $e');
-          }
-        }
-      } finally {
-        _ensureNavigated(target, attempts: attempts - 1, intervalMs: intervalMs);
-      }
-    });
   }
 
   @override
@@ -133,9 +68,6 @@ class _SplashScreenState extends State<SplashScreen>
 
   @override
   Widget build(BuildContext context) {
-    debugPrint('💫💫💫 SPLASH SCREEN BUILD() CALLED');
-    debugPrint('💫💫💫 SPLASH: context=$context');
-    debugPrint('💫💫💫 SPLASH: About to return Container');
     // Minimal splash content; do NOT nest a MaterialApp inside router.
     return Scaffold(
       backgroundColor: Colors.redAccent,

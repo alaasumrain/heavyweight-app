@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'log_config.dart';
 
 /// Lightweight structured logging helper for debug builds.
 /// Prints single-line JSON to make logs easy to scan and share.
@@ -7,10 +8,14 @@ class HWLog {
   // Rate-limiter to avoid flooding logs on rapid rebuilds
   static final Map<String, DateTime> _lastPrint = {};
 
-  static bool _allow(String key, Duration interval) {
+  static bool _allow(String key, Duration defaultInterval) {
+    // Sampling check
+    if (!LogConfig.allowSample(key)) return false;
+    // Cooldown check (per-key override)
+    final cd = LogConfig.cooldownFor(key) ?? defaultInterval;
     final now = DateTime.now();
     final last = _lastPrint[key];
-    if (last != null && now.difference(last) < interval) {
+    if (last != null && now.difference(last) < cd) {
       return false;
     }
     _lastPrint[key] = now;
@@ -29,6 +34,7 @@ class HWLog {
   }
 
   static void event(String name, {Map<String, Object?> data = const {}}) {
+    if (LogConfig.isMuted(name)) return;
     // Throttle rapid-fire events with the same name to reduce console noise
     if (!_allow('event:$name', const Duration(milliseconds: 400))) return;
     _print({
@@ -40,6 +46,7 @@ class HWLog {
   }
 
   static void screen(String name, {Map<String, Object?> data = const {}}) {
+    if (LogConfig.isMuted(name)) return;
     // Throttle identical screen logs within 1s to reduce noise
     if (!_allow('screen:$name', const Duration(seconds: 1))) return;
     _print({

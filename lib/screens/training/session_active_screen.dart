@@ -234,14 +234,14 @@ class _SessionActiveScreenState extends State<SessionActiveScreen> {
     String feedback;
     
     if (repsCompleted <= 3) {
-      status = 'BELOW_TARGET';
-      feedback = 'LOAD_DECREASE_REQUIRED';
+      status = 'BELOW_RANGE';
+      feedback = 'ADJUST_WEIGHT_DOWN';
     } else if (repsCompleted >= 7) {
-      status = 'ABOVE_TARGET';
-      feedback = 'LOAD_INCREASE_REQUIRED';
+      status = 'ABOVE_RANGE';
+      feedback = 'ADJUST_WEIGHT_UP';
     } else {
-      status = 'ON_TARGET';
-      feedback = 'LOAD_OPTIMAL';
+      status = 'IN_RANGE';
+      feedback = 'LOAD_OK';
     }
     
     // Add to session log

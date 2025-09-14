@@ -12,13 +12,13 @@ class HeavyweightHeader extends StatelessWidget {
   final List<Widget>? actions;
 
   const HeavyweightHeader({
-    Key? key,
+    super.key,
     this.title,
     this.subtitle,
     this.showBackButton = true,
     this.fallbackRoute = '/',
     this.actions,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

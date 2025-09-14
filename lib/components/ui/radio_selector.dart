@@ -51,7 +51,7 @@ class RadioSelector<T> extends StatelessWidget {
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: HeavyweightTheme.primary.withValues(alpha: 0.08),
+                            color: HeavyweightTheme.primary.withOpacity(0.08),
                             blurRadius: 8,
                             spreadRadius: 1,
                           ),

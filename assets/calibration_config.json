@@ -1,0 +1,135 @@
+{
+  "calibration_settings": {
+    "max_attempts": 5,
+    "target_reps": 5,
+    "acceptable_range": [4, 6],
+    "enable_warmups": true,
+    "warmup_sets": 2,
+    "rest_between_attempts": 180
+  },
+  "rep_multipliers": {
+    "25": 2.2,
+    "24": 2.1,
+    "23": 2.0,
+    "22": 1.95,
+    "21": 1.9,
+    "20": 1.85,
+    "19": 1.8,
+    "18": 1.75,
+    "17": 1.7,
+    "16": 1.65,
+    "15": 1.6,
+    "14": 1.55,
+    "13": 1.5,
+    "12": 1.45,
+    "11": 1.4,
+    "10": 1.35,
+    "9": 1.3,
+    "8": 1.25,
+    "7": 1.15,
+    "6": 1.05,
+    "5": 1.0,
+    "4": 0.95,
+    "3": 0.9,
+    "2": 0.85,
+    "1": 0.8,
+    "0": 0.7
+  },
+  "warmup_protocols": {
+    "bench": [
+      {
+        "percentage": 0.4,
+        "reps": 8,
+        "rest": 60,
+        "description": "Light warmup - blood flow"
+      },
+      {
+        "percentage": 0.65,
+        "reps": 5,
+        "rest": 90,
+        "description": "Medium warmup - prepare nervous system"
+      }
+    ],
+    "squat": [
+      {
+        "percentage": 0.4,
+        "reps": 10,
+        "rest": 60,
+        "description": "Bodyweight squat pattern"
+      },
+      {
+        "percentage": 0.6,
+        "reps": 6,
+        "rest": 90,
+        "description": "Medium load preparation"
+      }
+    ],
+    "deadlift": [
+      {
+        "percentage": 0.45,
+        "reps": 6,
+        "rest": 90,
+        "description": "Light deadlift - form check"
+      },
+      {
+        "percentage": 0.7,
+        "reps": 3,
+        "rest": 120,
+        "description": "Heavy warmup - neural activation"
+      }
+    ],
+    "overhead": [
+      {
+        "percentage": 0.35,
+        "reps": 8,
+        "rest": 60,
+        "description": "Shoulder mobility prep"
+      },
+      {
+        "percentage": 0.6,
+        "reps": 5,
+        "rest": 90,
+        "description": "Medium warmup"
+      }
+    ],
+    "default": [
+      {
+        "percentage": 0.4,
+        "reps": 8,
+        "rest": 60,
+        "description": "Light warmup"
+      },
+      {
+        "percentage": 0.65,
+        "reps": 5,
+        "rest": 90,
+        "description": "Medium warmup"
+      }
+    ]
+  },
+  "calibration_feedback": {
+    "25": "WAY TOO LIGHT - 2.2x jump",
+    "20": "TOO LIGHT - 1.85x jump", 
+    "15": "LIGHT - 1.6x jump",
+    "14": "LIGHT - 1.55x jump",
+    "13": "LIGHT - 1.5x jump",
+    "12": "GETTING CLOSER - 1.45x jump",
+    "11": "GETTING CLOSER - 1.4x jump",
+    "10": "GETTING CLOSER - 1.35x jump",
+    "9": "GETTING CLOSER - 1.3x jump", 
+    "8": "CLOSE - 1.25x jump",
+    "7": "VERY CLOSE - 1.15x jump",
+    "6": "VERY CLOSE - 1.05x jump",
+    "5": "PERFECT - 5RM FOUND!",
+    "4": "SLIGHTLY HEAVY - 5% reduction",
+    "3": "TOO HEAVY - 10% reduction",
+    "2": "TOO HEAVY - 15% reduction",
+    "1": "TOO HEAVY - 20% reduction",
+    "0": "COMPLETE FAILURE - 30% reduction"
+  },
+  "safety_limits": {
+    "min_weight": 20.0,
+    "max_increase_per_attempt": 50.0,
+    "max_decrease_per_attempt": 30.0
+  }
+}

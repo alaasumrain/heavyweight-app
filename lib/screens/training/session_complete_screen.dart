@@ -175,7 +175,7 @@ class _SessionCompleteScreenState extends State<SessionCompleteScreen>
           child: Column(
             children: [
               Text(
-                widget.mandateSatisfied ? 'MANDATE' : 'MANDATE',
+                widget.mandateSatisfied ? 'IN RANGE' : 'OUT OF RANGE',
                 style: TextStyle(
                   color: widget.mandateSatisfied ? HeavyweightTheme.primary : HeavyweightTheme.error,
                   fontSize: 24,
@@ -185,7 +185,7 @@ class _SessionCompleteScreenState extends State<SessionCompleteScreen>
               ),
               const SizedBox(height: HeavyweightTheme.spacingSm),
               Text(
-                widget.mandateSatisfied ? 'SATISFIED' : 'VIOLATED',
+                widget.mandateSatisfied ? 'LOCKED' : 'ADJUST REQUIRED',
                 style: TextStyle(
                   color: widget.mandateSatisfied ? HeavyweightTheme.primary : HeavyweightTheme.error,
                   fontSize: 32,
@@ -236,7 +236,7 @@ class _SessionCompleteScreenState extends State<SessionCompleteScreen>
           const SizedBox(height: HeavyweightTheme.spacingMd),
           
           _buildStatRow('TOTAL_SETS', '${stats.totalSets}'),
-          _buildStatRow('MANDATE_SETS', '${stats.mandateSets}', 
+          _buildStatRow('IN_RANGE_SETS', '${stats.mandateSets}', 
                        color: HeavyweightTheme.primary),
           _buildStatRow('FAILURE_SETS', '${stats.failureSets}', 
                        color: stats.failureSets > 0 ? HeavyweightTheme.error : null),

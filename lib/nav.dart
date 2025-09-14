@@ -21,6 +21,9 @@ import '/screens/onboarding/profile/unit_preference_screen.dart';
 import '/screens/onboarding/profile/physical_stats_screen.dart';
 import '/screens/onboarding/profile/training_objective_screen.dart';
 import '/screens/onboarding/profile/starting_day_screen.dart';
+import '/screens/onboarding/profile/baseline_strength_screen.dart';
+import '/screens/onboarding/profile/rest_days_screen.dart';
+import '/screens/onboarding/profile/session_duration_screen.dart';
 import '/screens/onboarding/auth_screen.dart';
 import '/screens/training/session_active_screen.dart';
 import '/screens/training/enforced_rest_screen.dart';
@@ -35,11 +38,16 @@ import '/screens/onboarding/terms_privacy_screen.dart';
 import '/screens/training/daily_workout_screen.dart';
 import '/screens/training/protocol_screen.dart';
 import '/screens/training/session_complete_screen.dart';
+import '/screens/dev/config_screen.dart';
+import '/screens/dev/screen_index.dart';
+import '/core/routes.dart';
+import '/screens/dev/status_screen.dart';
 import '/fortress/engine/workout_engine.dart';
 import '/core/page_transitions.dart';
 import '/core/error_handler.dart';
 import '/core/logging.dart';
 import '/core/nav_logging.dart';
+import '/core/route_observer.dart';
 
 
 
@@ -79,13 +87,15 @@ GoRouter createRouter(
   String initialLocation = '/',
 }) {
   debugPrint('🧭 createRouter(): initialLocation=$initialLocation');
+  // Ensure screen registry has entries
+  registerScreens();
   return GoRouter(
       // Diagnostic line to verify initial location
       // (go_router will also log initial location later)
       initialLocation: initialLocation,
       debugLogDiagnostics: false,
       navigatorKey: NavLogging.navigatorKey,
-      observers: const [],
+      observers: [HWRouteObserver()],
       refreshListenable: refresh,
       redirectLimit: 10,
       errorBuilder: (context, state) => ErrorScreen(
@@ -120,55 +130,10 @@ GoRouter createRouter(
               }
 
               final appState = appStateProvider.appState;
-              debugPrint('🔀🔀🔀 ROOT: App initialized, checking onboarding state');
-              
-              if (!appState.legalAccepted) {
-                debugPrint('🔀🔀🔀 ROOT: Legal not accepted, redirecting to /legal');
-                return '/legal';
-              }
-              
-              if (!appState.manifestoCommitted) {
-                debugPrint('🔀🔀🔀 ROOT: Manifesto not committed, redirecting to /manifesto');
-                return '/manifesto';
-              }
-              
-              if (appState.trainingExperience == null) {
-                debugPrint('🔀🔀🔀 ROOT: Training experience missing, redirecting to /profile/experience');
-                return '/profile/experience';
-              }
-              
-              if (appState.trainingFrequency == null) {
-                debugPrint('🔀🔀🔀 ROOT: Training frequency missing, redirecting to /profile/frequency');
-                return '/profile/frequency';
-              }
-              
-              if (appState.unitPreference == null) {
-                debugPrint('🔀🔀🔀 ROOT: Unit preference missing, redirecting to /profile/units');
-                return '/profile/units';
-              }
-              
-              if (appState.physicalStats == null) {
-                debugPrint('🔀🔀🔀 ROOT: Physical stats missing, redirecting to /profile/stats');
-                return '/profile/stats';
-              }
-              
-              if (appState.trainingObjective == null) {
-                debugPrint('🔀🔀🔀 ROOT: Training objective missing, redirecting to /profile/objective');
-                return '/profile/objective';
-              }
-              
-              if (appState.preferredStartingDay == null) {
-                debugPrint('🔀🔀🔀 ROOT: Starting day missing, redirecting to /profile/starting-day');
-                return '/profile/starting-day';
-              }
-              
-              if (!appState.isAuthenticated) {
-                debugPrint('🔀🔀🔀 ROOT: Not authenticated, redirecting to /auth');
-                return '/auth';
-              }
-
-              debugPrint('🔀🔀🔀 ROOT: All onboarding complete, redirecting to /app');
-              return '/app?tab=0';
+              debugPrint('🔀🔀🔀 ROOT: App initialized, using nextRoute');
+              final next = appState.nextRoute;
+              debugPrint('🔀🔀🔀 ROOT: nextRoute => $next');
+              return next;
             } catch (e) {
               debugPrint('🔀🔀🔀 ROOT: Error in redirect, falling back to splash: $e');
               return '/splash';
@@ -272,6 +237,21 @@ GoRouter createRouter(
           builder: (context, state) => const StartingDayScreen(),
         ),
         GoRoute(
+          name: 'profile_rest_days',
+          path: '/profile/rest-days',
+          builder: (context, state) => const RestDaysScreen(),
+        ),
+        GoRoute(
+          name: 'profile_duration',
+          path: '/profile/duration',
+          builder: (context, state) => const SessionDurationScreen(),
+        ),
+        GoRoute(
+          name: 'profile_baseline',
+          path: '/profile/baseline',
+          builder: (context, state) => const BaselineStrengthScreen(),
+        ),
+        GoRoute(
           name: 'auth',
           path: '/auth',
           builder: (context, state) => const AuthScreen(),
@@ -329,6 +309,24 @@ GoRouter createRouter(
               exerciseName: params?['exerciseName'] ?? 'Unknown Exercise',
             );
           },
+        ),
+        // Hidden dev route: Effective config panel
+        GoRoute(
+          name: 'dev_config',
+          path: '/dev/config',
+          builder: (context, state) => const DevConfigScreen(),
+        ),
+        // Hidden dev route: Screen index
+        GoRoute(
+          name: 'dev_screens',
+          path: '/dev/screens',
+          builder: (context, state) => const ScreenIndex(),
+        ),
+        // Hidden dev route: Status flags
+        GoRoute(
+          name: 'dev_status',
+          path: '/dev/status',
+          builder: (context, state) => const DevStatusScreen(),
         ),
         GoRoute(
           name: 'session_detail',

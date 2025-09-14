@@ -10,7 +10,7 @@ import '../../core/logging.dart';
 /// Provides smooth transitions without full page rebuilds
 class MainAppShell extends StatefulWidget {
   final int initialIndex;
-  const MainAppShell({Key? key, this.initialIndex = 0}) : super(key: key);
+  const MainAppShell({super.key, this.initialIndex = 0});
 
   @override
   State<MainAppShell> createState() => _MainAppShellState();

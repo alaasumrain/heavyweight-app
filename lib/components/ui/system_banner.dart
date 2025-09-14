@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../core/theme/heavyweight_theme.dart';
 
 class SystemBanner extends StatelessWidget {
-  const SystemBanner({Key? key}) : super(key: key);
+  const SystemBanner({super.key});
   
   @override
   Widget build(BuildContext context) {

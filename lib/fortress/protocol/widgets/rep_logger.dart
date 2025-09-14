@@ -12,13 +12,13 @@ class RepLogger extends StatefulWidget {
   final bool liveMode; // Enable real-time visual feedback
   
   const RepLogger({
-    Key? key,
+    super.key,
     required this.onRepsLogged,
     this.initialValue = 5,
     this.currentSet = 1,
     this.previousSetReps,
     this.liveMode = true,
-  }) : super(key: key);
+  });
   
   @override
   State<RepLogger> createState() => _RepLoggerState();

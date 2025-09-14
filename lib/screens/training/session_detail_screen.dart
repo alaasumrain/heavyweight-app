@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import '../../components/ui/command_button.dart';
 import '../../core/theme/heavyweight_theme.dart';
@@ -6,6 +7,9 @@ import '../../fortress/engine/models/set_data.dart';
 import '../../fortress/engine/models/exercise.dart';
 import '../../components/layout/heavyweight_scaffold.dart';
 import '../../core/logging.dart';
+import 'package:provider/provider.dart';
+import '../../providers/profile_provider.dart';
+import '../../core/units.dart';
 
 class SessionDetailScreen extends StatelessWidget {
   final WorkoutSession session;
@@ -26,6 +30,13 @@ class SessionDetailScreen extends StatelessWidget {
       subtitle: _formatDateTime(session.date),
       showBackButton: true,
       fallbackRoute: '/training-log',
+      actions: [
+        IconButton(
+          onPressed: () => _exportCsv(context, session),
+          icon: const Icon(Icons.download, color: Colors.white),
+          tooltip: 'EXPORT CSV',
+        ),
+      ],
       body: Padding(
           padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
           child: Column(
@@ -60,7 +71,7 @@ class SessionDetailScreen extends StatelessWidget {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text('TOTAL_VOLUME: ${totalVolume.toStringAsFixed(0)} KG', style: HeavyweightTheme.bodySmall),
-                        Text('MANDATE_SETS: ${session.sets.where((s) => s.metMandate).length}', style: HeavyweightTheme.bodySmall),
+                        Text('IN_RANGE_SETS: ${session.sets.where((s) => s.metMandate).length}', style: HeavyweightTheme.bodySmall),
                       ],
                     ),
                   ],
@@ -87,7 +98,7 @@ class SessionDetailScreen extends StatelessWidget {
                         itemCount: exerciseGroups.length,
                         itemBuilder: (context, index) {
                           final entry = exerciseGroups.entries.elementAt(index);
-                          return _buildExerciseDetail(entry.key, entry.value);
+                          return _buildExerciseDetail(context, entry.key, entry.value);
                         },
                       ),
                     ),
@@ -114,6 +125,30 @@ class SessionDetailScreen extends StatelessWidget {
         ),
       );
   }
+
+  void _exportCsv(BuildContext context, WorkoutSession session) async {
+    final buffer = StringBuffer();
+    buffer.writeln('ts,exercise_id,phase,set_idx,signed_kg,effective_kg,reps,est1rm_kg,note');
+    for (final s in session.sets) {
+      final ts = s.timestamp.toIso8601String();
+      final ex = s.exerciseId;
+      final phase = s.metMandate || s.exceededMandate || s.isFailure ? 'WORKING' : 'UNKNOWN';
+      final setIdx = s.setNumber;
+      final signed = s.weight.toStringAsFixed(1);
+      final effective = signed; // if BW known, adjust here in future
+      final reps = s.actualReps;
+      final est1rm = '';
+      final note = '';
+      buffer.writeln('$ts,$ex,$phase,$setIdx,$signed,$effective,$reps,$est1rm,$note');
+    }
+    final csv = buffer.toString();
+    await Clipboard.setData(ClipboardData(text: csv));
+    if (context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('CSV copied to clipboard'), duration: Duration(seconds: 1)),
+      );
+    }
+  }
   
   Map<String, List<SetData>> _groupSetsByExercise(List<SetData> sets) {
     final groups = <String, List<SetData>>{};
@@ -129,7 +164,7 @@ class SessionDetailScreen extends StatelessWidget {
     return groups;
   }
   
-  Widget _buildExerciseDetail(String exerciseId, List<SetData> sets) {
+  Widget _buildExerciseDetail(BuildContext context, String exerciseId, List<SetData> sets) {
     final exercise = Exercise.bigSix.firstWhere(
       (e) => e.id == exerciseId,
       orElse: () => Exercise(
@@ -162,7 +197,7 @@ class SessionDetailScreen extends StatelessWidget {
           const SizedBox(height: HeavyweightTheme.spacingSm),
           
           // Sets breakdown
-          ...sets.map((set) => _buildSetDetail(set)),
+          ...sets.map((set) => _buildSetDetail(context, set)),
           
           const SizedBox(height: HeavyweightTheme.spacingSm),
           
@@ -197,7 +232,7 @@ class SessionDetailScreen extends StatelessWidget {
     );
   }
   
-  Widget _buildSetDetail(SetData set) {
+  Widget _buildSetDetail(BuildContext context, SetData set) {
     Color statusColor = HeavyweightTheme.textSecondary;
     String statusText = 'UNKNOWN';
     
@@ -206,31 +241,38 @@ class SessionDetailScreen extends StatelessWidget {
       statusText = 'FAILURE';
     } else if (set.actualReps < 4) {
       statusColor = HeavyweightTheme.warning;
-      statusText = 'BELOW_MANDATE';
+      statusText = 'BELOW_RANGE';
     } else if (set.actualReps <= 6) {
       statusColor = HeavyweightTheme.primary;
-      statusText = 'MANDATE_MET';
+      statusText = 'IN_RANGE';
     } else {
       statusColor = HeavyweightTheme.accent;
-      statusText = 'EXCEEDED_MANDATE';
+      statusText = 'ABOVE_RANGE';
     }
     
+    // Determine user unit
+    final unit = context.read<ProfileProvider>().unit == Unit.kg ? HWUnit.kg : HWUnit.lb;
+
+    // Bodyweight load display
+    String loadDisplay;
+    if (set.exerciseId == 'pullup' || set.exerciseId == 'dips' || set.exerciseId == 'dip' || set.exerciseId == 'weighted_dips') {
+      if (set.weight > 0) {
+        loadDisplay = 'LOAD: BW + ${formatWeightForUnit(set.weight, unit)} ${unit == HWUnit.kg ? 'KG' : 'LB'}';
+      } else if (set.weight < 0) {
+        loadDisplay = 'LOAD: BW - ${formatWeightForUnit(set.weight.abs(), unit)} ${unit == HWUnit.kg ? 'KG' : 'LB'} (assist)';
+      } else {
+        loadDisplay = 'LOAD: BW';
+      }
+    } else {
+      loadDisplay = 'LOAD: ${formatWeightForUnit(set.weight, unit)} ${unit == HWUnit.kg ? 'KG' : 'LB'}';
+    }
+
     return Padding(
       padding: const EdgeInsets.only(bottom: HeavyweightTheme.spacingSm),
       child: Row(
         children: [
-          Text(
-            '├─ SET_${set.setNumber}: ',
-            style: HeavyweightTheme.bodySmall.copyWith(
-              color: HeavyweightTheme.textSecondary,
-            ),
-          ),
-          Text(
-            '${set.actualReps} reps @ ${set.weight}kg',
-            style: HeavyweightTheme.bodySmall.copyWith(
-              color: HeavyweightTheme.primary,
-            ),
-          ),
+          Text('├─ SET_${set.setNumber}: ', style: HeavyweightTheme.bodySmall.copyWith(color: HeavyweightTheme.textSecondary)),
+          Text('$loadDisplay · REPS: ${set.actualReps}', style: HeavyweightTheme.bodySmall.copyWith(color: HeavyweightTheme.primary)),
           const Spacer(),
           Container(
             padding: const EdgeInsets.symmetric(horizontal: HeavyweightTheme.spacingXs, vertical: HeavyweightTheme.spacingXs),

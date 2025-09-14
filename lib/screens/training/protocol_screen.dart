@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'dart:math' as math;
 import 'package:flutter/services.dart';
 import 'package:go_router/go_router.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 import '../../fortress/protocol/widgets/rest_timer.dart';
 import '../../fortress/protocol/widgets/rep_logger.dart';
 import '../../fortress/engine/workout_engine.dart';
@@ -10,6 +12,13 @@ import '../../backend/supabase/supabase_workout_repository.dart';
 import '../../core/theme/heavyweight_theme.dart';
 import '../../components/layout/heavyweight_scaffold.dart';
 import '../../core/logging.dart';
+import '../../viewmodels/exercise_viewmodel.dart';
+import '../../components/ui/exercise_alternatives_widget.dart';
+import '../../core/system_config.dart';
+import '../../core/units.dart';
+import 'package:provider/provider.dart';
+import '../../providers/profile_provider.dart';
+import '../../fortress/calibration/calibration_resume_store.dart';
 
 /// The Protocol Screen - The heart of the workout experience
 /// Minimalist, brutal, effective
@@ -17,9 +26,9 @@ class ProtocolScreen extends StatefulWidget {
   final DailyWorkout? workout;
   
   const ProtocolScreen({
-    Key? key,
+    super.key,
     this.workout,
-  }) : super(key: key);
+  });
   
   @override
   State<ProtocolScreen> createState() => _ProtocolScreenState();
@@ -38,6 +47,10 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
   bool _isCalibrating = false;
   double _currentCalibrationWeight = 40.0;
   int _calibrationAttempt = 1;
+  final List<_CalibrationEntry> _calibrationEntries = [];
+  bool _resumedCalibration = false;
+  bool _oscillationTriggered = false;
+  static const int _maxCalibrationAttempts = 5; // Prevent infinite calibration
   Map<String, double> _calibratedWeights = {};
   
   // Weight adjustment system
@@ -62,6 +75,8 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
       if (_isCalibrating) {
         _currentCalibrationWeight = firstPrescription.prescribedWeight;
       }
+      // Attempt resume of unfinished calibration
+      _tryResumeCalibration();
     } else {
       // No valid mandate - this shouldn't happen, but handle gracefully
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -79,6 +94,20 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
         }
       });
     }
+  }
+
+  Future<void> _tryResumeCalibration() async {
+    final rec = await CalibrationResumeStore.loadPending();
+    if (rec == null) return;
+    final idx = widget.workout!.exercises.indexWhere((e) => e.exercise.id == rec.exerciseId);
+    if (idx == -1) return;
+    setState(() {
+      _currentExerciseIndex = idx;
+      _isCalibrating = true;
+      _calibrationAttempt = rec.attemptIdx + 1; // next expected
+      _currentCalibrationWeight = rec.nextSignedKg;
+      _resumedCalibration = true;
+    });
   }
   
   Future<void> _initializeRepository() async {
@@ -118,33 +147,22 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
   
   void _handleCalibrationReps(int actualReps) async {
     HWLog.event('protocol_handle_calibration', data: {'reps': actualReps, 'weight': _currentCalibrationWeight});
-    // Calculate next calibration weight
-    final nextWeight = _engine.calculateCalibrationWeight(
-      _currentCalibrationWeight,
-      actualReps,
-    );
-    // Success toast for calibration attempt
-    if (mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          backgroundColor: HeavyweightTheme.primary,
-          content: Text(
-            'CALIBRATION SET LOGGED',
-            style: TextStyle(color: HeavyweightTheme.onPrimary),
-          ),
-          duration: Duration(milliseconds: 800),
-        ),
-      );
-    }
-    
-    if (actualReps == 5) {
+    // Record attempt
+    _calibrationEntries.add(_CalibrationEntry(_currentCalibrationWeight, actualReps));
+    // Determine lock conditions
+    final inMandate = actualReps >= 4 && actualReps <= 6;
+    final reachedMax = _calibrationAttempt >= 3;
+    if (inMandate || reachedMax) {
+      // Choose best (closest to 5) if not in range
+      final best = _selectBestCalibrationEntry(_calibrationEntries);
+      _currentCalibrationWeight = best.weight;
       // Found the 5RM!
       if (_currentPrescription != null) {
         _calibratedWeights[_currentPrescription!.exercise.id] = _currentCalibrationWeight;
       }
       
       // If this is bench press on Day 1, estimate all other weights
-      if (widget.workout?.isDay1 == true && _currentPrescription?.exercise.id == 'bench') {
+      if (_currentPrescription?.exercise.id == 'bench') {
         final estimatedWeights = _engine.estimateWeightsFromBenchPress(_currentCalibrationWeight);
         _calibratedWeights.addAll(estimatedWeights);
       }
@@ -159,8 +177,31 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
         restTaken: 0,
       );
       await _repository.saveSet(setData);
-      HWLog.event('protocol_save_set', data: {'exercise': setData.exerciseId, 'reps': actualReps, 'weight': setData.weight});
+      HWLog.event('protocol_save_set', data: {
+        'exercise': setData.exerciseId,
+        'reps': actualReps,
+        'weight': setData.weight,
+        'in_range': actualReps >= 4 && actualReps <= 6,
+        'calib_attempts': _calibrationAttempt,
+        'oscillation_locked': _oscillationTriggered,
+        'resume_used': _resumedCalibration,
+      });
       _sessionSets.add(setData);
+      // Clear resume state since exercise is locked
+      await CalibrationResumeStore.clear();
+      // Lock message
+      if (mounted) {
+        final unit = context.read<ProfileProvider>().unit == Unit.kg ? HWUnit.kg : HWUnit.lb;
+        final disp = formatWeightForUnit(_currentCalibrationWeight, unit);
+        final msg = 'WORKING WEIGHT LOCKED: $disp ${unit == HWUnit.kg ? 'KG' : 'LB'}';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: Colors.green.shade700,
+            content: Text(msg, style: const TextStyle(color: Colors.white)),
+            duration: const Duration(milliseconds: 1000),
+          ),
+        );
+      }
       
       // Move to next exercise
       setState(() {
@@ -168,6 +209,7 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
           _currentExerciseIndex++;
           _currentSet = 1;
           _calibrationAttempt = 1;
+          _calibrationEntries.clear();
           
           // Check if next exercise needs calibration
           final nextPrescription = widget.workout!.exercises[_currentExerciseIndex];
@@ -186,14 +228,124 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
         }
       });
     } else {
-      // Continue calibrating
+      // Continue calibrating with rep-curve next weight
+      final exerciseId = _currentPrescription?.exercise.id ?? '';
+      final res = _computeNextCalibrationNext(
+        currentWeight: _currentCalibrationWeight,
+        reps: actualReps,
+        exerciseId: exerciseId,
+        attempt: _calibrationAttempt,
+      );
+      // Persist attempt for crash-proof resume
+      await CalibrationResumeStore.saveAttempt(
+        exerciseId: exerciseId,
+        attemptIdx: _calibrationAttempt,
+        signedLoadKg: _currentCalibrationWeight,
+        effectiveLoadKg: _currentCalibrationWeight,
+        reps: actualReps,
+        est1RmKg: res.est1rm,
+        nextSignedKg: res.next,
+      );
+      // Feedback
+      if (mounted) {
+        final msg = 'RECORDED: $actualReps · ${res.note}';
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: HeavyweightTheme.primary,
+            content: Text(msg, style: const TextStyle(color: HeavyweightTheme.onPrimary)),
+            duration: const Duration(milliseconds: 900),
+          ),
+        );
+      }
+      HWLog.event('protocol_calib_attempt', data: {
+        'exercise': exerciseId,
+        'attempt': _calibrationAttempt,
+        'reps': actualReps,
+        'current': _currentCalibrationWeight,
+        'next': res.next,
+        'jump_pct': res.pct,
+        'resume_used': _resumedCalibration,
+      });
       setState(() {
-        _currentCalibrationWeight = nextWeight;
+        _currentCalibrationWeight = res.next;
         _calibrationAttempt++;
         _isResting = true;
-        _restSeconds = 180; // 3 minutes - THE MANDATE
+        // fixed for calibration per v1, with optional debug-short override
+        final cfg = SystemConfig.instance;
+        _restSeconds = (cfg.isLoaded && cfg.debugShortRestEnabled)
+            ? cfg.debugShortRestSeconds
+            : 180;
       });
     }
+  }
+
+  _CalibrationEntry _selectBestCalibrationEntry(List<_CalibrationEntry> entries) {
+    if (entries.isEmpty) return _CalibrationEntry(_currentCalibrationWeight, 5);
+    // Oscillation guard: if last two weights bounce A<->B, pick closer to 5
+    if (entries.length >= 3) {
+      final a = entries[entries.length - 3].weight;
+      final b = entries[entries.length - 2].weight;
+      final c = entries[entries.length - 1].weight;
+      if (a == c && b != a) {
+        final e1 = entries[entries.length - 3];
+        final e2 = entries[entries.length - 2];
+        _oscillationTriggered = true;
+        return ( (e1.reps - 5).abs() <= (e2.reps - 5).abs() ) ? e1 : e2;
+      }
+    }
+    // choose overall closest to 5 reps
+    entries.sort((x, y) => (x.reps - 5).abs().compareTo((y.reps - 5).abs()));
+    return entries.first;
+  }
+
+  _NextCalibResult _computeNextCalibrationNext({
+    required double currentWeight,
+    required int reps,
+    required String exerciseId,
+    required int attempt,
+  }) {
+    // Clamp reps range for formulas stability
+    final r = reps.clamp(0, 15);
+    if (r == 5) return _NextCalibResult(next: currentWeight, est1rm: currentWeight * (1 + 5 / 30.0), note: 'PERFECT - 5RM FOUND!', pct: 100);
+    // Epley and Brzycki 1RM estimates
+    final est1RM_e = currentWeight * (1 + r / 30.0);
+    final est1RM_b = currentWeight * 36.0 / (37 - (r == 0 ? 1 : r));
+    final est1RM = _median([est1RM_e, est1RM_b]);
+    // Target 5-rep load by inverse
+    final tgt_e = est1RM / (1 + 5 / 30.0);
+    final tgt_b = est1RM * (37 - 5) / 36.0;
+    double target = _median([tgt_e, tgt_b]);
+    // Jump caps
+    double jump = target / (currentWeight == 0 ? 1 : currentWeight);
+    if (attempt <= 1 && reps >= 12) {
+      jump = jump.clamp(1.0, 1.55);
+    } else if (attempt <= 1 && reps <= 2) {
+      jump = jump.clamp(0.45, 1.0);
+    } else {
+      jump = jump.clamp(0.75, 1.25);
+    }
+    double next = currentWeight * jump;
+    // Bridge set if huge gap on first attempt
+    if (attempt == 1 && (target / (currentWeight == 0 ? 1 : currentWeight)) > 1.35) {
+      next = math.sqrt(currentWeight * target);
+    }
+    // Rounding per exercise increment
+    final inc = SystemConfig.instance.incrementForExerciseKg(exerciseId);
+    final rounded = (next / inc).round() * inc;
+    // Min clamp from config
+    final minClamp = SystemConfig.instance.minClampForExerciseKg(exerciseId);
+    final nextClamped = rounded < minClamp ? minClamp : rounded;
+    final pct = (currentWeight > 0) ? ((nextClamped / currentWeight - 1.0) * 100.0) : 0.0;
+    final note = (pct == 0) ? 'NO CHANGE' : (pct > 0 ? 'ADJUSTING +${pct.toStringAsFixed(0)}%' : 'ADJUSTING ${pct.toStringAsFixed(0)}%');
+    return _NextCalibResult(next: nextClamped, est1rm: est1RM, note: note, pct: pct.round());
+  }
+
+  double _median(List<double> xs) {
+    xs.sort();
+    final n = xs.length;
+    if (n == 0) return 0;
+    if (n % 2 == 1) return xs[n >> 1];
+    return (xs[n ~/ 2 - 1] + xs[n ~/ 2]) / 2.0;
   }
   
   void _handleWorkoutReps(int actualReps) async {
@@ -247,16 +399,19 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
       }
     });
     
-    // Calculate rest time based on performance (using 5 seconds for testing)
-    // TODO: Batch setState calls for better performance
-    final calculatedRest = 5; // Simplified to 5 seconds for testing
+    // Calculate rest time based on performance - THE MANDATE requires proper rest
+    final calculatedRest = _engine.calculateRestSeconds(actualReps, 180); // 180 seconds base rest
+    final cfg = SystemConfig.instance;
+    final restToUse = (cfg.isLoaded && cfg.debugShortRestEnabled)
+        ? cfg.debugShortRestSeconds
+        : calculatedRest;
     
     setState(() {
       if (_currentSet < (_currentPrescription?.targetSets ?? 3)) {
         // More sets remaining for this exercise
         _currentSet++;
         _isResting = true;
-        _restSeconds = 180; // 3 minutes - THE MANDATE
+        _restSeconds = restToUse; // Apply performance-based or debug-short rest between sets
       } else {
         // Move to next exercise
         if (widget.workout != null && _currentExerciseIndex < widget.workout!.exercises.length - 1) {
@@ -274,7 +429,7 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
           }
           
           _isResting = true;
-          _restSeconds = calculatedRest;
+        _restSeconds = restToUse;
         } else {
           // Workout complete
           _completeWorkout();
@@ -387,16 +542,34 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
   
   @override
   Widget build(BuildContext context) {
-    HWLog.event('protocol_build');
     if (_isResting) {
+      final cfg = SystemConfig.instance;
+      final shortOn = cfg.isLoaded && cfg.debugShortRestEnabled;
       return HeavyweightScaffold(
         title: 'RESTING',
-        body: RestTimer(
-          restSeconds: _restSeconds,
-          onComplete: _onRestComplete,
-          canSkip: false,
-          canExtend: true,
-          lastSetPerformance: _getLastSetPerformance(),
+        body: Stack(
+          children: [
+            RestTimer(
+              restSeconds: _restSeconds,
+              onComplete: _onRestComplete,
+              canSkip: false,
+              canExtend: true,
+              lastSetPerformance: _getLastSetPerformance(),
+            ),
+            if (shortOn)
+              Positioned(
+                left: 8,
+                top: 8,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                  color: Colors.red.withOpacity(0.18),
+                  child: Text(
+                    'DEV · SHORT REST (${cfg.debugShortRestSeconds}s)',
+                    style: const TextStyle(fontSize: 10, color: Colors.redAccent),
+                  ),
+                ),
+              ),
+          ],
         ),
       );
     }
@@ -414,12 +587,47 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
                   padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
                   child: Column(
                     children: [
-                      Text(
-                        _currentPrescription?.exercise.name.toUpperCase() ?? 'UNKNOWN EXERCISE',
-                        style: HeavyweightTheme.h1,
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Expanded(
+                            child: Text(
+                              _currentPrescription?.exercise.name.toUpperCase() ?? 'UNKNOWN EXERCISE',
+                              style: HeavyweightTheme.h1,
+                              textAlign: TextAlign.center,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                          Consumer<ExerciseViewModel>(
+                            builder: (context, exerciseViewModel, child) {
+                              if (!exerciseViewModel.isLoaded || _currentPrescription == null) {
+                                return const SizedBox();
+                              }
+                              
+                              final hasAlternatives = exerciseViewModel.hasAlternatives(_currentPrescription!.exercise.id);
+                              if (!hasAlternatives) {
+                                return const SizedBox();
+                              }
+                              
+                              return IconButton(
+                                onPressed: () {
+                                  ExerciseAlternativesBottomSheet.show(
+                                    context,
+                                    exerciseId: _currentPrescription!.exercise.id,
+                                    currentExerciseName: _currentPrescription!.exercise.name,
+                                  );
+                                },
+                                icon: const Icon(
+                                  Icons.swap_horiz,
+                                  color: Colors.white,
+                                  size: 24,
+                                ),
+                                tooltip: 'Exercise Options',
+                              );
+                            },
+                          ),
+                        ],
                       ),
                       const SizedBox(height: HeavyweightTheme.spacingMd),
                       Text(
@@ -454,7 +662,13 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
                             ),
                             const SizedBox(height: HeavyweightTheme.spacingSm),
                             Text(
-                              _isCalibrating ? '${_currentCalibrationWeight} KG' : '${_currentWorkingWeight} KG',
+                              () {
+                                final unit = context.read<ProfileProvider>().unit == Unit.kg ? HWUnit.kg : HWUnit.lb;
+                                final valueKg = _isCalibrating ? _currentCalibrationWeight : _currentWorkingWeight;
+                                final disp = formatWeightForUnit(valueKg, unit);
+                                final suffix = unit == HWUnit.kg ? 'KG' : 'LB';
+                                return '$disp $suffix';
+                              }(),
                               style: GoogleFonts.ibmPlexMono(
                                 color: _isCalibrating
                                     ? HeavyweightTheme.warning
@@ -720,4 +934,18 @@ class _ProtocolScreenState extends State<ProtocolScreen> {
       ),
     );
   }
+}
+
+class _CalibrationEntry {
+  final double weight;
+  final int reps;
+  _CalibrationEntry(this.weight, this.reps);
+}
+
+class _NextCalibResult {
+  final double next;
+  final double est1rm;
+  final String note;
+  final int pct;
+  _NextCalibResult({required this.next, required this.est1rm, required this.note, required this.pct});
 }

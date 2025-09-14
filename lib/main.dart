@@ -15,6 +15,7 @@ import 'providers/profile_provider.dart';
 import 'providers/repository_provider.dart';
 import 'providers/workout_engine_provider.dart';
 import 'providers/app_state_provider.dart';
+import 'viewmodels/exercise_viewmodel.dart';
 import 'core/auth_service.dart';
 import 'core/error_handler.dart';
 import 'nav.dart';
@@ -93,6 +94,12 @@ void main() async {
       debugPrint('✅ HEAVYWEIGHT: App state provider initialized');
     }
 
+    final exerciseViewModel = ExerciseViewModel();
+    await exerciseViewModel.initialize();
+    if (kDebugMode) {
+      debugPrint('✅ HEAVYWEIGHT: Exercise view model initialized');
+    }
+
     runApp(MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (context) => ProfileProvider()),
@@ -100,6 +107,7 @@ void main() async {
         ChangeNotifierProvider.value(value: repositoryProvider),
         ChangeNotifierProvider.value(value: appStateProvider),
         ChangeNotifierProvider.value(value: AuthService()), // Add AuthService
+        ChangeNotifierProvider.value(value: exerciseViewModel),
       ],
       child: const MyApp(),
     ));

@@ -17,13 +17,13 @@ class HeavyweightCard extends StatelessWidget {
   final bool animated;
   
   const HeavyweightCard({
-    Key? key,
+    super.key,
     required this.child,
     this.variant = CardVariant.standard,
     this.onTap,
     this.padding,
     this.animated = true,
-  }) : super(key: key);
+  });
   
   @override
   Widget build(BuildContext context) {
@@ -67,7 +67,7 @@ class HeavyweightCard extends StatelessWidget {
         return HeavyweightTheme.accentCardDecoration;
       case CardVariant.error:
         return BoxDecoration(
-          color: HeavyweightTheme.errorSurface.withValues(alpha: 0.1),
+          color: HeavyweightTheme.errorSurface.withOpacity(0.1),
           border: Border.all(color: HeavyweightTheme.error),
         );
     }

@@ -41,7 +41,7 @@ class Exercise {
       id: 'bench',
       name: 'Bench Press',
       muscleGroup: 'Chest',
-      prescribedWeight: 60.0, // Bar + 20kg per side (1 plate each side)
+      prescribedWeight: 80.0, // Bar + 30kg per side - SERIOUS starting weight
     ),
     Exercise(
       id: 'overhead',
@@ -63,31 +63,101 @@ class Exercise {
     ),
   ];
 
-  /// Chest day exercises - matches database exactly
+  /// Chest day exercises - HEAVYWEIGHT starting weights for serious lifters
   static const List<Exercise> chestExercises = [
     Exercise(
       id: 'bench',
       name: 'Bench Press',
       muscleGroup: 'Chest',
-      prescribedWeight: 60.0, // Bar + 20kg per side
+      prescribedWeight: 80.0, // Serious starting weight - Bar + 30kg per side
     ),
     Exercise(
       id: 'incline_db',
       name: 'DB Incline Bench Press',
       muscleGroup: 'Chest',
-      prescribedWeight: 25.0, // Per hand
+      prescribedWeight: 25.0, // Per hand - good starting weight
     ),
     Exercise(
       id: 'chest_fly',
       name: 'Chest Flies',
       muscleGroup: 'Chest',
-      prescribedWeight: 15.0, // Per hand - isolation
+      prescribedWeight: 30.0, // Machine stack weight (not per hand)
     ),
     Exercise(
-      id: 'close_grip_bench',
-      name: 'Close Grip Bench Press',
+      id: 'dips',
+      name: 'Dips',
       muscleGroup: 'Chest/Triceps',
-      prescribedWeight: 50.0, // Close grip bench weight
+      prescribedWeight: 0.0, // Bodyweight first, then add weight
+    ),
+  ];
+
+  /// Back day exercises
+  static const List<Exercise> backExercises = [
+    Exercise(
+      id: 'deadlift',
+      name: 'Deadlift',
+      muscleGroup: 'Back/Legs',
+      prescribedWeight: 100.0,
+    ),
+    Exercise(
+      id: 'row',
+      name: 'Barbell Row',
+      muscleGroup: 'Back',
+      prescribedWeight: 50.0,
+    ),
+    Exercise(
+      id: 'pullup',
+      name: 'Weighted Pull-up',
+      muscleGroup: 'Back/Biceps',
+      prescribedWeight: 0.0,
+    ),
+  ];
+
+  /// Arms day exercises
+  static const List<Exercise> armExercises = [
+    Exercise(
+      id: 'pullup',
+      name: 'Weighted Pull-up',
+      muscleGroup: 'Back/Biceps',
+      prescribedWeight: 0.0,
+    ),
+    Exercise(
+      id: 'overhead',
+      name: 'Overhead Press',
+      muscleGroup: 'Shoulders/Triceps',
+      prescribedWeight: 40.0,
+    ),
+  ];
+
+  /// Shoulders day exercises
+  static const List<Exercise> shoulderExercises = [
+    Exercise(
+      id: 'overhead',
+      name: 'Overhead Press',
+      muscleGroup: 'Shoulders',
+      prescribedWeight: 40.0,
+    ),
+    Exercise(
+      id: 'row',
+      name: 'Barbell Row',
+      muscleGroup: 'Back/Rear Delts',
+      prescribedWeight: 50.0,
+    ),
+  ];
+
+  /// Legs day exercises
+  static const List<Exercise> legExercises = [
+    Exercise(
+      id: 'squat',
+      name: 'Barbell Squat',
+      muscleGroup: 'Legs',
+      prescribedWeight: 80.0,
+    ),
+    Exercise(
+      id: 'deadlift',
+      name: 'Deadlift',
+      muscleGroup: 'Back/Legs',
+      prescribedWeight: 100.0,
     ),
   ];
   
@@ -122,12 +192,13 @@ class Exercise {
     required String description,
     int setsTarget = 3,
   }) {
+    final id = Exercise.mapNameToId(name);
     return Exercise(
       databaseId: databaseId,
-      id: name.toLowerCase().replaceAll(' ', '_'),
+      id: id,
       name: name,
       muscleGroup: 'Mixed', // Will be set based on day
-      prescribedWeight: 20.0, // Default starting weight
+      prescribedWeight: Exercise.startingWeightFor(id), // Use proper starting weight
       setsTarget: setsTarget,
       description: description,
     );
@@ -161,7 +232,7 @@ class Exercise {
       id: _mapExerciseNameToId(row['name']),
       name: row['name'],
       muscleGroup: _getMuscleGroupForExercise(row['name']),
-      prescribedWeight: 60.0, // Will be determined by calibration
+      prescribedWeight: startingWeightFor(_mapExerciseNameToId(row['name'])), // Use consistent starting weight
       targetReps: 5,
       restSeconds: 180,
     );
@@ -187,8 +258,8 @@ class Exercise {
         return 'incline_db';
       case 'chest flies':
         return 'chest_fly';
-      case 'close grip bench press':
-        return 'close_grip_bench';
+      case 'dips':
+        return 'dips';
       default:
         return name.toLowerCase().replaceAll(' ', '_');
     }
@@ -197,19 +268,18 @@ class Exercise {
   /// Public method for external use of exercise name mapping
   static String mapNameToId(String name) => _mapExerciseNameToId(name);
 
-  /// Get starting weight for exercise to prevent 0.0kg
+  /// Get starting weight for exercise - HEAVYWEIGHT weights for serious lifters
   static double startingWeightFor(String id) {
     switch (id) {
-      case 'bench': return 60.0;           // Bar + 20kg per side
+      case 'bench': return 80.0;           // Bar + 30kg per side - SERIOUS
       case 'squat': return 80.0;           // Bar + 30kg per side  
       case 'deadlift': return 100.0;       // Bar + 40kg per side
       case 'overhead': return 40.0;        // Bar + 10kg per side
       case 'row': return 50.0;             // Bar + 15kg per side
       case 'incline_db': return 25.0;      // Per hand
-      case 'chest_fly': return 15.0;       // Per hand - isolation
-      case 'close_grip_bench': return 50.0; // Close grip bench
+      case 'chest_fly': return 30.0;       // Machine stack weight
+      case 'dips': return 0.0;             // Bodyweight first
       case 'pullup': return 0.0;           // Bodyweight
-      case 'dips': return 0.0;             // Bodyweight
       default: return 20.0;                // Safe minimum
     }
   }

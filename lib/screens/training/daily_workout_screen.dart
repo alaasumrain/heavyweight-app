@@ -301,13 +301,13 @@ class _DailyWorkoutScreenState extends State<DailyWorkoutScreen> {
                 ],
               ),
               
-              // Mandate with overflow protection
+              // Status with overflow protection
               Flexible(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      'MANDATE',
+                      'STATUS',
                       style: HeavyweightTheme.labelSmall.copyWith(
                         color: HeavyweightTheme.textSecondary,
                       ),
@@ -391,7 +391,7 @@ class _DailyWorkoutScreenState extends State<DailyWorkoutScreen> {
               ),
               const SizedBox(height: HeavyweightTheme.spacingXl),
               const Text(
-                'REST DAY MANDATED',
+                'REST DAY',
                 style: TextStyle(
                   color: HeavyweightTheme.danger,
                   fontSize: 28,

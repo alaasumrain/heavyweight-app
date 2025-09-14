@@ -15,7 +15,7 @@ import 'main_app_shell.dart';
 import '../../core/logging.dart';
 
 class NavigationShell extends StatelessWidget {
-  const NavigationShell({Key? key}) : super(key: key);
+  const NavigationShell({super.key});
 
   @override
   Widget build(BuildContext context) {

@@ -14,13 +14,13 @@ class RestTimer extends StatefulWidget {
   final String? lastSetPerformance; // 'below_mandate', 'within_mandate', 'above_mandate'
   
   const RestTimer({
-    Key? key,
+    super.key,
     required this.restSeconds,
     required this.onComplete,
     this.canSkip = true, // Default to flexible
     this.canExtend = true,
     this.lastSetPerformance,
-  }) : super(key: key);
+  });
   
   @override
   State<RestTimer> createState() => _RestTimerState();
@@ -322,7 +322,7 @@ class _RestTimerState extends State<RestTimer> with SingleTickerProviderStateMix
                     padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
                       border: Border.all(color: Colors.orange.shade800),
-                      color: Colors.orange.shade900.withValues(alpha: 0.3),
+                      color: Colors.orange.shade900.withOpacity(0.3),
                     ),
                     child: Text(
                       'REST EXTENDED',

@@ -14,12 +14,12 @@ class ErrorScreen extends StatelessWidget {
   final String? retryRoute;
 
   const ErrorScreen({
-    Key? key,
+    super.key,
     this.error,
     this.errorMessage,
     this.onRetry,
     this.retryRoute,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
