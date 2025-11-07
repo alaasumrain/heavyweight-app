@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:go_router/go_router.dart';
 import '../../components/layout/heavyweight_scaffold.dart';
+import '../../components/ui/command_button.dart';
 import '../../core/theme/heavyweight_theme.dart';
 import '../../fortress/viewmodels/logbook_viewmodel.dart';
 import '../../providers/logbook_viewmodel_provider.dart';
@@ -10,26 +11,90 @@ import '../../fortress/engine/storage/workout_repository_interface.dart';
 import '../../core/logging.dart';
 
 class TrainingLogScreen extends StatefulWidget {
-  const TrainingLogScreen({Key? key}) : super(key: key);
-  
+  const TrainingLogScreen({super.key});
+
   static Widget withProvider() {
     return const LogbookViewModelProvider(
       child: TrainingLogScreen(),
     );
   }
-  
+
   @override
   State<TrainingLogScreen> createState() => _TrainingLogScreenState();
 }
 
 class _TrainingLogScreenState extends State<TrainingLogScreen> {
-  bool _isLoading = true;
+  Widget _buildMetricTile(String label, String value) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: HeavyweightTheme.spacingSm,
+        vertical: HeavyweightTheme.spacingXs,
+      ),
+      decoration: BoxDecoration(
+        border: Border.all(
+            color: HeavyweightTheme.secondary.withValues(alpha: 0.5)),
+        color: HeavyweightTheme.background,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            label,
+            style: HeavyweightTheme.labelSmall.copyWith(
+              color: HeavyweightTheme.textSecondary,
+              letterSpacing: 1,
+            ),
+          ),
+          const SizedBox(height: HeavyweightTheme.spacingXs),
+          Text(
+            value,
+            style: HeavyweightTheme.h4.copyWith(fontSize: 16),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSessionChip(String value, Color borderColor) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: HeavyweightTheme.spacingSm,
+        vertical: HeavyweightTheme.spacingXs,
+      ),
+      decoration: BoxDecoration(
+        border: Border.all(color: borderColor.withValues(alpha: 0.6)),
+      ),
+      child: Text(
+        value,
+        style: HeavyweightTheme.bodySmall.copyWith(
+          color: HeavyweightTheme.textSecondary,
+          letterSpacing: 1,
+        ),
+      ),
+    );
+  }
+
   @override
   void initState() {
     super.initState();
+    HWLog.event('training_log_screen_init');
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<LogbookViewModel>().initialize();
+      if (mounted) {
+        context.read<LogbookViewModel>().initialize();
+      }
     });
+  }
+
+  @override
+  void dispose() {
+    HWLog.event('training_log_screen_dispose');
+    super.dispose();
+  }
+
+  /// Refresh logbook data (for pull-to-refresh)
+  Future<void> _refreshLogbook() async {
+    await context.read<LogbookViewModel>().refresh();
   }
 
   @override
@@ -37,62 +102,57 @@ class _TrainingLogScreenState extends State<TrainingLogScreen> {
     HWLog.screen('Training/Logbook');
     return Consumer<LogbookViewModel>(
       builder: (context, viewModel, child) {
-        if (viewModel.isLoading) {
+        if (viewModel.error != null) {
+          HWLog.event('training_log_state',
+              data: {'state': 'error', 'error': viewModel.error.toString()});
+          return _buildError(viewModel.error!);
+        }
+
+        if (viewModel.isLoading && !viewModel.hasSessions) {
           HWLog.event('training_log_state', data: {'state': 'loading'});
           return HeavyweightScaffold(
-            body: Center(
-              child: CircularProgressIndicator(
-                color: HeavyweightTheme.primary,
-              ),
+            title: 'LOGBOOK',
+            body: const Center(
+              child: CircularProgressIndicator(color: HeavyweightTheme.primary),
             ),
           );
         }
-        
-        if (viewModel.error != null) {
-          HWLog.event('training_log_state', data: {'state': 'error', 'error': viewModel.error.toString()});
-          return _buildError(viewModel.error!);
-        }
-        
-        HWLog.event('training_log_state', data: {'state': 'ready', 'sessionCount': viewModel.sessions.length});
+
+        HWLog.event('training_log_state', data: {
+          'state': 'ready',
+          'sessionCount': viewModel.sessions.length
+        });
+
         return HeavyweightScaffold(
           title: 'LOGBOOK',
-          
-          body: Column(
-            children: [
-                  
-                  // Stats Summary
-                  _buildStatsContainer(viewModel.stats),
-                  
-                  const SizedBox(height: HeavyweightTheme.spacingLg),
-                  
-                  // Session History
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'SESSION_HISTORY:',
-                          style: HeavyweightTheme.labelMedium.copyWith(
-                            color: HeavyweightTheme.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: HeavyweightTheme.spacingMd),
-                        
-                        Expanded(
-                          child: viewModel.hasSessions 
-                              ? ListView.builder(
-                                  itemCount: viewModel.sessions.length,
-                                  itemBuilder: (context, index) {
-                                    final session = viewModel.sessions[index];
-                                    return _buildSessionCard(session, viewModel);
-                                  },
-                                )
-                              : _buildEmptyState(),
-                        ),
-                      ],
+          body: RefreshIndicator(
+            color: HeavyweightTheme.primary,
+            backgroundColor: HeavyweightTheme.surface,
+            onRefresh: _refreshLogbook,
+            child: ListView(
+              padding: const EdgeInsets.symmetric(
+                horizontal: HeavyweightTheme.spacingMd,
+                vertical: HeavyweightTheme.spacingMd,
+              ),
+              children: [
+                _buildStatsContainer(viewModel.stats),
+                const SizedBox(height: HeavyweightTheme.spacingLg),
+                if (viewModel.hasSessions) ...[
+                  Text(
+                    'SESSION_HISTORY:',
+                    style: HeavyweightTheme.labelMedium.copyWith(
+                      color: HeavyweightTheme.textSecondary,
                     ),
                   ),
-            ],
+                  const SizedBox(height: HeavyweightTheme.spacingMd),
+                  ...viewModel.sessions
+                      .map((session) => _buildSessionCard(session, viewModel)),
+                ] else ...[
+                  _buildEmptyState(),
+                ],
+                const SizedBox(height: HeavyweightTheme.spacingXl),
+              ],
+            ),
           ),
         );
       },
@@ -101,123 +161,130 @@ class _TrainingLogScreenState extends State<TrainingLogScreen> {
 
   Widget _buildStatsContainer(PerformanceStats stats) {
     return Container(
-      width: double.infinity,
       padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
       decoration: BoxDecoration(
-        border: Border.all(color: HeavyweightTheme.primary, width: 1),
+        color: HeavyweightTheme.surface,
+        border: Border.all(
+            color: HeavyweightTheme.secondary.withValues(alpha: 0.6)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            'RECENT_PERFORMANCE:',
+            'PERFORMANCE SNAPSHOT',
             style: HeavyweightTheme.labelMedium.copyWith(
               color: HeavyweightTheme.primary,
+              letterSpacing: 1.5,
             ),
           ),
           const SizedBox(height: HeavyweightTheme.spacingSm),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Wrap(
+            spacing: HeavyweightTheme.spacingSm,
+            runSpacing: HeavyweightTheme.spacingSm,
             children: [
-              Expanded(child: Text('TOTAL_SESSIONS: ${stats.workoutDays}', style: HeavyweightTheme.bodySmall)),
-              Expanded(child: Text('TOTAL_SETS: ${stats.totalSets}', style: HeavyweightTheme.bodySmall, textAlign: TextAlign.end)),
-            ],
-          ),
-          const SizedBox(height: HeavyweightTheme.spacingXs),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(child: Text('ADHERENCE: ${stats.mandateAdherence.toStringAsFixed(0)}%', style: HeavyweightTheme.bodySmall)),
-              Expanded(child: Text('VOLUME: ${stats.totalVolume.toStringAsFixed(0)} KG', style: HeavyweightTheme.bodySmall, textAlign: TextAlign.end)),
+              _buildMetricTile('TOTAL SESSIONS', stats.workoutDays.toString()),
+              _buildMetricTile('TOTAL SETS', stats.totalSets.toString()),
+              _buildMetricTile(
+                  'ADHERENCE', '${stats.mandateAdherence.toStringAsFixed(0)}%'),
+              _buildMetricTile(
+                  'TOTAL VOLUME', '${stats.totalVolume.toStringAsFixed(0)} KG'),
             ],
           ),
         ],
       ),
     );
   }
-  
+
   Widget _buildSessionCard(WorkoutSession session, LogbookViewModel viewModel) {
     final dayName = viewModel.getWorkoutDayName(session);
     final duration = viewModel.getSessionDuration(session);
     final exercises = viewModel.getExerciseSummary(session);
     final volume = viewModel.getSessionVolume(session);
-    
+
     return InkWell(
-      onTap: () {
-        context.go('/session-detail', extra: session);
-      },
+      onTap: () => context.go('/session-detail', extra: session),
       child: Container(
         margin: const EdgeInsets.only(bottom: HeavyweightTheme.spacingMd),
         padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
         decoration: BoxDecoration(
-          border: Border.all(color: HeavyweightTheme.textSecondary, width: 1),
+          color: HeavyweightTheme.surface,
+          border: Border.all(
+              color: HeavyweightTheme.secondary.withValues(alpha: 0.6)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Session header
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _formatDate(session.date),
+                      style: HeavyweightTheme.labelSmall.copyWith(
+                        color: HeavyweightTheme.textSecondary,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                    Text(
+                      dayName,
+                      style: HeavyweightTheme.h4.copyWith(
+                        letterSpacing: 2,
+                      ),
+                    ),
+                  ],
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    _buildSessionChip(duration, HeavyweightTheme.secondary),
+                    const SizedBox(height: HeavyweightTheme.spacingXs),
+                    _buildSessionChip('${volume.toStringAsFixed(0)} KG',
+                        HeavyweightTheme.primary),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: HeavyweightTheme.spacingSm),
+            ...exercises.map((exerciseText) => Padding(
+                  padding:
+                      const EdgeInsets.only(bottom: HeavyweightTheme.spacingXs),
+                  child: Text(
+                    exerciseText,
+                    style: HeavyweightTheme.bodySmall.copyWith(
+                      color: HeavyweightTheme.textSecondary,
+                    ),
+                  ),
+                )),
+            const SizedBox(height: HeavyweightTheme.spacingSm),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  '${_formatDate(session.date)} - $dayName',
-                  style: HeavyweightTheme.h4.copyWith(fontSize: 14),
-                ),
-                Text(
-                  duration,
+                  'LOGGED SETS: ${session.sets.length}',
                   style: HeavyweightTheme.bodySmall.copyWith(
                     color: HeavyweightTheme.textSecondary,
                   ),
                 ),
+                const Icon(Icons.arrow_forward_ios,
+                    size: 14, color: HeavyweightTheme.textSecondary),
               ],
-            ),
-            
-            const SizedBox(height: HeavyweightTheme.spacingSm),
-            
-            // Volume
-            Text(
-              'VOLUME: ${volume.toStringAsFixed(0)} KG',
-              style: HeavyweightTheme.bodySmall.copyWith(
-                color: HeavyweightTheme.primary,
-              ),
-            ),
-            
-            const SizedBox(height: HeavyweightTheme.spacingSm),
-            
-            // Exercises
-            ...exercises.map<Widget>((exerciseText) {
-              return Padding(
-                padding: const EdgeInsets.only(bottom: HeavyweightTheme.spacingXs),
-                child: Text(
-                  '├─ $exerciseText',
-                  style: HeavyweightTheme.bodySmall.copyWith(
-                    color: HeavyweightTheme.textSecondary,
-                  ),
-                ),
-              );
-            }),
-            
-            const SizedBox(height: HeavyweightTheme.spacingSm),
-            
-            // Tap indicator
-            Text(
-              'COMMAND: VIEW_SESSION',
-              style: HeavyweightTheme.bodySmall.copyWith(
-                color: HeavyweightTheme.textSecondary,
-                fontSize: 10,
-                letterSpacing: 1,
-              ),
             ),
           ],
         ),
       ),
     );
   }
-  
+
   Widget _buildEmptyState() {
-    return Center(
+    return Container(
+      padding: const EdgeInsets.all(HeavyweightTheme.spacingLg),
+      decoration: BoxDecoration(
+        border: Border.all(color: HeavyweightTheme.secondary),
+      ),
       child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
             'NO_SESSIONS_RECORDED',
@@ -234,11 +301,17 @@ class _TrainingLogScreenState extends State<TrainingLogScreen> {
             ),
             textAlign: TextAlign.center,
           ),
+          const SizedBox(height: HeavyweightTheme.spacingLg),
+          CommandButton(
+            text: 'GO TO ASSIGNMENT',
+            variant: ButtonVariant.primary,
+            onPressed: () => context.go('/app?tab=0'),
+          ),
         ],
       ),
     );
   }
-  
+
   Widget _buildError(String error) {
     return HeavyweightScaffold(
       body: Center(
@@ -268,7 +341,7 @@ class _TrainingLogScreenState extends State<TrainingLogScreen> {
       ),
     );
   }
-  
+
   String _formatDate(DateTime date) {
     return '${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}';
   }

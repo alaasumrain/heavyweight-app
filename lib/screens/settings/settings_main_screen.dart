@@ -12,79 +12,72 @@ import '../../components/ui/toast.dart';
 import '../../core/logging.dart';
 
 class SettingsMainScreen extends StatelessWidget {
-  const SettingsMainScreen({Key? key}) : super(key: key);
+  const SettingsMainScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     HWLog.screen('Settings/Main');
     return HeavyweightScaffold(
       title: 'SETTINGS',
-      
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-                      _buildSettingsSection('PROFILE', [
-                        _buildSettingsItem(
-                          icon: Icons.person_outline,
-                          label: 'PROFILE_MANAGEMENT',
-                          subtitle: 'EDIT PROFILE.',
-                          onTap: () => context.go('/profile'),
-                        ),
-                      ]),
-                      
-                      const SizedBox(height: HeavyweightTheme.spacingXl),
-                      
-                      _buildSettingsSection('DATA', [
-                        _buildSettingsItem(
-                          icon: Icons.storage_outlined,
-                          label: 'TRAINING_DATA',
-                          subtitle: 'EXPORT / MANAGE.',
-                          onTap: () => _showDataOptions(context),
-                        ),
-                        _buildSettingsItem(
-                          icon: Icons.refresh_outlined,
-                          label: 'COMMAND: RESET_APPLICATION',
-                          subtitle: 'CLEAR ALL DATA AND RESTART.',
-                          onTap: () => _showResetDialog(context),
-                          isDestructive: false,
-                        ),
-                      ]),
-                      
-                      const SizedBox(height: HeavyweightTheme.spacingXl),
-                      
-                      _buildSettingsSection('ABOUT', [
-                        _buildSettingsItem(
-                          icon: Icons.info_outline,
-                          label: 'VERSION',
-                          subtitle: 'V1.0.0 – HEAVYWEIGHT_PROTOCOL.',
-                          onTap: () => _showAbout(context),
-                        ),
-                        _buildSettingsItem(
-                          icon: Icons.description_outlined,
-                          label: 'PHILOSOPHY',
-                          subtitle: 'ADAPTIVE LOAD CONTROL.',
-                          onTap: () => context.go('/manifesto'),
-                        ),
-                      ]),
-                      
-                      const SizedBox(height: HeavyweightTheme.spacingXl),
-                      
-                      _buildSettingsSection('DEVELOPER', [
-                        _buildSettingsItem(
-                          icon: Icons.refresh,
-                          label: 'Reset All Data',
-                          subtitle: 'Clear all data and restart onboarding',
-                          onTap: () => _resetAllData(context),
-                          isDestructive: true,
-                        ),
-                      ]),
+            _buildSettingsSection('PROFILE', [
+              _buildSettingsItem(
+                icon: Icons.person_outline,
+                label: 'PROFILE_MANAGEMENT',
+                subtitle: 'EDIT PROFILE.',
+                onTap: () => context.push('/profile'),
+              ),
+            ]),
+            const SizedBox(height: HeavyweightTheme.spacingXl),
+            _buildSettingsSection('DATA', [
+              _buildSettingsItem(
+                icon: Icons.storage_outlined,
+                label: 'TRAINING_DATA',
+                subtitle: 'EXPORT / MANAGE.',
+                onTap: () => _showDataOptions(context),
+              ),
+              _buildSettingsItem(
+                icon: Icons.refresh_outlined,
+                label: 'COMMAND: RESET_APPLICATION',
+                subtitle: 'CLEAR ALL DATA AND RESTART.',
+                onTap: () => _showResetDialog(context),
+                isDestructive: false,
+              ),
+            ]),
+            const SizedBox(height: HeavyweightTheme.spacingXl),
+            _buildSettingsSection('ABOUT', [
+              _buildSettingsItem(
+                icon: Icons.info_outline,
+                label: 'VERSION',
+                subtitle: 'V1.0.0 – HEAVYWEIGHT_PROTOCOL.',
+                onTap: () => _showAbout(context),
+              ),
+              _buildSettingsItem(
+                icon: Icons.description_outlined,
+                label: 'PHILOSOPHY',
+                subtitle: 'ADAPTIVE LOAD CONTROL.',
+                onTap: () => context.go('/manifesto'),
+              ),
+            ]),
+            const SizedBox(height: HeavyweightTheme.spacingXl),
+            _buildSettingsSection('DEVELOPER', [
+              _buildSettingsItem(
+                icon: Icons.refresh,
+                label: 'Reset All Data',
+                subtitle: 'Clear all data and restart onboarding',
+                onTap: () => _resetAllData(context),
+                isDestructive: true,
+              ),
+            ]),
           ],
         ),
       ),
     );
   }
-  
+
   Widget _buildSettingsSection(String title, List<Widget> items) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -101,7 +94,7 @@ class SettingsMainScreen extends StatelessWidget {
       ],
     );
   }
-  
+
   Widget _buildSettingsItem({
     required IconData icon,
     required String label,
@@ -118,7 +111,7 @@ class SettingsMainScreen extends StatelessWidget {
           padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
           decoration: BoxDecoration(
             border: Border.all(
-              color: isDestructive 
+              color: isDestructive
                   ? HeavyweightTheme.error.withValues(alpha: 0.3)
                   : HeavyweightTheme.secondary,
             ),
@@ -127,8 +120,8 @@ class SettingsMainScreen extends StatelessWidget {
             children: [
               Icon(
                 icon,
-                color: isDestructive 
-                    ? HeavyweightTheme.error 
+                color: isDestructive
+                    ? HeavyweightTheme.error
                     : HeavyweightTheme.textSecondary,
                 size: 24,
               ),
@@ -140,8 +133,8 @@ class SettingsMainScreen extends StatelessWidget {
                     Text(
                       label,
                       style: HeavyweightTheme.bodyMedium.copyWith(
-                        color: isDestructive 
-                            ? HeavyweightTheme.error 
+                        color: isDestructive
+                            ? HeavyweightTheme.error
                             : HeavyweightTheme.textPrimary,
                       ),
                     ),
@@ -166,7 +159,7 @@ class SettingsMainScreen extends StatelessWidget {
       ),
     );
   }
-  
+
   void _showDataOptions(BuildContext context) {
     HWLog.event('settings_data_options_open');
     showModalBottomSheet(
@@ -183,18 +176,24 @@ class SettingsMainScreen extends StatelessWidget {
             ),
             const SizedBox(height: HeavyweightTheme.spacingLg),
             ListTile(
-              leading: const Icon(Icons.file_download, color: HeavyweightTheme.textPrimary),
-              title: const Text('Export Data', style: TextStyle(color: HeavyweightTheme.textPrimary)),
-              subtitle: const Text('Export workout history as CSV', style: TextStyle(color: HeavyweightTheme.textSecondary)),
+              leading: const Icon(Icons.file_download,
+                  color: HeavyweightTheme.textPrimary),
+              title: const Text('Export Data',
+                  style: TextStyle(color: HeavyweightTheme.textPrimary)),
+              subtitle: const Text('Export workout history as CSV',
+                  style: TextStyle(color: HeavyweightTheme.textSecondary)),
               onTap: () {
                 Navigator.pop(context);
                 _exportData(context);
               },
             ),
             ListTile(
-              leading: const Icon(Icons.analytics, color: HeavyweightTheme.textPrimary),
-              title: const Text('View Statistics', style: TextStyle(color: HeavyweightTheme.textPrimary)),
-              subtitle: const Text('Detailed training analytics', style: TextStyle(color: HeavyweightTheme.textSecondary)),
+              leading: const Icon(Icons.analytics,
+                  color: HeavyweightTheme.textPrimary),
+              title: const Text('View Statistics',
+                  style: TextStyle(color: HeavyweightTheme.textPrimary)),
+              subtitle: const Text('Detailed training analytics',
+                  style: TextStyle(color: HeavyweightTheme.textSecondary)),
               onTap: () {
                 Navigator.pop(context);
                 context.go('/app?tab=1');
@@ -205,7 +204,7 @@ class SettingsMainScreen extends StatelessWidget {
       ),
     );
   }
-  
+
   void _exportData(BuildContext context) {
     HWLog.event('settings_export_data');
     ScaffoldMessenger.of(context).showSnackBar(
@@ -218,14 +217,19 @@ class SettingsMainScreen extends StatelessWidget {
       ),
     );
   }
-  
+
   // removed screenshot capture utility
-  
+
   void _resetAllData(BuildContext context) {
     HWLog.event('settings_reset_all_open');
+    final navigator = Navigator.of(context);
+    final router = GoRouter.of(context);
+    final appState = context.read<AppStateProvider>().appState;
+    final repositoryProvider = context.read<RepositoryProvider>();
+
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (dialogContext) => AlertDialog(
         backgroundColor: HeavyweightTheme.surface,
         title: const Text(
           'RESET ALL DATA',
@@ -237,39 +241,39 @@ class SettingsMainScreen extends StatelessWidget {
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(context),
+            onPressed: () => navigator.pop(),
             child: const Text('CANCEL'),
           ),
           TextButton(
             onPressed: () async {
-              Navigator.pop(context);
-              
+              navigator.pop();
+
               // Reset app state
               HWLog.event('settings_reset_all_confirm');
-              final appState = context.read<AppStateProvider>().appState;
               await appState.reset();
-              
+
               // Reset repository
-              final repository = context.read<RepositoryProvider>().repository;
+              final repository = repositoryProvider.repository;
               if (repository != null) {
                 await repository.clearAll();
               }
-              
+
               // Sign out to clear auth session
               await AuthService().signOut();
-              
+
               // Navigate to splash/onboarding
               HWLog.event('settings_reset_all_navigate', data: {'to': '/'});
-              context.go('/');
+              router.go('/');
             },
-            style: TextButton.styleFrom(foregroundColor: HeavyweightTheme.danger),
+            style:
+                TextButton.styleFrom(foregroundColor: HeavyweightTheme.danger),
             child: const Text('RESET ALL'),
           ),
         ],
       ),
     );
   }
-  
+
   void _showResetDialog(BuildContext context) {
     showDialog(
       context: context,
@@ -308,7 +312,9 @@ class SettingsMainScreen extends StatelessWidget {
             onPressed: () {
               context.read<ProfileProvider>().reset();
               context.pop();
-              HeavyweightToast.show(context, message: 'APPLICATION RESET COMPLETE', variant: ToastVariant.warn);
+              HeavyweightToast.show(context,
+                  message: 'APPLICATION RESET COMPLETE',
+                  variant: ToastVariant.warn);
             },
             child: Text(
               'RESET',
@@ -321,7 +327,7 @@ class SettingsMainScreen extends StatelessWidget {
       ),
     );
   }
-  
+
   void _showAbout(BuildContext context) {
     showDialog(
       context: context,

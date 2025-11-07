@@ -3,12 +3,11 @@ import 'package:go_router/go_router.dart';
 import '../../components/layout/heavyweight_scaffold.dart';
 import '../../components/ui/command_button.dart';
 import '../../components/ui/selector_wheel.dart';
-import '../../components/ui/warning_stripes.dart';
 import '../../core/theme/heavyweight_theme.dart';
 import '../../core/logging.dart';
 
 class SessionActiveScreen extends StatefulWidget {
-  const SessionActiveScreen({Key? key}) : super(key: key);
+  const SessionActiveScreen({super.key});
 
   @override
   State<SessionActiveScreen> createState() => _SessionActiveScreenState();
@@ -22,20 +21,22 @@ class _SessionActiveScreenState extends State<SessionActiveScreen> {
   String exerciseName = 'SQUAT';
   double currentWeight = 80.0;
   int repsCompleted = 0;
-  
+
   // Session log
   List<Map<String, dynamic>> sessionLog = [];
-  
+
   // UI state
   bool isLogging = false;
   String? lastFeedback;
+  bool _sessionComplete = false;
 
   @override
   Widget build(BuildContext context) {
     HWLog.screen('Training/SessionActive');
     return HeavyweightScaffold(
       title: 'SESSION_ACTIVE',
-      subtitle: 'EXERCISE_${currentExercise.toString().padLeft(2, '0')}_SET_${currentSet.toString().padLeft(2, '0')}',
+      subtitle:
+          'EXERCISE_${currentExercise.toString().padLeft(2, '0')}_SET_${currentSet.toString().padLeft(2, '0')}',
       showNavigation: false, // Hide nav during session
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -83,9 +84,9 @@ class _SessionActiveScreenState extends State<SessionActiveScreen> {
               ],
             ),
           ),
-          
+
           const SizedBox(height: HeavyweightTheme.spacingXl),
-          
+
           // Rep input section
           Text(
             'INPUT_REPS:',
@@ -94,14 +95,15 @@ class _SessionActiveScreenState extends State<SessionActiveScreen> {
             ),
           ),
           const SizedBox(height: HeavyweightTheme.spacingMd),
-          
+
           Center(
             child: SelectorWheel(
               value: repsCompleted,
               min: 0,
               max: 15,
               onChanged: (value) {
-                HWLog.event('session_active_reps_change', data: {'value': value});
+                HWLog.event('session_active_reps_change',
+                    data: {'value': value});
                 setState(() {
                   repsCompleted = value;
                 });
@@ -109,21 +111,24 @@ class _SessionActiveScreenState extends State<SessionActiveScreen> {
               suffix: 'REPS',
             ),
           ),
-          
+
           const SizedBox(height: HeavyweightTheme.spacingXl),
-          
+
           // Log set button
           CommandButton(
             text: isLogging ? 'LOGGING...' : 'LOG_SET',
             variant: ButtonVariant.primary,
-            onPressed: isLogging ? null : () {
-              HWLog.event('session_active_log_set', data: {'reps': repsCompleted, 'weight': currentWeight});
-              _logSet();
-            },
+            onPressed: isLogging
+                ? null
+                : () {
+                    HWLog.event('session_active_log_set',
+                        data: {'reps': repsCompleted, 'weight': currentWeight});
+                    _logSet();
+                  },
           ),
-          
+
           const SizedBox(height: HeavyweightTheme.spacingLg),
-          
+
           // Feedback display
           if (lastFeedback != null)
             Container(
@@ -140,9 +145,9 @@ class _SessionActiveScreenState extends State<SessionActiveScreen> {
                 textAlign: TextAlign.center,
               ),
             ),
-          
+
           const SizedBox(height: HeavyweightTheme.spacingXl),
-          
+
           // Session log
           Expanded(
             child: Column(
@@ -155,14 +160,13 @@ class _SessionActiveScreenState extends State<SessionActiveScreen> {
                   ),
                 ),
                 const SizedBox(height: HeavyweightTheme.spacingMd),
-                
                 Expanded(
-                  child: SingleChildScrollView(
-                    child: Container(
-                      width: double.infinity,
+                  child: Container(
+                    width: double.infinity,
                     padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
                     decoration: BoxDecoration(
-                      border: Border.all(color: HeavyweightTheme.textSecondary, width: 1),
+                      border: Border.all(
+                          color: HeavyweightTheme.textSecondary, width: 1),
                     ),
                     child: sessionLog.isEmpty
                         ? Text(
@@ -171,28 +175,28 @@ class _SessionActiveScreenState extends State<SessionActiveScreen> {
                               color: HeavyweightTheme.textSecondary,
                             ),
                           )
-                        : ListView.builder(
+                        : ListView.separated(
                             itemCount: sessionLog.length,
+                            separatorBuilder: (_, __) => const SizedBox(
+                                height: HeavyweightTheme.spacingSm),
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
                             itemBuilder: (context, index) {
                               final entry = sessionLog[index];
-                              return Padding(
-                                padding: const EdgeInsets.only(bottom: HeavyweightTheme.spacingSm),
-                                child: Text(
-                                  '${entry['exercise']} SET_${entry['set']}: ${entry['reps']}@${entry['weight']}KG ${entry['status']}',
-                                  style: HeavyweightTheme.bodySmall,
-                                ),
+                              return Text(
+                                '${entry['exercise']} SET_${entry['set']}: ${entry['reps']}@${entry['weight']}KG ${entry['status']}',
+                                style: HeavyweightTheme.bodySmall,
                               );
                             },
                           ),
-                    ),
                   ),
                 ),
               ],
             ),
           ),
-          
+
           const SizedBox(height: HeavyweightTheme.spacingLg),
-          
+
           // Session controls
           Row(
             children: [
@@ -212,7 +216,7 @@ class _SessionActiveScreenState extends State<SessionActiveScreen> {
       ),
     );
   }
-  
+
   void _logSet() async {
     if (repsCompleted == 0) {
       setState(() {
@@ -220,19 +224,19 @@ class _SessionActiveScreenState extends State<SessionActiveScreen> {
       });
       return;
     }
-    
+
     setState(() {
       isLogging = true;
       lastFeedback = null;
     });
-    
+
     // Simulate logging delay
     await Future.delayed(const Duration(milliseconds: 500));
-    
+
     // Determine feedback based on reps
     String status;
     String feedback;
-    
+
     if (repsCompleted <= 3) {
       status = 'BELOW_RANGE';
       feedback = 'ADJUST_WEIGHT_DOWN';
@@ -243,20 +247,21 @@ class _SessionActiveScreenState extends State<SessionActiveScreen> {
       status = 'IN_RANGE';
       feedback = 'LOAD_OK';
     }
-    
+
     // Add to session log
-    sessionLog.add({
+    final entry = {
       'exercise': exerciseName,
       'set': currentSet,
       'reps': repsCompleted,
       'weight': currentWeight,
       'status': status,
-    });
-    
+    };
+
     setState(() {
+      sessionLog.add(entry);
       isLogging = false;
       lastFeedback = feedback;
-      
+
       // Progress to next set or exercise
       if (currentSet < totalSets) {
         currentSet++;
@@ -270,19 +275,21 @@ class _SessionActiveScreenState extends State<SessionActiveScreen> {
           _completeSession();
         }
       }
-      
+
       // Reset reps for next set
       repsCompleted = 0;
     });
-    
+
     // Auto-trigger rest period if not last set
-    if (currentSet <= totalSets && !(currentExercise > 3)) {
+    if (!_sessionComplete && currentSet <= totalSets && currentExercise <= 3) {
       Future.delayed(const Duration(seconds: 2), () {
-        _startRestPeriod();
+        if (!_sessionComplete && mounted) {
+          _startRestPeriod();
+        }
       });
     }
   }
-  
+
   void _loadNextExercise() {
     switch (currentExercise) {
       case 2:
@@ -295,13 +302,14 @@ class _SessionActiveScreenState extends State<SessionActiveScreen> {
         break;
     }
   }
-  
+
   void _startRestPeriod() {
     // Navigate to enforced rest screen
     context.go('/enforced-rest');
   }
-  
+
   void _completeSession() {
+    _sessionComplete = true;
     // Navigate to session complete screen (placeholder)
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
@@ -316,7 +324,7 @@ class _SessionActiveScreenState extends State<SessionActiveScreen> {
       ),
     );
   }
-  
+
   void _terminateSession() {
     showDialog(
       context: context,

@@ -9,6 +9,7 @@ import '../../../core/logging.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../providers/app_state_provider.dart';
 import '../../../core/units.dart';
+import '../../../components/ui/hw_text_field.dart';
 
 class BaselineStrengthScreen extends StatefulWidget {
   const BaselineStrengthScreen({super.key});
@@ -28,7 +29,9 @@ class _BaselineStrengthScreenState extends State<BaselineStrengthScreen> {
     HWLog.screen('Onboarding/Profile/Baseline');
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final appState = context.read<AppStateProvider>().appState;
-      final unit = context.read<ProfileProvider>().unit == Unit.kg ? HWUnit.kg : HWUnit.lb;
+      final unit = context.read<ProfileProvider>().unit == Unit.kg
+          ? HWUnit.kg
+          : HWUnit.lb;
       if (appState.baselineBenchKg != null) {
         _benchCtrl.text = formatWeightForUnit(appState.baselineBenchKg!, unit);
       }
@@ -38,7 +41,6 @@ class _BaselineStrengthScreenState extends State<BaselineStrengthScreen> {
       if (appState.baselineDeadKg != null) {
         _deadCtrl.text = formatWeightForUnit(appState.baselineDeadKg!, unit);
       }
-      setState(() {});
     });
   }
 
@@ -52,7 +54,9 @@ class _BaselineStrengthScreenState extends State<BaselineStrengthScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final unit = context.watch<ProfileProvider>().unit == Unit.kg ? HWUnit.kg : HWUnit.lb;
+    final unit = context.watch<ProfileProvider>().unit == Unit.kg
+        ? HWUnit.kg
+        : HWUnit.lb;
     final unitLabel = unit == HWUnit.kg ? 'KG' : 'LB';
 
     return HeavyweightScaffold(
@@ -71,37 +75,73 @@ class _BaselineStrengthScreenState extends State<BaselineStrengthScreen> {
               ),
               const SizedBox(height: HeavyweightTheme.spacingLg),
 
-              _numberField(label: 'BENCH PRESS ($unitLabel)', controller: _benchCtrl),
+              HWTextField(
+                label: 'BENCH PRESS',
+                controller: _benchCtrl,
+                suffix: unitLabel,
+                hintText: unit == HWUnit.kg ? 'e.g. 100' : 'e.g. 225',
+                numeric: true,
+                min: 0,
+                max: unit == HWUnit.kg ? 500 : kgToLb(500),
+              ),
               const SizedBox(height: HeavyweightTheme.spacingMd),
-              _numberField(label: 'SQUAT ($unitLabel)', controller: _squatCtrl),
+              HWTextField(
+                label: 'SQUAT',
+                controller: _squatCtrl,
+                suffix: unitLabel,
+                hintText: unit == HWUnit.kg ? 'e.g. 140' : 'e.g. 315',
+                numeric: true,
+                min: 0,
+                max: unit == HWUnit.kg ? 500 : kgToLb(500),
+              ),
               const SizedBox(height: HeavyweightTheme.spacingMd),
-              _numberField(label: 'DEADLIFT ($unitLabel)', controller: _deadCtrl),
+              HWTextField(
+                label: 'DEADLIFT',
+                controller: _deadCtrl,
+                suffix: unitLabel,
+                hintText: unit == HWUnit.kg ? 'e.g. 160' : 'e.g. 405',
+                numeric: true,
+                min: 0,
+                max: unit == HWUnit.kg ? 500 : kgToLb(500),
+              ),
 
               const SizedBox(height: HeavyweightTheme.spacingXl),
-              Row(
+
+              // Buttons with proper spacing
+              Column(
                 children: [
-                  Expanded(
-                    child: CommandButton(
-                      text: 'SKIP',
-                      variant: ButtonVariant.secondary,
-                      onPressed: () => context.go('/manifesto'),
-                    ),
+                  CommandButton(
+                    text: 'SAVE & CONTINUE',
+                    variant: ButtonVariant.primary,
+                    onPressed: () async {
+                      final appState =
+                          context.read<AppStateProvider>().appState;
+                      final benchKg = _benchCtrl.text.trim().isEmpty
+                          ? null
+                          : parseWeightInput(_benchCtrl.text, unit);
+                      final squatKg = _squatCtrl.text.trim().isEmpty
+                          ? null
+                          : parseWeightInput(_squatCtrl.text, unit);
+                      final deadKg = _deadCtrl.text.trim().isEmpty
+                          ? null
+                          : parseWeightInput(_deadCtrl.text, unit);
+                      final router = GoRouter.of(context);
+                      await appState.setBaseline(
+                        benchKg: benchKg,
+                        squatKg: squatKg,
+                        deadKg: deadKg,
+                      );
+                      if (!mounted) return;
+                      router.go('/manifesto');
+                    },
                   ),
-                  const SizedBox(width: HeavyweightTheme.spacingMd),
-                  Expanded(
-                    child: CommandButton(
-                      text: 'SAVE & CONTINUE',
-                      variant: ButtonVariant.primary,
-                      onPressed: () async {
-                        final appState = context.read<AppStateProvider>().appState;
-                        final benchKg = _benchCtrl.text.trim().isEmpty ? null : parseWeightInput(_benchCtrl.text, unit);
-                        final squatKg = _squatCtrl.text.trim().isEmpty ? null : parseWeightInput(_squatCtrl.text, unit);
-                        final deadKg  = _deadCtrl.text.trim().isEmpty ? null : parseWeightInput(_deadCtrl.text, unit);
-                        await appState.setBaseline(benchKg: benchKg, squatKg: squatKg, deadKg: deadKg);
-                        if (!mounted) return;
-                        context.go('/manifesto');
-                      },
-                    ),
+                  const SizedBox(height: HeavyweightTheme.spacingMd),
+                  CommandButton(
+                    text: 'SKIP',
+                    variant: ButtonVariant.secondary,
+                    onPressed: () {
+                      GoRouter.of(context).go('/manifesto');
+                    },
                   ),
                 ],
               ),
@@ -112,19 +152,5 @@ class _BaselineStrengthScreenState extends State<BaselineStrengthScreen> {
     );
   }
 
-  Widget _numberField({required String label, required TextEditingController controller}) {
-    return TextField(
-      controller: controller,
-      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-      decoration: InputDecoration(
-        labelText: label,
-        border: const OutlineInputBorder(borderRadius: BorderRadius.zero),
-        enabledBorder: const OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide(color: Color(0xFF444444))),
-        focusedBorder: const OutlineInputBorder(borderRadius: BorderRadius.zero, borderSide: BorderSide(color: HeavyweightTheme.primary, width: 2)),
-        filled: true,
-        fillColor: const Color(0xFF111111),
-      ),
-    );
-  }
+  // TextField helper removed in favor of HWTextField
 }
-

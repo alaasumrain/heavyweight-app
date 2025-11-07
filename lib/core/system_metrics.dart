@@ -20,14 +20,23 @@ class SystemMetricsService {
     if (!SystemConfig.instance.isLoaded) {
       SystemConfig.instance.load();
     }
-    final metricsCfg = (SystemConfig.instance as dynamic)._data?['metrics'] as Map<String, dynamic>?;
-    final windows = (metricsCfg?['adherenceWindows'] as List?)?.map((e) => (e as num).toInt()).toList() ?? [3, 6, 12];
+    final metricsCfg = (SystemConfig.instance as dynamic)._data?['metrics']
+        as Map<String, dynamic>?;
+    final windows = (metricsCfg?['adherenceWindows'] as List?)
+            ?.map((e) => (e as num).toInt())
+            .toList() ??
+        [3, 6, 12];
     final plateau = metricsCfg?['plateau'] as Map<String, dynamic>?;
     final plateauWindow = (plateau?['windowSessions'] as num?)?.toInt() ?? 6;
-    final plateauMinProgress = (plateau?['minProgressPercent'] as num?)?.toDouble() ?? 1.0;
+    final plateauMinProgress =
+        (plateau?['minProgressPercent'] as num?)?.toDouble() ?? 1.0;
 
     if (history.isEmpty) {
-      return MetricsSummary(adherenceOverall: 0, adherenceWindow: {}, plateauDetected: false, sessionsCount: 0);
+      return MetricsSummary(
+          adherenceOverall: 0,
+          adherenceWindow: {},
+          plateauDetected: false,
+          sessionsCount: 0);
     }
 
     // Group sets by session date
@@ -47,7 +56,9 @@ class SystemMetricsService {
     // Window adherence per number of sessions
     final windowResults = <int, double>{};
     for (final w in windows) {
-      final lastSessions = sessionList.length >= w ? sessionList.sublist(sessionList.length - w) : sessionList;
+      final lastSessions = sessionList.length >= w
+          ? sessionList.sublist(sessionList.length - w)
+          : sessionList;
       int wSets = 0;
       int wMandate = 0;
       for (final sess in lastSessions) {
@@ -91,4 +102,3 @@ class SystemMetricsService {
     return count > 0 ? sum / count : 0.0;
   }
 }
-

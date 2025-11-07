@@ -7,12 +7,12 @@ import 'repository_provider.dart';
 /// Ensures proper dependency injection and lifecycle management
 class LogbookViewModelProvider extends StatelessWidget {
   final Widget child;
-  
+
   const LogbookViewModelProvider({
     super.key,
     required this.child,
   });
-  
+
   @override
   Widget build(BuildContext context) {
     return Consumer<RepositoryProvider>(
@@ -26,9 +26,10 @@ class LogbookViewModelProvider extends StatelessWidget {
             ),
           );
         }
-        
+
         return ChangeNotifierProvider(
-          create: (_) => LogbookViewModel(repository: repositoryProvider.repository!),
+          create: (_) =>
+              LogbookViewModel(repository: repositoryProvider.repository!),
           child: child,
         );
       },

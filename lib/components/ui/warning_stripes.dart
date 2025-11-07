@@ -11,9 +11,9 @@ class WarningStripes extends StatelessWidget {
   final TextStyle? textStyle;
   final bool animated;
   final EdgeInsetsGeometry? padding;
-  
+
   const WarningStripes({
-    Key? key,
+    super.key,
     this.height = 40.0,
     this.primaryColor = const Color(0xFFFFD700), // Gold/Yellow
     this.secondaryColor = const Color(0xFF000000), // Black
@@ -22,8 +22,8 @@ class WarningStripes extends StatelessWidget {
     this.textStyle,
     this.animated = false,
     this.padding,
-  }) : super(key: key);
-  
+  });
+
   /// Factory for standard warning stripes (yellow/black)
   factory WarningStripes.warning({
     double height = 40.0,
@@ -42,7 +42,7 @@ class WarningStripes extends StatelessWidget {
       padding: padding,
     );
   }
-  
+
   /// Factory for danger stripes (red/black)
   factory WarningStripes.danger({
     double height = 40.0,
@@ -61,7 +61,7 @@ class WarningStripes extends StatelessWidget {
       padding: padding,
     );
   }
-  
+
   /// Factory for construction/caution stripes (orange/black)
   factory WarningStripes.caution({
     double height = 40.0,
@@ -83,7 +83,7 @@ class WarningStripes extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    Widget stripesWidget = Container(
+    final stripesWidget = SizedBox(
       height: height,
       width: double.infinity,
       child: CustomPaint(
@@ -94,27 +94,29 @@ class WarningStripes extends StatelessWidget {
         ),
         child: text != null
             ? Container(
-                padding: padding ?? const EdgeInsets.symmetric(horizontal: 16.0),
+                padding:
+                    padding ?? const EdgeInsets.symmetric(horizontal: 16.0),
                 alignment: Alignment.center,
                 child: Text(
                   text!,
-                  style: textStyle ?? TextStyle(
-                    color: secondaryColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                    letterSpacing: 2,
-                  ),
+                  style: textStyle ??
+                      TextStyle(
+                        color: secondaryColor,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                        letterSpacing: 2,
+                      ),
                   textAlign: TextAlign.center,
                 ),
               )
             : null,
       ),
     );
-    
+
     if (animated) {
       return _AnimatedStripes(child: stripesWidget);
     }
-    
+
     return stripesWidget;
   }
 }
@@ -124,27 +126,27 @@ class _StripesPainter extends CustomPainter {
   final Color primaryColor;
   final Color secondaryColor;
   final double stripeWidth;
-  
+
   _StripesPainter({
     required this.primaryColor,
     required this.secondaryColor,
     required this.stripeWidth,
   });
-  
+
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()..style = PaintingStyle.fill;
-    
+
     // Fill background with secondary color
     paint.color = secondaryColor;
     canvas.drawRect(Rect.fromLTWH(0, 0, size.width, size.height), paint);
-    
+
     // Draw diagonal stripes with primary color
     paint.color = primaryColor;
-    
+
     final double diagonalLength = size.width + size.height;
     final double stripeSpacing = stripeWidth * 2;
-    
+
     for (double x = -size.height; x < diagonalLength; x += stripeSpacing) {
       final path = Path();
       path.moveTo(x, 0);
@@ -152,11 +154,11 @@ class _StripesPainter extends CustomPainter {
       path.lineTo(x + stripeWidth + size.height, size.height);
       path.lineTo(x + size.height, size.height);
       path.close();
-      
+
       canvas.drawPath(path, paint);
     }
   }
-  
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
@@ -164,9 +166,9 @@ class _StripesPainter extends CustomPainter {
 /// Animated wrapper for moving stripes effect
 class _AnimatedStripes extends StatefulWidget {
   final Widget child;
-  
+
   const _AnimatedStripes({required this.child});
-  
+
   @override
   State<_AnimatedStripes> createState() => _AnimatedStripesState();
 }
@@ -175,7 +177,7 @@ class _AnimatedStripesState extends State<_AnimatedStripes>
     with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _animation;
-  
+
   @override
   void initState() {
     super.initState();
@@ -183,19 +185,19 @@ class _AnimatedStripesState extends State<_AnimatedStripes>
       duration: const Duration(seconds: 2),
       vsync: this,
     )..repeat();
-    
+
     _animation = Tween<double>(
       begin: 0.0,
       end: 40.0, // Move by stripe width * 2
     ).animate(_controller);
   }
-  
+
   @override
   void dispose() {
     _controller.dispose();
     super.dispose();
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
@@ -209,11 +211,3 @@ class _AnimatedStripesState extends State<_AnimatedStripes>
     );
   }
 }
-
-
-
-
-
-
-
-

@@ -1,0 +1,1 @@
+- lets make it a habit to update our docs file with what we did//added //remvoed after each successful big task that is worth it

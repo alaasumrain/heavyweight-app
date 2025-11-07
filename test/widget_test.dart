@@ -7,16 +7,8 @@
 
 // ignore_for_file: prefer_const_constructors
 
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-import 'package:heavyweight_app/main.dart';
-import 'package:heavyweight_app/providers/profile_provider.dart';
-import 'package:heavyweight_app/providers/workout_engine_provider.dart';
-import 'package:heavyweight_app/providers/repository_provider.dart';
-import 'package:heavyweight_app/providers/app_state_provider.dart';
-import 'package:heavyweight_app/core/auth_service.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   testWidgets('App widget creation test', (WidgetTester tester) async {
@@ -28,7 +20,7 @@ void main() {
         ),
       ),
     );
-    
+
     // Find the text widget
     expect(find.text('Test'), findsOneWidget);
   });

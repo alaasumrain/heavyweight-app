@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import '../screens/training/daily_workout_screen.dart';
 import '../screens/training/protocol_screen.dart';
 import '../screens/training/enforced_rest_screen.dart';
-import '../screens/training/session_complete_screen.dart';
 import '../screens/dev/config_screen.dart';
 
 typedef ScreenBuilder = Widget Function(BuildContext);
@@ -25,4 +24,3 @@ void registerScreens() {
   // SessionCompleteScreen requires parameters - use nav.dart routing instead
   ScreenRegistry.register('DevConfig', (_) => const DevConfigScreen());
 }
-

@@ -7,7 +7,6 @@ import 'package:flutter/foundation.dart';
 import 'backend/supabase/supabase_workout_repository.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_web_plugins/url_strategy.dart';
-import 'package:flutter/foundation.dart' show kIsWeb;
 // import 'package:google_fonts/google_fonts.dart';
 import 'package:go_router/go_router.dart';
 import 'backend/supabase/supabase.dart';
@@ -18,10 +17,12 @@ import 'providers/app_state_provider.dart';
 import 'viewmodels/exercise_viewmodel.dart';
 import 'core/auth_service.dart';
 import 'core/error_handler.dart';
+import 'core/cache_service.dart';
+import 'services/revenue_cat_service.dart';
+import 'services/preferences_service.dart';
 import 'nav.dart';
 import 'core/logging.dart';
 import 'core/router_refresh.dart';
-import 'core/nav_logging.dart';
 
 // Diagnostic flag: run with --dart-define=HW_DIAG=1 to boot a minimal app
 const String _hwDiag = String.fromEnvironment('HW_DIAG', defaultValue: '');
@@ -54,72 +55,110 @@ void main() async {
 
   try {
     // Initialize Supabase using secure configuration (with timeout guard)
-    final supabaseInitialized = await SupabaseService
-        .initialize()
+    final supabaseInitialized = await SupabaseService.initialize()
         .timeout(const Duration(seconds: 10), onTimeout: () => false);
-    
+
     if (supabaseInitialized) {
       if (kDebugMode) {
         debugPrint('✅ HEAVYWEIGHT: Supabase initialized successfully');
       }
     } else {
       if (kDebugMode) {
-        debugPrint('⚠️ HEAVYWEIGHT: Supabase not available - running in offline mode');
+        debugPrint(
+            '⚠️ HEAVYWEIGHT: Supabase not available - running in offline mode');
       }
       // Continue with app initialization - Supabase failure is not fatal
     }
 
     // Initialize auth service (with timeout guard)
     await AuthService().initialize().timeout(
-      const Duration(seconds: 10),
-      onTimeout: () => throw TimeoutException('Auth service initialization timed out'),
-    );
+          const Duration(seconds: 10),
+          onTimeout: () =>
+              throw TimeoutException('Auth service initialization timed out'),
+        );
     if (kDebugMode) {
       debugPrint('✅ HEAVYWEIGHT: Auth service initialized');
     }
 
     // Initialize providers
     final repositoryProvider = RepositoryProvider();
-    await repositoryProvider
-        .initialize()
-        .timeout(const Duration(seconds: 10), onTimeout: () {
+    await repositoryProvider.initialize().timeout(const Duration(seconds: 10),
+        onTimeout: () {
       throw TimeoutException('Repository provider initialization timed out');
     });
     if (kDebugMode) {
       debugPrint('✅ HEAVYWEIGHT: Repository provider initialized');
     }
-    
+
+    // Initialize cache service for persistent caching
+    await CacheService().initialize();
+    if (kDebugMode) {
+      debugPrint('✅ HEAVYWEIGHT: Cache service initialized');
+    }
+
     final appStateProvider = AppStateProvider();
+    await appStateProvider.initialize();
     if (kDebugMode) {
       debugPrint('✅ HEAVYWEIGHT: App state provider initialized');
     }
 
-    final exerciseViewModel = ExerciseViewModel();
+    final preferencesService = PreferencesService();
+    await preferencesService.initialize();
+
+    final exerciseViewModel =
+        ExerciseViewModel(preferencesService: preferencesService);
     await exerciseViewModel.initialize();
     if (kDebugMode) {
       debugPrint('✅ HEAVYWEIGHT: Exercise view model initialized');
     }
 
+    // Initialize RevenueCat
+    const revenueCatApiKey = String.fromEnvironment(
+      'REVENUECAT_API_KEY',
+      defaultValue: 'appl_qgzMNzvTbtPPxjHOEcliVtOUPaA', // iOS API key
+    );
+    if (revenueCatApiKey.isNotEmpty) {
+      final revenueCatConfigured =
+          await RevenueCatService.instance.configure(apiKey: revenueCatApiKey);
+      if (kDebugMode) {
+        debugPrint(revenueCatConfigured
+            ? '✅ HEAVYWEIGHT: RevenueCat configured successfully'
+            : '⚠️ HEAVYWEIGHT: RevenueCat configuration failed');
+      }
+    } else {
+      if (kDebugMode) {
+        debugPrint(
+            '⚠️ HEAVYWEIGHT: RevenueCat API key not provided - subscriptions disabled');
+      }
+    }
+
     runApp(MultiProvider(
       providers: [
-        ChangeNotifierProvider(create: (context) => ProfileProvider()),
+        ChangeNotifierProvider.value(value: appStateProvider),
+        ChangeNotifierProxyProvider<AppStateProvider, ProfileProvider>(
+          create: (_) => ProfileProvider(),
+          update: (_, appState, profile) {
+            final target = profile ?? ProfileProvider();
+            target.applyAppState(appState.appState);
+            return target;
+          },
+        ),
         ChangeNotifierProvider(create: (context) => WorkoutEngineProvider()),
         ChangeNotifierProvider.value(value: repositoryProvider),
-        ChangeNotifierProvider.value(value: appStateProvider),
         ChangeNotifierProvider.value(value: AuthService()), // Add AuthService
         ChangeNotifierProvider.value(value: exerciseViewModel),
+        Provider<PreferencesService>.value(value: preferencesService),
       ],
       child: const MyApp(),
     ));
-    
+
     if (kDebugMode) {
       debugPrint('✅ HEAVYWEIGHT: App launched successfully');
     }
-    
   } catch (error, stackTrace) {
     debugPrint('❌ HEAVYWEIGHT FATAL ERROR: $error');
     debugPrint('📍 Stack trace: $stackTrace');
-    
+
     // Show error screen instead of black screen
     runApp(MaterialApp(
       title: 'HEAVYWEIGHT - Error',
@@ -286,11 +325,10 @@ class MyApp extends StatefulWidget {
 class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
   late AppStateNotifier _appStateNotifier;
   late GoRouter _router;
-  ThemeMode _themeMode = ThemeMode.dark;
+  final ThemeMode _themeMode = ThemeMode.dark;
   CombinedRefreshNotifier? _refreshNotifier;
   // We will always render MaterialApp.router; the builder shows a visible
   // fallback if the child is null to guarantee first paint.
-  bool _booted = true;
 
   @override
   void initState() {
@@ -318,14 +356,18 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
 
     // Watchdog removed to avoid build/runtime noise and API differences.
   }
-  
+
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _refreshNotifier?.dispose();
+
+    // Dispose cache service to clean up timer
+    CacheService().dispose();
+
     super.dispose();
   }
-  
+
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     super.didChangeAppLifecycleState(state);
@@ -334,7 +376,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       _processOfflineQueueIfNeeded();
     }
   }
-  
+
   void _processOfflineQueueIfNeeded() {
     try {
       final repositoryProvider = context.read<RepositoryProvider>();
@@ -372,9 +414,9 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         primaryColor: Colors.white,
         // Avoid GoogleFonts during diagnosis to ensure first paint
         textTheme: ThemeData.dark().textTheme.apply(
-          bodyColor: Colors.white,
-          displayColor: Colors.white,
-        ),
+              bodyColor: Colors.white,
+              displayColor: Colors.white,
+            ),
         colorScheme: const ColorScheme.dark(
           primary: Colors.white,
           secondary: Color(0xFF444444),
@@ -387,7 +429,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
           style: ElevatedButton.styleFrom(
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
-            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+            shape:
+                const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
             elevation: 0,
             textStyle: const TextStyle(
               fontFamily: 'Rubik',
@@ -400,7 +443,8 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         outlinedButtonTheme: OutlinedButtonThemeData(
           style: OutlinedButton.styleFrom(
             foregroundColor: Colors.white,
-            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
+            shape:
+                const RoundedRectangleBorder(borderRadius: BorderRadius.zero),
             side: const BorderSide(color: Colors.white),
           ),
         ),
@@ -450,7 +494,11 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
       // Ensure something paints even if routes misbehave
       builder: (context, child) {
         final isNull = child == null;
-        if (kDebugMode) debugPrint('🧭 MaterialApp.router.builder: child=${isNull ? 'NULL' : child.runtimeType}');
+        if (kDebugMode) {
+          debugPrint(
+            '🧭 MaterialApp.router.builder: child=${isNull ? 'NULL' : child.runtimeType}',
+          );
+        }
         if (isNull) {
           return const Scaffold(
             backgroundColor: Color(0xFF111111),
@@ -469,7 +517,7 @@ class _MyAppState extends State<MyApp> with WidgetsBindingObserver {
         }
         return ColoredBox(
           color: const Color(0xFF000000),
-          child: child!,
+          child: child,
         );
       },
     );

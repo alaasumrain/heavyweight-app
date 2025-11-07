@@ -7,9 +7,9 @@ import '/providers/workout_engine_provider.dart';
 /// Factory provider for creating WorkoutViewModel with proper dependencies
 class WorkoutViewModelProvider extends StatelessWidget {
   final Widget child;
-  
+
   const WorkoutViewModelProvider({super.key, required this.child});
-  
+
   @override
   Widget build(BuildContext context) {
     return Consumer2<RepositoryProvider, WorkoutEngineProvider>(
@@ -23,12 +23,12 @@ class WorkoutViewModelProvider extends StatelessWidget {
             ),
           );
         }
-        
+
         // Initialize engine with repository if not already done
         if (!engineProvider.isInitialized) {
           engineProvider.initialize(repositoryProvider.repository!);
         }
-        
+
         return ChangeNotifierProvider(
           create: (context) => WorkoutViewModel(
             repository: repositoryProvider.repository!,

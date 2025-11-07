@@ -11,8 +11,8 @@ import '../../core/logging.dart';
 /// The Manifesto Screen - The gateway to the system
 /// User must read the philosophy and type "I COMMIT" to enter
 class ManifestoScreen extends StatefulWidget {
-  const ManifestoScreen({Key? key}) : super(key: key);
-  
+  const ManifestoScreen({super.key});
+
   @override
   State<ManifestoScreen> createState() => _ManifestoScreenState();
 }
@@ -22,14 +22,14 @@ class _ManifestoScreenState extends State<ManifestoScreen> {
   final _commitmentController = TextEditingController();
   final _focusNode = FocusNode();
   bool _isValidating = false;
-  
+
   @override
   void dispose() {
     _commitmentController.dispose();
     _focusNode.dispose();
     super.dispose();
   }
-  
+
   Future<void> _handleCommitment() async {
     HWLog.event('manifesto_commit_attempt', data: {
       'text': _commitmentController.text,
@@ -38,19 +38,19 @@ class _ManifestoScreenState extends State<ManifestoScreen> {
       setState(() {
         _isValidating = true;
       });
-      
+
       // Mark manifesto as committed in AppState
       final appState = context.read<AppStateProvider>().appState;
       await appState.commitManifesto();
-      
+
       // Navigate to next step (AppState will handle routing)
       if (!mounted) return;
       final nextRoute = appState.nextRoute;
       HWLog.event('manifesto_commit_success', data: {'next': nextRoute});
-      context.go(nextRoute);
+      GoRouter.of(context).go(nextRoute);
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     HWLog.screen('Onboarding/Manifesto');
@@ -76,7 +76,7 @@ class _ManifestoScreenState extends State<ManifestoScreen> {
       ),
     );
   }
-  
+
   Widget _buildManifestoText() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -85,9 +85,7 @@ class _ManifestoScreenState extends State<ManifestoScreen> {
           'THE PROTOCOL',
           style: HeavyweightTheme.bodyMedium,
         ),
-        
         const SizedBox(height: HeavyweightTheme.spacingLg),
-        
         Text(
           '''THE HEAVYWEIGHT PROTOCOL
 
@@ -109,7 +107,7 @@ READY TO BEGIN YOUR TRANSFORMATION?''',
       ],
     );
   }
-  
+
   Widget _buildCommitmentInput() {
     return Form(
       key: _formKey,
@@ -120,9 +118,9 @@ READY TO BEGIN YOUR TRANSFORMATION?''',
             'TYPE "I COMMIT" TO BEGIN',
             style: HeavyweightTheme.bodySmall,
           ),
-          
+
           const SizedBox(height: HeavyweightTheme.spacingMd),
-          
+
           // Input field
           TextFormField(
             controller: _commitmentController,
@@ -143,7 +141,8 @@ READY TO BEGIN YOUR TRANSFORMATION?''',
               ),
               focusedBorder: const OutlineInputBorder(
                 borderRadius: BorderRadius.zero,
-                borderSide: BorderSide(color: HeavyweightTheme.primary, width: 2),
+                borderSide:
+                    BorderSide(color: HeavyweightTheme.primary, width: 2),
               ),
               errorBorder: const OutlineInputBorder(
                 borderRadius: BorderRadius.zero,
@@ -158,18 +157,18 @@ READY TO BEGIN YOUR TRANSFORMATION?''',
             ],
             validator: (value) {
               if (value == null || value.isEmpty) {
-                return 'Your commitment is required';
+                return 'COMMITMENT_REQUIRED.';
               }
               if (value.trim().toUpperCase() != 'I COMMIT') {
-                return 'Type exactly: I COMMIT';
+                return 'TYPE EXACTLY: I COMMIT';
               }
               return null;
             },
             onFieldSubmitted: (_) => _handleCommitment(),
           ),
-          
+
           const SizedBox(height: HeavyweightTheme.spacingXl),
-          
+
           // Submit button
           if (!_isValidating)
             CommandButton(
@@ -177,7 +176,7 @@ READY TO BEGIN YOUR TRANSFORMATION?''',
               variant: ButtonVariant.primary,
               onPressed: _handleCommitment,
             ),
-          
+
           if (_isValidating)
             const CircularProgressIndicator(
               color: HeavyweightTheme.primary,

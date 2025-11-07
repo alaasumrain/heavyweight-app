@@ -1,75 +1,70 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/material.dart';
+
 import '/core/app_state.dart';
 import '/core/logging.dart';
 
-/// Provider for AppState to make it available throughout the app
+/// Provider for AppState to make it available throughout the app.
+///
+/// Async initialization is triggered explicitly via [initialize] so callers can
+/// await readiness before wiring the provider into the widget tree. This keeps
+/// provider construction side-effect free, which aligns better with Flutter's
+/// lifecycle expectations.
 class AppStateProvider extends ChangeNotifier {
-  late final AppState _appState;
+  AppStateProvider({AppState? appState}) : _appState = appState ?? AppState() {
+    _appState.addListener(_handleAppStateChange);
+  }
+
+  final AppState _appState;
   bool _isInitialized = false;
-  
+  bool _initializing = false;
+
   AppState get appState => _appState;
   bool get isInitialized => _isInitialized;
-  
-  AppStateProvider() {
-    if (kDebugMode) {
-      debugPrint('🔧 AppStateProvider: Constructor called');
+
+  Future<void> initialize() async {
+    if (_isInitialized || _initializing) {
+      return;
     }
-    _appState = AppState();
-    HWLog.event('provider_constructed', data: {
-      'provider': identityHashCode(this),
-    });
-    _initialize();
-  }
-  
-  Future<void> _initialize() async {
+    _initializing = true;
+
     if (kDebugMode) {
-      debugPrint('⏳ AppStateProvider: Starting initialization...');
+      debugPrint('HW AppStateProvider: initializing');
     }
+
     try {
-      debugPrint('🔧 AppStateProvider: About to call _appState.initialize()');
       await _appState.initialize();
-      debugPrint('🔧 AppStateProvider: _appState.initialize() completed');
-      debugPrint('🔧 AppStateProvider: About to log state snapshot');
-      // Snapshot state after initialization - temporarily commented out
-      // HWLog.appStateSnapshot({
-      //   'phase': 'post_initialize',
-      //   'legalAccepted': _appState.legalAccepted,
-      //   'manifestoCommitted': _appState.manifestoCommitted,
-      //   'trainingExperience': _appState.trainingExperience,
-      //   'trainingFrequency': _appState.trainingFrequency,
-      //   'unitPreference': _appState.unitPreference,
-      //   'physicalStats': _appState.physicalStats,
-      //   'trainingObjective': _appState.trainingObjective,
-      //   'isAuthenticated': _appState.isAuthenticated,
-      //   'nextRoute': _appState.nextRoute,
-      // });
-      debugPrint('🔧 AppStateProvider: State snapshot logged (commented out)');
-      if (kDebugMode) {
-        debugPrint('✅ AppStateProvider: AppState initialized');
-      }
-      // Mark as initialized immediately to allow routing to proceed
-      debugPrint('🕰️ AppStateProvider: Setting _isInitialized = true');
       _isInitialized = true;
-      if (kDebugMode) {
-        debugPrint('🎯 AppStateProvider: Marked as initialized, notifying listeners');
-      }
-      HWLog.event('provider_notify', data: {
+      HWLog.event('provider_initialized', data: {
         'provider': identityHashCode(this),
-        'isInitialized': _isInitialized,
       });
       notifyListeners();
-    } catch (e, stackTrace) {
-      // Handle initialization errors gracefully
+    } catch (error, stackTrace) {
       if (kDebugMode) {
-        debugPrint('❌ AppStateProvider: Initialization error: $e');
-        debugPrint('❌ AppStateProvider: Stack trace: $stackTrace');
+        debugPrint('HW AppStateProvider: initialization error: $error');
+        debugPrint(stackTrace.toString());
       }
-      // Still mark as initialized to prevent infinite loading
-      debugPrint('🔧 AppStateProvider: Error path - setting _isInitialized = true');
+      // Mark initialized to prevent downstream waits from hanging forever.
       _isInitialized = true;
-      debugPrint('🔧 AppStateProvider: Error path - calling notifyListeners()');
       notifyListeners();
+      HWLog.event('provider_initialize_failed', data: {
+        'provider': identityHashCode(this),
+        'error': error.toString(),
+      });
+    } finally {
+      _initializing = false;
     }
+  }
+
+  void _handleAppStateChange() {
+    if (kDebugMode) {
+      debugPrint('HW AppStateProvider: state changed');
+    }
+    notifyListeners();
+  }
+
+  @override
+  void dispose() {
+    _appState.removeListener(_handleAppStateChange);
+    super.dispose();
   }
 }

@@ -43,6 +43,10 @@ app.*.map.json
 **/ios/Flutter/flutter_export_environment.sh
 **/ios/ServiceDefinitions.json
 **/ios/Runner/GeneratedPluginRegistrant.*
+**/ios/Pods/
+**/ios/node_modules/
+**/ios/.npm-cache/
+**/ios/.cache/
 
 # Android related
 **/android/**/gradle-wrapper.jar

@@ -24,4 +24,3 @@ class InlineBackButton extends StatelessWidget {
     );
   }
 }
-

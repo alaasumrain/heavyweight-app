@@ -7,15 +7,15 @@ class RadioSelector<T> extends StatelessWidget {
   final T? selectedValue;
   final Function(T) onChanged;
   final String? semanticLabel;
-  
+
   const RadioSelector({
-    Key? key,
+    super.key,
     required this.options,
     required this.selectedValue,
     required this.onChanged,
     this.semanticLabel,
-  }) : super(key: key);
-  
+  });
+
   @override
   Widget build(BuildContext context) {
     return Semantics(
@@ -38,20 +38,27 @@ class RadioSelector<T> extends StatelessWidget {
               },
               child: AnimatedContainer(
                 duration: const Duration(milliseconds: 200),
-                margin: const EdgeInsets.only(bottom: HeavyweightTheme.spacingMd),
+                margin:
+                    const EdgeInsets.only(bottom: HeavyweightTheme.spacingMd),
                 padding: const EdgeInsets.all(HeavyweightTheme.spacingLg),
                 width: double.infinity,
-                constraints: const BoxConstraints(minHeight: 60), // Accessibility minimum
+                constraints: const BoxConstraints(
+                    minHeight: 60), // Accessibility minimum
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: isSelected ? HeavyweightTheme.primary : HeavyweightTheme.secondary,
+                    color: isSelected
+                        ? HeavyweightTheme.primary
+                        : HeavyweightTheme.secondary,
                     width: isSelected ? 2 : 1,
                   ),
-                  color: isSelected ? HeavyweightTheme.surface : Colors.transparent,
+                  color: isSelected
+                      ? HeavyweightTheme.surface
+                      : Colors.transparent,
                   boxShadow: isSelected
                       ? [
                           BoxShadow(
-                            color: HeavyweightTheme.primary.withOpacity(0.08),
+                            color: HeavyweightTheme.primary
+                                .withValues(alpha: 0.08),
                             blurRadius: 8,
                             spreadRadius: 1,
                           ),
@@ -64,7 +71,9 @@ class RadioSelector<T> extends StatelessWidget {
                     Text(
                       isSelected ? '[X]' : '[ ]',
                       style: HeavyweightTheme.bodyLarge.copyWith(
-                        color: isSelected ? HeavyweightTheme.primary : HeavyweightTheme.textSecondary,
+                        color: isSelected
+                            ? HeavyweightTheme.primary
+                            : HeavyweightTheme.textSecondary,
                         fontWeight: FontWeight.bold,
                         letterSpacing: 1,
                       ),
@@ -74,8 +83,11 @@ class RadioSelector<T> extends StatelessWidget {
                       child: Text(
                         option.label.toUpperCase(),
                         style: HeavyweightTheme.bodyLarge.copyWith(
-                          color: isSelected ? HeavyweightTheme.primary : HeavyweightTheme.textSecondary,
-                          fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                          color: isSelected
+                              ? HeavyweightTheme.primary
+                              : HeavyweightTheme.textSecondary,
+                          fontWeight:
+                              isSelected ? FontWeight.bold : FontWeight.normal,
                         ),
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
@@ -95,6 +107,6 @@ class RadioSelector<T> extends StatelessWidget {
 class RadioOption<T> {
   final T value;
   final String label;
-  
+
   const RadioOption({required this.value, required this.label});
 }

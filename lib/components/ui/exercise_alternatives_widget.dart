@@ -23,14 +23,15 @@ class ExerciseAlternativesWidget extends StatelessWidget {
         }
 
         final alternatives = exerciseViewModel.getAlternativesFor(exerciseId);
-        
+
         if (alternatives.length <= 1) {
           // No alternatives available
           return const SizedBox();
         }
 
-        final selectedAlternative = exerciseViewModel.getSelectedAlternative(exerciseId);
-        
+        final selectedAlternative =
+            exerciseViewModel.getSelectedAlternative(exerciseId);
+
         return Card(
           margin: const EdgeInsets.symmetric(vertical: 8.0),
           child: Padding(
@@ -49,19 +50,19 @@ class ExerciseAlternativesWidget extends StatelessWidget {
                     Text(
                       'EXERCISE OPTIONS',
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 1,
-                      ),
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 1,
+                          ),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 ...alternatives.map((alternative) => _buildAlternativeOption(
-                  context,
-                  alternative,
-                  selectedAlternative?.id == alternative.id,
-                  exerciseViewModel,
-                )),
+                      context,
+                      alternative,
+                      selectedAlternative?.id == alternative.id,
+                      exerciseViewModel,
+                    )),
               ],
             ),
           ),
@@ -90,20 +91,17 @@ class ExerciseAlternativesWidget extends StatelessWidget {
               color: isSelected ? Colors.white : Colors.grey[700]!,
               width: isSelected ? 2 : 1,
             ),
-            color: isSelected ? Colors.white.withOpacity(0.1) : Colors.transparent,
+            color: isSelected
+                ? Colors.white.withValues(alpha: 0.1)
+                : Colors.transparent,
           ),
           child: Row(
             children: [
-              Radio<String>(
-                value: alternative.id,
-                groupValue: exerciseViewModel.getSelectedAlternative(exerciseId)?.id,
-                onChanged: (value) {
-                  if (value != null) {
-                    exerciseViewModel.selectAlternative(exerciseId, value);
-                    onSelectionChanged?.call();
-                  }
-                },
-                activeColor: Colors.white,
+              Icon(
+                isSelected
+                    ? Icons.radio_button_checked
+                    : Icons.radio_button_unchecked,
+                color: Colors.white,
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -122,11 +120,14 @@ class ExerciseAlternativesWidget extends StatelessWidget {
                         ),
                         const Spacer(),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: _getDifficultyColor(alternative.difficulty).withOpacity(0.2),
+                            color: _getDifficultyColor(alternative.difficulty)
+                                .withValues(alpha: 0.2),
                             border: Border.all(
-                              color: _getDifficultyColor(alternative.difficulty),
+                              color:
+                                  _getDifficultyColor(alternative.difficulty),
                             ),
                           ),
                           child: Text(
@@ -134,7 +135,8 @@ class ExerciseAlternativesWidget extends StatelessWidget {
                             style: TextStyle(
                               fontSize: 10,
                               fontWeight: FontWeight.bold,
-                              color: _getDifficultyColor(alternative.difficulty),
+                              color:
+                                  _getDifficultyColor(alternative.difficulty),
                               letterSpacing: 0.5,
                             ),
                           ),
@@ -225,7 +227,7 @@ class ExerciseAlternativesBottomSheet extends StatelessWidget {
         }
 
         final alternatives = exerciseViewModel.getAlternativesFor(exerciseId);
-        
+
         if (alternatives.isEmpty) {
           return SizedBox(
             height: 200,
@@ -233,9 +235,9 @@ class ExerciseAlternativesBottomSheet extends StatelessWidget {
               child: Text(
                 'NO ALTERNATIVES AVAILABLE',
                 style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                  color: Colors.grey[400],
-                  letterSpacing: 1,
-                ),
+                      color: Colors.grey[400],
+                      letterSpacing: 1,
+                    ),
               ),
             ),
           );
@@ -253,9 +255,9 @@ class ExerciseAlternativesBottomSheet extends StatelessWidget {
                     Text(
                       'CHOOSE EXERCISE',
                       style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 2,
-                      ),
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 2,
+                          ),
                     ),
                     const Spacer(),
                     IconButton(
@@ -275,10 +277,10 @@ class ExerciseAlternativesBottomSheet extends StatelessWidget {
                 ),
                 const SizedBox(height: 24),
                 ...alternatives.map((alternative) => _buildAlternativeCard(
-                  context,
-                  alternative,
-                  exerciseViewModel,
-                )),
+                      context,
+                      alternative,
+                      exerciseViewModel,
+                    )),
                 const SizedBox(height: 16),
               ],
             ),
@@ -293,8 +295,10 @@ class ExerciseAlternativesBottomSheet extends StatelessWidget {
     ExerciseAlternative alternative,
     ExerciseViewModel exerciseViewModel,
   ) {
-    final isSelected = exerciseViewModel.getSelectedAlternative(exerciseId)?.id == alternative.id;
-    
+    final isSelected =
+        exerciseViewModel.getSelectedAlternative(exerciseId)?.id ==
+            alternative.id;
+
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       child: InkWell(
@@ -309,7 +313,9 @@ class ExerciseAlternativesBottomSheet extends StatelessWidget {
               color: isSelected ? Colors.white : Colors.grey[700]!,
               width: isSelected ? 2 : 1,
             ),
-            color: isSelected ? Colors.white.withOpacity(0.1) : Colors.transparent,
+            color: isSelected
+                ? Colors.white.withValues(alpha: 0.1)
+                : Colors.transparent,
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -333,9 +339,11 @@ class ExerciseAlternativesBottomSheet extends StatelessWidget {
                   ),
                   const Spacer(),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
-                      color: _getDifficultyColor(alternative.difficulty).withOpacity(0.2),
+                      color: _getDifficultyColor(alternative.difficulty)
+                          .withValues(alpha: 0.2),
                       border: Border.all(
                         color: _getDifficultyColor(alternative.difficulty),
                       ),

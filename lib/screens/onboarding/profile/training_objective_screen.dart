@@ -10,7 +10,7 @@ import '../../../components/layout/heavyweight_scaffold.dart';
 import '../../../core/logging.dart';
 
 class TrainingObjectiveScreen extends StatelessWidget {
-  const TrainingObjectiveScreen({Key? key}) : super(key: key);
+  const TrainingObjectiveScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -28,7 +28,7 @@ class TrainingObjectiveScreen extends StatelessWidget {
             children: [
               // Back removed for a simpler forward flow
               const SizedBox(height: HeavyweightTheme.spacingSm),
-              
+
               // Header
               Text(
                 'SELECT PRIMARY TRAINING DIRECTIVE\nCONFIGURE PROTOCOL OPTIMIZATION',
@@ -36,11 +36,11 @@ class TrainingObjectiveScreen extends StatelessWidget {
                 style: HeavyweightTheme.bodyMedium,
               ),
               const SizedBox(height: HeavyweightTheme.spacingMd),
-              
+
               // DEV navigation removed per product direction
-              
+
               const SizedBox(height: HeavyweightTheme.spacingMd),
-              
+
               // Objective options
               Consumer<ProfileProvider>(
                 builder: (context, provider, child) {
@@ -52,7 +52,8 @@ class TrainingObjectiveScreen extends StatelessWidget {
                       ),
                       RadioOption(
                         value: TrainingObjective.size,
-                        label: 'HYPERTROPHY PROTOCOL - Muscle mass optimization',
+                        label:
+                            'HYPERTROPHY PROTOCOL - Muscle mass optimization',
                       ),
                       RadioOption(
                         value: TrainingObjective.endurance,
@@ -65,35 +66,38 @@ class TrainingObjectiveScreen extends StatelessWidget {
                     ],
                     selectedValue: provider.objective,
                     onChanged: (val) {
-                      HWLog.event('profile_objective_select', data: {'value': val.name});
+                      HWLog.event('profile_objective_select',
+                          data: {'value': val.name});
                       provider.setObjective(val);
                     },
                   );
                 },
               ),
-              
+
               const SizedBox(height: HeavyweightTheme.spacingXl),
-              
+
               // Continue button
               Consumer<ProfileProvider>(
                 builder: (context, provider, child) {
                   return CommandButton(
-                    text: 'COMMAND: CONFIRM',
+                    text: 'CONTINUE',
                     variant: ButtonVariant.primary,
                     isDisabled: provider.objective == null,
                     onPressed: provider.objective != null
                         ? () async {
                             HWLog.event('profile_objective_continue');
                             // Save training objective to AppState
-                            final appState = context.read<AppStateProvider>().appState;
-                            await appState.setTrainingObjective(provider.objective!.name);
-                            
+                            final appState =
+                                context.read<AppStateProvider>().appState;
+                            await appState
+                                .setTrainingObjective(provider.objective!.name);
+
                             if (!context.mounted) return;
                             if (isEditMode) {
-                              context.go('/profile');
+                              context.pop();
                             } else {
                               final nextRoute = appState.nextRoute;
-                              context.go(nextRoute);
+                              GoRouter.of(context).go(nextRoute);
                             }
                           }
                         : null,

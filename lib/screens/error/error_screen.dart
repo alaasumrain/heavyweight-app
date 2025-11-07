@@ -24,24 +24,26 @@ class ErrorScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     HWLog.screen('Error/Generic');
-    final message = errorMessage ?? 
-        (error != null ? HeavyweightErrorHandler.getErrorMessage(error!) : 'UNKNOWN_ERROR');
+    final message = errorMessage ??
+        (error != null
+            ? HeavyweightErrorHandler.getErrorMessage(error!)
+            : 'UNKNOWN_ERROR');
 
     return HeavyweightScaffold(
       body: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Spacer(),
-          
+
           // Error icon
           const Icon(
             Icons.error_outline,
             color: HeavyweightTheme.danger,
             size: 64,
           ),
-          
+
           const SizedBox(height: HeavyweightTheme.spacingLg),
-          
+
           // Error title
           const Text(
             'SYSTEM_FAULT',
@@ -52,12 +54,13 @@ class ErrorScreen extends StatelessWidget {
               letterSpacing: 2,
             ),
           ),
-          
+
           const SizedBox(height: HeavyweightTheme.spacingMd),
-          
+
           // Error message
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: HeavyweightTheme.spacingXxl),
+            padding: const EdgeInsets.symmetric(
+                horizontal: HeavyweightTheme.spacingXxl),
             child: Text(
               message,
               style: const TextStyle(
@@ -68,9 +71,9 @@ class ErrorScreen extends StatelessWidget {
               textAlign: TextAlign.center,
             ),
           ),
-          
+
           const Spacer(),
-          
+
           // Action buttons
           if (onRetry != null || retryRoute != null) ...[
             CommandButton(
@@ -89,7 +92,7 @@ class ErrorScreen extends StatelessWidget {
             ),
             const SizedBox(height: HeavyweightTheme.spacingMd),
           ],
-          
+
           CommandButton(
             text: 'COMMAND: HOME',
             variant: ButtonVariant.secondary,
@@ -98,7 +101,7 @@ class ErrorScreen extends StatelessWidget {
               context.go('/app?tab=0');
             },
           ),
-          
+
           const SizedBox(height: HeavyweightTheme.spacingXxl),
         ],
       ),
@@ -110,7 +113,7 @@ class ErrorScreen extends StatelessWidget {
 class NetworkErrorScreen extends StatelessWidget {
   final VoidCallback? onRetry;
 
-  const NetworkErrorScreen({Key? key, this.onRetry}) : super(key: key);
+  const NetworkErrorScreen({super.key, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -124,7 +127,7 @@ class NetworkErrorScreen extends StatelessWidget {
 
 /// Authentication error screen
 class AuthErrorScreen extends StatelessWidget {
-  const AuthErrorScreen({Key? key}) : super(key: key);
+  const AuthErrorScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

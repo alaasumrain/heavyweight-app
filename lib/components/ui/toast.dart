@@ -10,7 +10,9 @@ class HeavyweightToast {
     ToastVariant variant = ToastVariant.info,
   }) {
     final bg = _bg(variant);
-    final fg = variant == ToastVariant.info ? HeavyweightTheme.primary : HeavyweightTheme.onPrimary;
+    final fg = variant == ToastVariant.info
+        ? HeavyweightTheme.primary
+        : HeavyweightTheme.onPrimary;
 
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
@@ -40,4 +42,3 @@ class HeavyweightToast {
     }
   }
 }
-

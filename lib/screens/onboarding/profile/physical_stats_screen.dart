@@ -34,154 +34,184 @@ class PhysicalStatsScreen extends StatelessWidget {
                 style: HeavyweightTheme.bodyMedium,
               ),
               const SizedBox(height: HeavyweightTheme.spacingLg),
-              
+
               // Stats selectors
               Consumer<ProfileProvider>(
                 builder: (context, provider, child) {
                   return Column(
                     children: [
-                          // Age
-                          _buildStatSection(
-                            'OPERATOR_AGE',
-                            SelectorWheel(
-                              value: provider.age ?? 25,
-                              min: 16,
-                              max: 80,
-                              suffix: 'YRS',
-                              onChanged: (v) {
-                                HWLog.event('profile_physical_age', data: {'value': v});
-                                provider.setAge(v);
-                              },
-                            ),
-                          ),
-                          
-                          const SizedBox(height: HeavyweightTheme.spacingLg),
-                          
-                          // Weight
-                          _buildStatSection(
-                            'MASS_SPECIFICATION',
-                            Column(
-                              children: [
-                                Builder(builder: (context) {
-                                  // Always store weight internally as KG; display in chosen unit
-                                  final unit = provider.unit == Unit.kg ? HWUnit.kg : HWUnit.lb;
-                                  final displayWeight = provider.weight == null
-                                      ? (unit == HWUnit.kg ? 70.0 : kgToLb(70.0))
-                                      : (unit == HWUnit.kg ? provider.weight! : kgToLb(provider.weight!));
+                      // Age
+                      _buildStatSection(
+                        'OPERATOR_AGE',
+                        SelectorWheel(
+                          value: provider.age ?? 25,
+                          min: 16,
+                          max: 80,
+                          suffix: 'YRS',
+                          onChanged: (v) {
+                            HWLog.event('profile_physical_age',
+                                data: {'value': v});
+                            provider.setAge(v);
+                          },
+                        ),
+                      ),
 
-                                  return SelectorWheel(
-                                    value: displayWeight.round(),
-                                    min: unit == HWUnit.kg ? 40 : 88,
-                                    max: unit == HWUnit.kg ? 200 : 440,
-                                    suffix: unit == HWUnit.kg ? 'KG' : 'LBS',
-                                    onChanged: (value) {
-                                      HWLog.event('profile_physical_weight', data: {'value': value, 'unit': unit.name});
-                                      final kg = unit == HWUnit.kg ? value.toDouble() : lbToKg(value.toDouble());
-                                      provider.setWeight(kg);
-                                    },
-                                  );
-                                }),
-                                const SizedBox(height: HeavyweightTheme.spacingSm),
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
-                                  children: [
-                                    GestureDetector(
-                                      onTap: () {
-                                        HWLog.event('profile_physical_unit', data: {'value': 'kg'});
-                                        provider.setUnit(Unit.kg);
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: HeavyweightTheme.spacingSm, vertical: HeavyweightTheme.spacingXs),
-                                        decoration: BoxDecoration(
-                                          border: Border.all(color: HeavyweightTheme.primary),
-                                          color: provider.unit == Unit.kg ? HeavyweightTheme.primary : Colors.transparent,
-                                        ),
-                                        child: Text(
-                                          'KG',
-                                          style: HeavyweightTheme.bodyMedium.copyWith(
-                                            color: provider.unit == Unit.kg
-                                                ? HeavyweightTheme.onPrimary
-                                                : HeavyweightTheme.textPrimary,
-                                          ),
-                                        ),
+                      const SizedBox(height: HeavyweightTheme.spacingLg),
+
+                      // Weight
+                      _buildStatSection(
+                        'MASS_SPECIFICATION',
+                        Column(
+                          children: [
+                            Builder(builder: (context) {
+                              // Always store weight internally as KG; display in chosen unit
+                              final unit = provider.unit == Unit.kg
+                                  ? HWUnit.kg
+                                  : HWUnit.lb;
+                              final displayWeight = provider.weight == null
+                                  ? (unit == HWUnit.kg ? 70.0 : kgToLb(70.0))
+                                  : (unit == HWUnit.kg
+                                      ? provider.weight!
+                                      : kgToLb(provider.weight!));
+
+                              return SelectorWheel(
+                                value: displayWeight.round(),
+                                min: unit == HWUnit.kg ? 40 : 88,
+                                max: unit == HWUnit.kg ? 200 : 440,
+                                suffix: unit == HWUnit.kg ? 'KG' : 'LBS',
+                                onChanged: (value) {
+                                  HWLog.event('profile_physical_weight', data: {
+                                    'value': value,
+                                    'unit': unit.name
+                                  });
+                                  final kg = unit == HWUnit.kg
+                                      ? value.toDouble()
+                                      : lbToKg(value.toDouble());
+                                  provider.setWeight(kg);
+                                },
+                              );
+                            }),
+                            const SizedBox(height: HeavyweightTheme.spacingSm),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                GestureDetector(
+                                  onTap: () {
+                                    HWLog.event('profile_physical_unit',
+                                        data: {'value': 'kg'});
+                                    provider.setUnit(Unit.kg);
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: HeavyweightTheme.spacingSm,
+                                        vertical: HeavyweightTheme.spacingXs),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                          color: HeavyweightTheme.primary),
+                                      color: provider.unit == Unit.kg
+                                          ? HeavyweightTheme.primary
+                                          : Colors.transparent,
+                                    ),
+                                    child: Text(
+                                      'KG',
+                                      style:
+                                          HeavyweightTheme.bodyMedium.copyWith(
+                                        color: provider.unit == Unit.kg
+                                            ? HeavyweightTheme.onPrimary
+                                            : HeavyweightTheme.textPrimary,
                                       ),
                                     ),
-                                    const SizedBox(width: HeavyweightTheme.spacingSm),
-                                    GestureDetector(
-                                      onTap: () {
-                                        HWLog.event('profile_physical_unit', data: {'value': 'lb'});
-                                        provider.setUnit(Unit.lb);
-                                      },
-                                      child: Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: HeavyweightTheme.spacingSm, vertical: HeavyweightTheme.spacingXs),
-                                        decoration: BoxDecoration(
-                                          border: Border.all(color: HeavyweightTheme.primary),
-                                          color: provider.unit == Unit.lb ? HeavyweightTheme.primary : Colors.transparent,
-                                        ),
-                                        child: Text(
-                                          'LBS',
-                                          style: HeavyweightTheme.bodyMedium.copyWith(
-                                            color: provider.unit == Unit.lb
-                                                ? HeavyweightTheme.onPrimary
-                                                : HeavyweightTheme.textPrimary,
-                                          ),
-                                        ),
+                                  ),
+                                ),
+                                const SizedBox(
+                                    width: HeavyweightTheme.spacingSm),
+                                GestureDetector(
+                                  onTap: () {
+                                    HWLog.event('profile_physical_unit',
+                                        data: {'value': 'lb'});
+                                    provider.setUnit(Unit.lb);
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: HeavyweightTheme.spacingSm,
+                                        vertical: HeavyweightTheme.spacingXs),
+                                    decoration: BoxDecoration(
+                                      border: Border.all(
+                                          color: HeavyweightTheme.primary),
+                                      color: provider.unit == Unit.lb
+                                          ? HeavyweightTheme.primary
+                                          : Colors.transparent,
+                                    ),
+                                    child: Text(
+                                      'LBS',
+                                      style:
+                                          HeavyweightTheme.bodyMedium.copyWith(
+                                        color: provider.unit == Unit.lb
+                                            ? HeavyweightTheme.onPrimary
+                                            : HeavyweightTheme.textPrimary,
                                       ),
                                     ),
-                                  ],
+                                  ),
                                 ),
                               ],
                             ),
-                          ),
-                          
-                          const SizedBox(height: HeavyweightTheme.spacingLg),
-                          
-                          // Height
-                          _buildStatSection(
-                            'HEIGHT_PARAMETER',
-                            SelectorWheel(
-                              value: provider.height ?? 175,
-                              min: 140,
-                              max: 220,
-                              suffix: 'CM',
-                              onChanged: (v) {
-                                HWLog.event('profile_physical_height', data: {'value': v});
-                                provider.setHeight(v);
-                              },
-                            ),
-                          ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: HeavyweightTheme.spacingLg),
+
+                      // Height
+                      _buildStatSection(
+                        'HEIGHT_PARAMETER',
+                        SelectorWheel(
+                          value: provider.height ?? 175,
+                          min: 140,
+                          max: 220,
+                          suffix: 'CM',
+                          onChanged: (v) {
+                            HWLog.event('profile_physical_height',
+                                data: {'value': v});
+                            provider.setHeight(v);
+                          },
+                        ),
+                      ),
                     ],
                   );
                 },
               ),
-              
+
               const SizedBox(height: HeavyweightTheme.spacingXl),
-              
+
               // Continue button
               Consumer<ProfileProvider>(
                 builder: (context, provider, child) {
-                  final isComplete = provider.age != null && 
-                                   provider.weight != null && 
-                                   provider.height != null;
-                  
+                  final isComplete = provider.age != null &&
+                      provider.weight != null &&
+                      provider.height != null;
+
                   return CommandButton(
-                    text: 'COMMAND: CONFIRM',
+                    text: 'CONTINUE',
                     variant: ButtonVariant.primary,
                     isDisabled: !isComplete,
                     onPressed: isComplete
                         ? () async {
                             HWLog.event('profile_physical_continue');
                             // Save physical stats to AppState
-                            final statsData = '${provider.age},${provider.weight},${provider.height}';
-                            final appState = context.read<AppStateProvider>().appState;
+                            final statsData =
+                                '${provider.age},${provider.weight},${provider.height}';
+                            final appState =
+                                context.read<AppStateProvider>().appState;
                             await appState.setPhysicalStats(statsData);
-                            
+
                             if (!context.mounted) return;
                             if (isEditMode) {
-                              context.go('/profile');
+                              context.pop();
                             } else {
-                              final nextRoute = appState.nextRoute;
-                              context.go(nextRoute);
+                              // After physical stats, next step is frequency
+                              HWLog.event(
+                                  'profile_physical_navigate_to_frequency');
+                              GoRouter.of(context).go('/profile/frequency');
                             }
                           }
                         : null,
@@ -194,7 +224,7 @@ class PhysicalStatsScreen extends StatelessWidget {
       ),
     );
   }
-  
+
   Widget _buildStatSection(String title, Widget selector) {
     return Column(
       children: [

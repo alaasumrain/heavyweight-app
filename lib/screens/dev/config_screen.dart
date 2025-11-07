@@ -24,11 +24,16 @@ class DevConfigScreen extends StatelessWidget {
               if (warnings.isNotEmpty)
                 Container(
                   padding: const EdgeInsets.all(12),
-                  color: Colors.red.withOpacity(0.15),
-                  child: Text('WARNINGS: ${warnings.join(', ')}', style: const TextStyle(color: Colors.redAccent)),
+                  color: Colors.red.withValues(alpha: 0.15),
+                  child: Text('WARNINGS: ${warnings.join(', ')}',
+                      style: const TextStyle(color: Colors.redAccent)),
                 ),
               const SizedBox(height: 12),
-              Text(jsonPretty, style: const TextStyle(fontFamily: 'IBM Plex Mono', fontSize: 12, color: Colors.white)),
+              Text(jsonPretty,
+                  style: const TextStyle(
+                      fontFamily: 'IBM Plex Mono',
+                      fontSize: 12,
+                      color: Colors.white)),
             ],
           ),
         ),
@@ -36,4 +41,3 @@ class DevConfigScreen extends StatelessWidget {
     );
   }
 }
-

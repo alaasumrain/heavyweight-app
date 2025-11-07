@@ -19,4 +19,3 @@ class HWRouteObserver extends RouteObserver<PageRoute<dynamic>> {
     super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
   }
 }
-

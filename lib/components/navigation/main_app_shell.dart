@@ -4,6 +4,7 @@ import '../../screens/training/assignment_screen.dart';
 import '../../screens/training/training_log_screen.dart';
 import '../../screens/settings/settings_main_screen.dart';
 import '../ui/navigation_bar.dart';
+import 'heavyweight_shell_scope.dart';
 import '../../core/logging.dart';
 
 /// Main app shell with sliding navigation between screens
@@ -16,7 +17,8 @@ class MainAppShell extends StatefulWidget {
   State<MainAppShell> createState() => _MainAppShellState();
 }
 
-class _MainAppShellState extends State<MainAppShell> with TickerProviderStateMixin {
+class _MainAppShellState extends State<MainAppShell>
+    with TickerProviderStateMixin {
   int _currentIndex = 0;
   late PageController _pageController;
   late AnimationController _animationController;
@@ -35,13 +37,17 @@ class _MainAppShellState extends State<MainAppShell> with TickerProviderStateMix
       keepPage: true, // Maintain page state
     );
     _animationController = AnimationController(
-      duration: const Duration(milliseconds: 400), // Slightly longer for smoother feel
+      duration: const Duration(
+          milliseconds: 400), // Slightly longer for smoother feel
       vsync: this,
     );
   }
 
   @override
   void dispose() {
+    HWLog.event('main_shell_dispose', data: {
+      'currentIndex': _currentIndex,
+    });
     _pageController.dispose();
     _animationController.dispose();
     super.dispose();
@@ -56,16 +62,22 @@ class _MainAppShellState extends State<MainAppShell> with TickerProviderStateMix
       setState(() {
         _currentIndex = index;
       });
-      
+
       // Enhanced carousel-style slide transition
       _pageController.animateToPage(
         index,
         duration: const Duration(milliseconds: 400), // Smooth carousel timing
-        curve: Curves.easeInOutQuart, // More pronounced easing for carousel feel
+        curve:
+            Curves.easeInOutQuart, // More pronounced easing for carousel feel
       );
       // Keep URL in sync
       if (index >= 0 && index < 3) {
-        context.go('/app?tab=$index');
+        final router = GoRouter.of(context);
+        final target = '/app?tab=$index';
+        final currentLocation = GoRouterState.of(context).uri.toString();
+        if (currentLocation != target) {
+          router.go(target);
+        }
       }
     }
   }
@@ -86,28 +98,31 @@ class _MainAppShellState extends State<MainAppShell> with TickerProviderStateMix
   Widget build(BuildContext context) {
     return PopScope(
       canPop: true,
-      child: Scaffold(
-        backgroundColor: Colors.black,
-        body: PageView(
-          controller: _pageController,
-          onPageChanged: _onPageChanged,
-          physics: const BouncingScrollPhysics(), // More fluid carousel feel
-          pageSnapping: true,
-          padEnds: false, // Remove padding for seamless carousel
-          children: [
-            // Assignment Screen
-            AssignmentScreen.withProvider(),
-            
-            // Training Log Screen  
-            TrainingLogScreen.withProvider(),
-            
-            // Settings Screen
-            const SettingsMainScreen(),
-          ],
-        ),
-        bottomNavigationBar: HeavyweightNavigationBar(
-          currentIndex: _currentIndex,
-          onTap: _onTabTapped,
+      child: HeavyweightShellScope(
+        hasShellNavigation: true,
+        child: Scaffold(
+          backgroundColor: Colors.black,
+          body: PageView(
+            controller: _pageController,
+            onPageChanged: _onPageChanged,
+            physics: const BouncingScrollPhysics(), // More fluid carousel feel
+            pageSnapping: true,
+            padEnds: false, // Remove padding for seamless carousel
+            children: [
+              // Assignment Screen
+              AssignmentScreen.withProvider(),
+
+              // Training Log Screen
+              TrainingLogScreen.withProvider(),
+
+              // Settings Screen
+              const SettingsMainScreen(),
+            ],
+          ),
+          bottomNavigationBar: HeavyweightNavigationBar(
+            currentIndex: _currentIndex,
+            onTap: _onTabTapped,
+          ),
         ),
       ),
     );

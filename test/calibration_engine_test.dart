@@ -18,12 +18,12 @@ double computeNextCalibration({
 }) {
   final r = reps.clamp(0, 15);
   if (r == 5) return current;
-  final est1RM_e = current * (1 + r / 30.0);
-  final est1RM_b = current * 36.0 / (37 - (r == 0 ? 1 : r));
-  final est1RM = _median([est1RM_e, est1RM_b]);
-  final tgt_e = est1RM / (1 + 5 / 30.0);
-  final tgt_b = est1RM * (37 - 5) / 36.0;
-  double target = _median([tgt_e, tgt_b]);
+  final est1rmE = current * (1 + r / 30.0);
+  final est1rmB = current * 36.0 / (37 - (r == 0 ? 1 : r));
+  final est1RM = _median([est1rmE, est1rmB]);
+  final tgtE = est1RM / (1 + 5 / 30.0);
+  final tgtB = est1RM * (37 - 5) / 36.0;
+  double target = _median([tgtE, tgtB]);
   double jump = target / (current == 0 ? 1 : current);
   if (attempt <= 1 && reps >= 12) {
     jump = jump.clamp(1.0, 1.55);
@@ -42,19 +42,21 @@ double computeNextCalibration({
 
 void main() {
   test('Bench 60x12 suggests around 75-85 kg', () {
-    final next = computeNextCalibration(current: 60, reps: 12, attempt: 1, inc: 2.5, minClamp: 20);
+    final next = computeNextCalibration(
+        current: 60, reps: 12, attempt: 1, inc: 2.5, minClamp: 20);
     expect(next >= 75 && next <= 85, true);
   });
 
   test('OHP 30x3 drops near 27.5 with 1.25 inc', () {
-    final next = computeNextCalibration(current: 30, reps: 3, attempt: 1, inc: 1.25, minClamp: 20);
+    final next = computeNextCalibration(
+        current: 30, reps: 3, attempt: 1, inc: 1.25, minClamp: 20);
     expect(next <= 30, true);
     expect((next / 1.25).round() * 1.25, next);
   });
 
   test('Clamp enforces min 20kg for non-BW', () {
-    final next = computeNextCalibration(current: 10, reps: 0, attempt: 1, inc: 2.5, minClamp: 20);
+    final next = computeNextCalibration(
+        current: 10, reps: 0, attempt: 1, inc: 2.5, minClamp: 20);
     expect(next, 20);
   });
 }
-

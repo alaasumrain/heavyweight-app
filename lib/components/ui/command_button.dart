@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import '../../core/theme/heavyweight_theme.dart';
 
 enum ButtonVariant { primary, secondary, accent, danger }
+
 enum ButtonSize { large, medium, small }
 
 class CommandButton extends StatelessWidget {
@@ -13,7 +14,7 @@ class CommandButton extends StatelessWidget {
   final bool isDisabled;
   final bool isLoading;
   final String? semanticLabel;
-  
+
   const CommandButton({
     super.key,
     required this.text,
@@ -24,7 +25,7 @@ class CommandButton extends StatelessWidget {
     this.isLoading = false,
     this.semanticLabel,
   });
-  
+
   // Legacy constructor for backward compatibility
   const CommandButton.inverse({
     super.key,
@@ -33,54 +34,56 @@ class CommandButton extends StatelessWidget {
     this.isDisabled = false,
     this.isLoading = false,
     this.semanticLabel,
-  }) : variant = ButtonVariant.primary,
-       size = ButtonSize.large;
-  
+  })  : variant = ButtonVariant.primary,
+        size = ButtonSize.large;
+
   @override
   Widget build(BuildContext context) {
     final isEffectivelyDisabled = isDisabled || isLoading || onPressed == null;
-    
+
     return Semantics(
       button: true,
       enabled: !isEffectivelyDisabled,
       label: semanticLabel ?? text,
       child: InkWell(
-        onTap: isEffectivelyDisabled ? null : () {
-          try {
-            HapticFeedback.lightImpact();
-            onPressed?.call();
-          } catch (error) {
-            // Log error but don't crash the app
-            debugPrint('CommandButton error: $error');
-          }
-        },
+        onTap: isEffectivelyDisabled
+            ? null
+            : () {
+                try {
+                  HapticFeedback.lightImpact();
+                  onPressed?.call();
+                } catch (error) {
+                  // Log error but don't crash the app
+                  debugPrint('CommandButton error: $error');
+                }
+              },
         child: Container(
           width: double.infinity,
           height: _getHeight(),
           decoration: _getDecoration(isEffectivelyDisabled),
           child: Center(
-            child: isLoading 
-              ? SizedBox(
-                  width: 20,
-                  height: 20,
-                  child: CircularProgressIndicator(
-                    color: _getTextColor(isEffectivelyDisabled),
-                    strokeWidth: 2,
+            child: isLoading
+                ? SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      color: _getTextColor(isEffectivelyDisabled),
+                      strokeWidth: 2,
+                    ),
+                  )
+                : Text(
+                    text,
+                    style: _getTextStyle(isEffectivelyDisabled),
+                    textAlign: TextAlign.center,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
-                )
-              : Text(
-                  text,
-                  style: _getTextStyle(isEffectivelyDisabled),
-                  textAlign: TextAlign.center,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                ),
           ),
         ),
       ),
     );
   }
-  
+
   double _getHeight() {
     switch (size) {
       case ButtonSize.large:
@@ -91,7 +94,7 @@ class CommandButton extends StatelessWidget {
         return HeavyweightTheme.buttonHeightSmall;
     }
   }
-  
+
   BoxDecoration _getDecoration(bool isEffectivelyDisabled) {
     if (isEffectivelyDisabled) {
       return BoxDecoration(
@@ -99,7 +102,7 @@ class CommandButton extends StatelessWidget {
         border: Border.all(color: HeavyweightTheme.textDisabled),
       );
     }
-    
+
     switch (variant) {
       case ButtonVariant.primary:
         return BoxDecoration(
@@ -123,12 +126,12 @@ class CommandButton extends StatelessWidget {
         );
     }
   }
-  
+
   Color _getTextColor(bool isEffectivelyDisabled) {
     if (isEffectivelyDisabled) {
       return HeavyweightTheme.textDisabled;
     }
-    
+
     switch (variant) {
       case ButtonVariant.primary:
         return HeavyweightTheme.onPrimary;
@@ -140,12 +143,12 @@ class CommandButton extends StatelessWidget {
         return HeavyweightTheme.primary;
     }
   }
-  
+
   TextStyle _getTextStyle(bool isEffectivelyDisabled) {
-    final baseStyle = size == ButtonSize.large 
-        ? HeavyweightTheme.labelLarge 
+    final baseStyle = size == ButtonSize.large
+        ? HeavyweightTheme.labelLarge
         : HeavyweightTheme.labelMedium;
-    
+
     return baseStyle.copyWith(
       color: _getTextColor(isEffectivelyDisabled),
     );

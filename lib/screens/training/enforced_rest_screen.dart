@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:google_fonts/google_fonts.dart';
 import '../../components/layout/heavyweight_scaffold.dart';
 import '../../components/ui/command_button.dart';
 import '../../components/ui/warning_stripes.dart';
@@ -9,7 +8,7 @@ import '../../core/theme/heavyweight_theme.dart';
 import '../../core/logging.dart';
 
 class EnforcedRestScreen extends StatefulWidget {
-  const EnforcedRestScreen({Key? key}) : super(key: key);
+  const EnforcedRestScreen({super.key});
 
   @override
   State<EnforcedRestScreen> createState() => _EnforcedRestScreenState();
@@ -65,12 +64,15 @@ class _EnforcedRestScreenState extends State<EnforcedRestScreen> {
     });
     return HeavyweightScaffold(
       title: 'ENFORCED_REST',
-      subtitle: isRestComplete ? 'STATUS: READY_TO_CONTINUE' : 'STATUS: REST_MANDATORY',
+      subtitle: isRestComplete
+          ? 'STATUS: READY_TO_CONTINUE'
+          : 'STATUS: REST_MANDATORY',
       showNavigation: false, // No navigation during rest
       body: SingleChildScrollView(
         child: ConstrainedBox(
           constraints: BoxConstraints(
-            minHeight: MediaQuery.of(context).size.height - 200, // Account for scaffold
+            minHeight: MediaQuery.of(context).size.height -
+                200, // Account for scaffold
           ),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -79,200 +81,204 @@ class _EnforcedRestScreenState extends State<EnforcedRestScreen> {
               if (isRestComplete || remainingSeconds <= 30)
                 WarningStripes.warning(
                   height: 45,
-                  text: isRestComplete 
-                      ? 'CONTINUE_PROTOCOL' 
+                  text: isRestComplete
+                      ? 'CONTINUE_PROTOCOL'
                       : 'PREPARE_TO_CONTINUE',
                   animated: isRestComplete,
                 ),
-              
+
               if (isRestComplete || remainingSeconds <= 30)
                 const SizedBox(height: HeavyweightTheme.spacingLg),
-          // Large countdown display
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(HeavyweightTheme.spacingXl),
-            decoration: BoxDecoration(
-              border: Border.all(
-                color: remainingSeconds <= 30 
-                    ? HeavyweightTheme.error 
-                    : HeavyweightTheme.primary,
-                width: 3,
+              // Large countdown display
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(HeavyweightTheme.spacingXl),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                    color: remainingSeconds <= 30
+                        ? HeavyweightTheme.error
+                        : HeavyweightTheme.primary,
+                    width: 3,
+                  ),
+                ),
+                child: Column(
+                  children: [
+                    Text(
+                      _formattedTime,
+                      style: HeavyweightTheme.h1.copyWith(
+                        fontSize: 72,
+                        color: remainingSeconds <= 30
+                            ? HeavyweightTheme.error
+                            : HeavyweightTheme.textPrimary,
+                        letterSpacing: 4,
+                      ),
+                    ),
+                    const SizedBox(height: HeavyweightTheme.spacingMd),
+
+                    // Progress bar
+                    Container(
+                      width: double.infinity,
+                      height: 8,
+                      decoration: BoxDecoration(
+                        border:
+                            Border.all(color: HeavyweightTheme.textSecondary),
+                      ),
+                      child: LinearProgressIndicator(
+                        value: _progressPercentage,
+                        backgroundColor: HeavyweightTheme.background,
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          remainingSeconds <= 30
+                              ? HeavyweightTheme.error
+                              : HeavyweightTheme.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  _formattedTime,
-                  style: GoogleFonts.ibmPlexMono(
-                    fontSize: 72,
-                    fontWeight: FontWeight.bold,
-                    color: remainingSeconds <= 30 
-                        ? HeavyweightTheme.error 
-                        : HeavyweightTheme.textPrimary,
-                    letterSpacing: 4,
-                  ),
+
+              const SizedBox(height: HeavyweightTheme.spacingXl),
+
+              // Rest status message
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(HeavyweightTheme.spacingLg),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                      color: HeavyweightTheme.textSecondary, width: 1),
                 ),
-                const SizedBox(height: HeavyweightTheme.spacingMd),
-                
-                // Progress bar
-                Container(
-                  width: double.infinity,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: HeavyweightTheme.textSecondary),
-                  ),
-                  child: LinearProgressIndicator(
-                    value: _progressPercentage,
-                    backgroundColor: HeavyweightTheme.background,
-                    valueColor: AlwaysStoppedAnimation<Color>(
-                      remainingSeconds <= 30 
-                          ? HeavyweightTheme.error 
-                          : HeavyweightTheme.primary,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          
-          const SizedBox(height: HeavyweightTheme.spacingXl),
-          
-          // Rest status message
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(HeavyweightTheme.spacingLg),
-            decoration: BoxDecoration(
-              border: Border.all(color: HeavyweightTheme.textSecondary, width: 1),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  isRestComplete 
-                      ? 'REST_PERIOD_COMPLETE' 
-                      : 'REST_PERIOD_ACTIVE',
-                  style: HeavyweightTheme.h4.copyWith(
-                    color: isRestComplete 
-                        ? HeavyweightTheme.accent 
-                        : HeavyweightTheme.textPrimary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-                const SizedBox(height: HeavyweightTheme.spacingSm),
-                Text(
-                  isRestComplete
-                      ? 'SYSTEM_READY_FOR_NEXT_SET'
-                      : 'ALL_COMMANDS_LOCKED',
-                  style: HeavyweightTheme.bodyMedium.copyWith(
-                    color: HeavyweightTheme.textSecondary,
-                  ),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-          
-          const SizedBox(height: HeavyweightTheme.spacingXl),
-          
-          // Next set preview
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
-            decoration: BoxDecoration(
-              border: Border.all(color: HeavyweightTheme.textSecondary, width: 1),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'NEXT_SET_PREVIEW:',
-                  style: HeavyweightTheme.labelMedium.copyWith(
-                    color: HeavyweightTheme.textSecondary,
-                  ),
-                ),
-                const SizedBox(height: HeavyweightTheme.spacingSm),
-                Row(
+                child: Column(
                   children: [
                     Text(
-                      '├─ EXERCISE: ',
-                      style: HeavyweightTheme.bodySmall.copyWith(
+                      isRestComplete
+                          ? 'REST_PERIOD_COMPLETE'
+                          : 'REST_PERIOD_ACTIVE',
+                      style: HeavyweightTheme.h4.copyWith(
+                        color: isRestComplete
+                            ? HeavyweightTheme.accent
+                            : HeavyweightTheme.textPrimary,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                    const SizedBox(height: HeavyweightTheme.spacingSm),
+                    Text(
+                      isRestComplete
+                          ? 'SYSTEM_READY_FOR_NEXT_SET'
+                          : 'ALL_COMMANDS_LOCKED',
+                      style: HeavyweightTheme.bodyMedium.copyWith(
                         color: HeavyweightTheme.textSecondary,
                       ),
-                    ),
-                    Text(
-                      'SQUAT',
-                      style: HeavyweightTheme.bodyMedium.copyWith(
-                        color: HeavyweightTheme.textPrimary,
-                      ),
+                      textAlign: TextAlign.center,
                     ),
                   ],
                 ),
-                Row(
+              ),
+
+              const SizedBox(height: HeavyweightTheme.spacingXl),
+
+              // Next set preview
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
+                decoration: BoxDecoration(
+                  border: Border.all(
+                      color: HeavyweightTheme.textSecondary, width: 1),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      '├─ SET: ',
-                      style: HeavyweightTheme.bodySmall.copyWith(
+                      'NEXT_SET_PREVIEW:',
+                      style: HeavyweightTheme.labelMedium.copyWith(
                         color: HeavyweightTheme.textSecondary,
                       ),
                     ),
-                    Text(
-                      '2/3',
-                      style: HeavyweightTheme.bodyMedium.copyWith(
-                        color: HeavyweightTheme.accent,
-                      ),
+                    const SizedBox(height: HeavyweightTheme.spacingSm),
+                    Row(
+                      children: [
+                        Text(
+                          '├─ EXERCISE: ',
+                          style: HeavyweightTheme.bodySmall.copyWith(
+                            color: HeavyweightTheme.textSecondary,
+                          ),
+                        ),
+                        Text(
+                          'SQUAT',
+                          style: HeavyweightTheme.bodyMedium.copyWith(
+                            color: HeavyweightTheme.textPrimary,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Text(
+                          '├─ SET: ',
+                          style: HeavyweightTheme.bodySmall.copyWith(
+                            color: HeavyweightTheme.textSecondary,
+                          ),
+                        ),
+                        Text(
+                          '2/3',
+                          style: HeavyweightTheme.bodyMedium.copyWith(
+                            color: HeavyweightTheme.accent,
+                          ),
+                        ),
+                      ],
+                    ),
+                    Row(
+                      children: [
+                        Text(
+                          '└─ LOAD: ',
+                          style: HeavyweightTheme.bodySmall.copyWith(
+                            color: HeavyweightTheme.textSecondary,
+                          ),
+                        ),
+                        Text(
+                          '80.0 KG',
+                          style: HeavyweightTheme.bodyMedium.copyWith(
+                            color: HeavyweightTheme.primary,
+                          ),
+                        ),
+                      ],
                     ),
                   ],
                 ),
-                Row(
-                  children: [
-                    Text(
-                      '└─ LOAD: ',
-                      style: HeavyweightTheme.bodySmall.copyWith(
-                        color: HeavyweightTheme.textSecondary,
-                      ),
-                    ),
-                    Text(
-                      '80.0 KG',
-                      style: HeavyweightTheme.bodyMedium.copyWith(
-                        color: HeavyweightTheme.primary,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ),
-          ),
-          
-          const Spacer(),
-          
-          // Continue button (only enabled when rest is complete)
-          CommandButton(
-            text: isRestComplete ? 'CONTINUE_PROTOCOL' : 'REST_MANDATORY',
-            variant: isRestComplete ? ButtonVariant.primary : ButtonVariant.secondary,
-            onPressed: isRestComplete ? _continueProtocol : null,
-          ),
-          
-          const SizedBox(height: HeavyweightTheme.spacingMd),
-          
-          // Emergency terminate button
-          CommandButton(
-            text: 'TERMINATE_SESSION',
-            variant: ButtonVariant.danger,
-            onPressed: _terminateSession,
-          ),
-          
-          const SizedBox(height: HeavyweightTheme.spacingLg),
+              ),
+
+              const Spacer(),
+
+              // Continue button (only enabled when rest is complete)
+              CommandButton(
+                text: isRestComplete ? 'CONTINUE_PROTOCOL' : 'REST_MANDATORY',
+                variant: isRestComplete
+                    ? ButtonVariant.primary
+                    : ButtonVariant.secondary,
+                onPressed: isRestComplete ? _continueProtocol : null,
+              ),
+
+              const SizedBox(height: HeavyweightTheme.spacingMd),
+
+              // Emergency terminate button
+              CommandButton(
+                text: 'TERMINATE_SESSION',
+                variant: ButtonVariant.danger,
+                onPressed: _terminateSession,
+              ),
+
+              const SizedBox(height: HeavyweightTheme.spacingLg),
             ],
           ),
         ),
       ),
     );
   }
-  
+
   void _continueProtocol() {
     // Return to session active screen
     context.pop();
   }
-  
+
   void _terminateSession() {
     showDialog(
       context: context,
@@ -321,4 +327,3 @@ class _EnforcedRestScreenState extends State<EnforcedRestScreen> {
     );
   }
 }
-

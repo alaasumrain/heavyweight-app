@@ -9,7 +9,7 @@ import '../viewmodels/exercise_viewmodel.dart';
 /// Ensures single instance across the app
 class WorkoutEngineProvider extends ChangeNotifier {
   WorkoutEngine? _engine;
-  
+
   /// Initialize with repository (must be called before using engine)
   void initialize(WorkoutRepositoryInterface repository) {
     _engine = WorkoutEngine(repository: repository);
@@ -18,7 +18,7 @@ class WorkoutEngineProvider extends ChangeNotifier {
       'engine': identityHashCode(_engine!).toString(),
     });
   }
-  
+
   /// Get the workout engine instance
   WorkoutEngine get engine {
     if (_engine == null) {
@@ -31,21 +31,19 @@ class WorkoutEngineProvider extends ChangeNotifier {
     }
     return _engine!;
   }
-  
+
   /// Check if engine is initialized with repository
   bool get isInitialized => _engine != null;
 
   /// Generate daily workout with exercise alternatives applied
   Future<DailyWorkout> generateWorkoutWithAlternatives(
-    List<SetData> history, 
-    ExerciseViewModel? exerciseViewModel, {
-    String? preferredStartingDay
-  }) async {
+      List<SetData> history, ExerciseViewModel? exerciseViewModel,
+      {String? preferredStartingDay}) async {
     final baseWorkout = await engine.generateDailyWorkout(
       history,
       preferredStartingDay: preferredStartingDay,
     );
-    
+
     return engine.applyExerciseAlternatives(baseWorkout, exerciseViewModel);
   }
 }

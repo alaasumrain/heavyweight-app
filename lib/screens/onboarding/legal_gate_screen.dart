@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:provider/provider.dart';
@@ -9,7 +8,7 @@ import '../../providers/app_state_provider.dart';
 import '../../core/logging.dart';
 
 class LegalGateScreen extends StatelessWidget {
-  const LegalGateScreen({Key? key}) : super(key: key);
+  const LegalGateScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -24,9 +23,11 @@ class LegalGateScreen extends StatelessWidget {
           // Warning text moved higher with reduced spacing
           Expanded(
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.start, // Changed from center to start
+              mainAxisAlignment:
+                  MainAxisAlignment.start, // Changed from center to start
               children: [
-                const SizedBox(height: HeavyweightTheme.spacingXl), // Add some top spacing
+                const SizedBox(
+                    height: HeavyweightTheme.spacingXl), // Add some top spacing
                 Icon(
                   Icons.warning_outlined,
                   color: HeavyweightTheme.error,
@@ -58,7 +59,7 @@ class LegalGateScreen extends StatelessWidget {
                   await appState.acceptLegal();
                   if (context.mounted) {
                     final nextRoute = appState.nextRoute;
-                    context.go(nextRoute);
+                    GoRouter.of(context).go(nextRoute);
                   }
                 },
               ),
@@ -66,7 +67,7 @@ class LegalGateScreen extends StatelessWidget {
               CommandButton(
                 text: 'VIEW TERMS & PRIVACY POLICY',
                 variant: ButtonVariant.secondary,
-                onPressed: () => context.go('/legal/terms'),
+                onPressed: () => GoRouter.of(context).go('/legal/terms'),
               ),
             ],
           ),

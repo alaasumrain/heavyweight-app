@@ -7,7 +7,7 @@ class SetData {
   final DateTime timestamp;
   final int setNumber; // Which set in the session (1, 2, 3, etc.)
   final int restTaken; // Actual rest taken in seconds
-  
+
   const SetData({
     required this.exerciseId,
     required this.weight,
@@ -16,16 +16,16 @@ class SetData {
     required this.setNumber,
     required this.restTaken,
   });
-  
+
   /// Determine if this set met the mandate
   bool get metMandate => actualReps >= 4 && actualReps <= 6;
-  
+
   /// Determine if this was a failure
   bool get isFailure => actualReps < 4;
-  
+
   /// Determine if this exceeded the mandate
   bool get exceededMandate => actualReps > 6;
-  
+
   /// Get performance zone for visualization
   PerformanceZone get performanceZone {
     if (actualReps == 0) return PerformanceZone.completeFailure;
@@ -33,7 +33,7 @@ class SetData {
     if (actualReps <= 6) return PerformanceZone.withinMandate;
     return PerformanceZone.aboveMandate;
   }
-  
+
   Map<String, dynamic> toJson() {
     return {
       'exerciseId': exerciseId,
@@ -44,7 +44,7 @@ class SetData {
       'restTaken': restTaken,
     };
   }
-  
+
   factory SetData.fromJson(Map<String, dynamic> json) {
     return SetData(
       exerciseId: json['exerciseId'],
@@ -60,9 +60,9 @@ class SetData {
 /// Performance zones for visual feedback
 enum PerformanceZone {
   completeFailure, // 0 reps - catastrophic
-  belowMandate,    // 1-3 reps - reduce weight
-  withinMandate,   // 4-6 reps - perfect
-  aboveMandate,    // 7+ reps - increase weight
+  belowMandate, // 1-3 reps - reduce weight
+  withinMandate, // 4-6 reps - perfect
+  aboveMandate, // 7+ reps - increase weight
 }
 
 /// Workout session - collection of sets
@@ -72,7 +72,7 @@ class WorkoutSession {
   final List<SetData> sets;
   final bool completed;
   final String? notes;
-  
+
   const WorkoutSession({
     required this.id,
     required this.date,
@@ -80,20 +80,20 @@ class WorkoutSession {
     this.completed = false,
     this.notes,
   });
-  
+
   /// Get all sets for a specific exercise
   List<SetData> setsForExercise(String exerciseId) {
     return sets.where((s) => s.exerciseId == exerciseId).toList();
   }
-  
+
   /// Calculate session performance score (0-100)
   double get performanceScore {
     if (sets.isEmpty) return 0;
-    
+
     final mandateSets = sets.where((s) => s.metMandate).length;
     return (mandateSets / sets.length) * 100;
   }
-  
+
   Map<String, dynamic> toJson() {
     return {
       'id': id,
@@ -103,14 +103,12 @@ class WorkoutSession {
       'notes': notes,
     };
   }
-  
+
   factory WorkoutSession.fromJson(Map<String, dynamic> json) {
     return WorkoutSession(
       id: json['id'],
       date: DateTime.parse(json['date']),
-      sets: (json['sets'] as List)
-          .map((s) => SetData.fromJson(s))
-          .toList(),
+      sets: (json['sets'] as List).map((s) => SetData.fromJson(s)).toList(),
       completed: json['completed'] ?? false,
       notes: json['notes'],
     );

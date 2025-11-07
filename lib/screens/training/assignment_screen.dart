@@ -1,27 +1,35 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:provider/provider.dart';
 import '../../components/layout/heavyweight_scaffold.dart';
 import '../../components/ui/command_button.dart';
+import '../../components/ui/exercise_alternatives_widget.dart';
 import '../../core/theme/heavyweight_theme.dart';
 import '../../fortress/viewmodels/workout_viewmodel.dart';
 import '../../providers/workout_viewmodel_provider.dart';
 import '../../providers/repository_provider.dart';
 import '../../providers/app_state_provider.dart';
 import '../../fortress/engine/workout_engine.dart';
+import '../../fortress/engine/exercise_intel.dart';
 import '../../fortress/engine/models/exercise.dart';
+import '../../fortress/engine/models/set_data.dart';
 import '../../core/logging.dart';
+import '../../providers/profile_provider.dart';
+import '../../core/units.dart';
+import '../../components/ui/workout_assignment_card.dart';
+import '../../core/workout_session_manager.dart';
+import '../../viewmodels/exercise_viewmodel.dart';
+import '../../services/preferences_service.dart';
 
 class AssignmentScreen extends StatefulWidget {
   const AssignmentScreen({super.key});
-  
+
   static Widget withProvider() {
     return const WorkoutViewModelProvider(
       child: AssignmentScreen(),
     );
   }
-  
+
   @override
   State<AssignmentScreen> createState() => _AssignmentScreenState();
 }
@@ -30,7 +38,14 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
   bool _showTutorial = false;
   String _lastSessionText = 'LOADING';
   String _streakText = 'LOADING';
-  
+  bool _primedLasts = false;
+  Map<String, SetData> _lastByExercise = const {};
+  bool _resumeAvailable = false;
+  bool _assignmentBuildLogged = false;
+  final Map<String, List<bool>> _setCompletion = {};
+  final Map<String, int> _extraSets = {};
+  final Map<String, String> _exerciseNotes = {};
+
   @override
   void initState() {
     super.initState();
@@ -41,22 +56,33 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
       // Get preferred starting day from app state
       final appState = context.read<AppStateProvider>().appState;
       final preferredStartingDay = appState.preferredStartingDay;
-      context.read<WorkoutViewModel>().initialize(preferredStartingDay: preferredStartingDay);
+      context
+          .read<WorkoutViewModel>()
+          .initialize(preferredStartingDay: preferredStartingDay);
       _loadSessionStats();
+      _checkFirstVisit();
+      _checkResume();
     });
   }
-  
+
+  /// Refresh workout data (for pull-to-refresh)
+  Future<void> _refreshWorkout() async {
+    final workoutViewModel = context.read<WorkoutViewModel>();
+    await workoutViewModel.refresh();
+    await _loadSessionStats();
+    await _checkResume();
+  }
+
   Future<void> _loadSessionStats() async {
     try {
       HWLog.event('assignment_load_stats_start');
       final viewModel = context.read<WorkoutViewModel>();
-      final stats = await viewModel.getStats();
-      
-      // Get last session from repository
       final repository = context.read<RepositoryProvider>().repository;
+      final stats = await viewModel.getStats();
+
       if (repository != null) {
         final lastSession = await repository.getLastSession();
-        
+
         // Calculate days since last session
         String lastSessionDisplay = 'NO_PREVIOUS_SESSION';
         if (lastSession != null) {
@@ -69,10 +95,10 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
             lastSessionDisplay = '${daysSince}_DAYS_AGO';
           }
         }
-        
+
         // Set streak based on workout days
         final streakDisplay = '${stats.workoutDays}_SESSIONS';
-        
+
         if (mounted) {
           setState(() {
             _lastSessionText = lastSessionDisplay;
@@ -94,27 +120,304 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
       }
     }
   }
-  
+
+  Future<void> _checkResume() async {
+    final hasSession = await WorkoutSessionManager.hasActiveSession();
+    if (!mounted) return;
+    setState(() {
+      _resumeAvailable = hasSession;
+    });
+  }
+
+  Future<void> _primeLasts(List<PlannedExercise> planned) async {
+    if (_primedLasts) return;
+    final repo = context.read<RepositoryProvider>().repository;
+    if (repo == null) return;
+    final ids = planned.map((p) => p.exercise.id).toSet();
+    try {
+      final map = await repo.getLastForExercises(ids);
+      if (!mounted) return;
+      setState(() {
+        _lastByExercise = map;
+        _primedLasts = true;
+      });
+    } catch (e) {
+      HWLog.event('assignment_prime_lasts_error',
+          data: {'error': e.toString()});
+    }
+  }
+
   String _getBodyPartFocus(DailyWorkout? workout) {
     if (workout == null) return 'INITIALIZING...';
-    
+
     // Just show the day name without date
     return workout.dayName;
   }
-  
+
+  Widget _buildMandateHeader(String focus, int exerciseCount) {
+    final trimmedFocus = focus.trim();
+    final focusLabel = trimmedFocus.isEmpty
+        ? 'NO_PROTOCOL_ASSIGNED'
+        : trimmedFocus.toUpperCase().replaceAll(' ', '_');
+    final countLabel = exerciseCount <= 0
+        ? '0 EXERCISES'
+        : exerciseCount == 1
+            ? '1 EXERCISE'
+            : '$exerciseCount EXERCISES';
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'MANDATE',
+          style: HeavyweightTheme.labelMedium.copyWith(
+            color: HeavyweightTheme.textSecondary,
+            letterSpacing: 2,
+          ),
+        ),
+        const SizedBox(height: HeavyweightTheme.spacingXs),
+        Text(
+          focusLabel,
+          style: HeavyweightTheme.h2.copyWith(
+            color: HeavyweightTheme.primary,
+            letterSpacing: 4,
+          ),
+        ),
+        const SizedBox(height: HeavyweightTheme.spacingSm),
+        Text(
+          countLabel,
+          style: HeavyweightTheme.bodySmall.copyWith(
+            color: HeavyweightTheme.textSecondary,
+            letterSpacing: 1.5,
+          ),
+        ),
+      ],
+    );
+  }
+
   String _getSubtitle() {
     final now = DateTime.now();
-    final dayNames = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+    final dayNames = [
+      'MONDAY',
+      'TUESDAY',
+      'WEDNESDAY',
+      'THURSDAY',
+      'FRIDAY',
+      'SATURDAY',
+      'SUNDAY'
+    ];
     final dayName = dayNames[now.weekday - 1];
-    final dateStr = '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
-    
+    final dateStr =
+        '${now.day.toString().padLeft(2, '0')}/${now.month.toString().padLeft(2, '0')}/${now.year}';
+
     return '$dayName | $dateStr';
   }
-  
+
+  void _ensureAssignmentState(String exerciseId, int totalSets) {
+    if (totalSets <= 0) {
+      _setCompletion[exerciseId] = <bool>[];
+      return;
+    }
+
+    final existing = _setCompletion[exerciseId];
+    if (existing == null) {
+      _setCompletion[exerciseId] = List<bool>.filled(totalSets, false);
+      return;
+    }
+
+    if (existing.length == totalSets) {
+      return;
+    }
+
+    final adjusted = List<bool>.filled(totalSets, false);
+    for (var i = 0; i < totalSets && i < existing.length; i++) {
+      adjusted[i] = existing[i];
+    }
+    _setCompletion[exerciseId] = adjusted;
+  }
+
+  void _handleToggleSet(String exerciseId, int setIndex, bool value) {
+    final sets = _setCompletion[exerciseId];
+    if (sets == null || setIndex >= sets.length) {
+      return;
+    }
+
+    setState(() {
+      final updated = List<bool>.from(sets);
+      updated[setIndex] = value;
+      _setCompletion[exerciseId] = updated;
+    });
+  }
+
+  void _handleAddSet(String exerciseId, int baseSets) {
+    final effectiveBase = baseSets > 0 ? baseSets : 1;
+    final currentExtra = _extraSets[exerciseId] ?? 0;
+    final currentTotal = effectiveBase + currentExtra;
+    _ensureAssignmentState(exerciseId, currentTotal);
+
+    final existing =
+        _setCompletion[exerciseId] ?? List<bool>.filled(currentTotal, false);
+    final updated = List<bool>.from(existing)..add(false);
+
+    setState(() {
+      _setCompletion[exerciseId] = updated;
+      final extra = updated.length - effectiveBase;
+      if (extra > 0) {
+        _extraSets[exerciseId] = extra;
+      }
+    });
+  }
+
+  Future<void> _handleEditNote(String exerciseId, String displayName) async {
+    final initialNote = _exerciseNotes[exerciseId] ?? '';
+    final controller = TextEditingController(text: initialNote);
+
+    final result = await showDialog<String>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.75),
+      builder: (dialogContext) {
+        return AlertDialog(
+          backgroundColor: HeavyweightTheme.background,
+          title: Text(
+            'NOTE FOR $displayName',
+            style: HeavyweightTheme.bodyLarge,
+          ),
+          content: TextField(
+            controller: controller,
+            autofocus: true,
+            maxLength: 200,
+            maxLines: 4,
+            style: HeavyweightTheme.bodyMedium
+                .copyWith(color: HeavyweightTheme.textPrimary),
+            decoration: const InputDecoration(
+              hintText: 'Log cues, weight adjustments, or cautions…',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('CANCEL'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(controller.text),
+              child: const Text('SAVE'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (result == null) {
+      return;
+    }
+
+    setState(() {
+      final trimmed = result.trim();
+      if (trimmed.isEmpty) {
+        _exerciseNotes.remove(exerciseId);
+      } else {
+        _exerciseNotes[exerciseId] = trimmed;
+      }
+    });
+  }
+
+  List<AssignmentEntry> _buildAssignmentEntries(
+    DailyWorkout workout,
+    HWUnit unit,
+    ExerciseViewModel exerciseViewModel,
+  ) {
+    final entries = <AssignmentEntry>[];
+    for (var i = 0; i < workout.exercises.length; i++) {
+      final planned = workout.exercises[i];
+      final exercise = planned.exercise;
+      final exerciseId = exercise.id;
+      final baseSets = planned.targetSets > 0
+          ? planned.targetSets
+          : (exercise.setsTarget ?? 3);
+      final extraSets = _extraSets[exerciseId] ?? 0;
+      final totalSets = (baseSets + extraSets).clamp(1, 12);
+      _ensureAssignmentState(exerciseId, totalSets);
+
+      final completionState =
+          _setCompletion[exerciseId] ?? List<bool>.filled(totalSets, false);
+      final completedSets =
+          completionState.where((completed) => completed).length;
+      final weightText = formatWeightForUnit(planned.prescribedWeight, unit);
+      final unitLabel = unit == HWUnit.kg ? 'KG' : 'LB';
+      final repsLabel = '4-6 reps';
+
+      final sets = List<AssignmentSet>.generate(totalSets, (index) {
+        final isCompleted =
+            index < completionState.length && completionState[index];
+        return AssignmentSet(
+          weight: weightText,
+          unit: unitLabel,
+          reps: repsLabel,
+          isCompleted: isCompleted,
+          onToggle: (value) => _handleToggleSet(exerciseId, index, value),
+        );
+      });
+
+      final last = _lastByExercise[exerciseId];
+      final lastLabel = last == null
+          ? 'LAST: —'
+          : 'LAST: ${formatWeightForUnit(last.weight, unit)} '
+              '$unitLabel × ${last.actualReps}';
+
+      final hasAlternatives = exerciseViewModel.isLoaded &&
+          exerciseViewModel.hasAlternatives(exerciseId);
+      final selectedAlt = exerciseViewModel.getSelectedAlternative(exerciseId);
+      var displayName = _formatToken(exercise.name);
+      String? primaryLabel;
+      var alternativeSelected = false;
+      if (selectedAlt != null && selectedAlt.id != exerciseId) {
+        alternativeSelected = true;
+        primaryLabel = displayName;
+        displayName = _formatToken(selectedAlt.name);
+      }
+
+      final subtitleParts = <String>[];
+      if (exercise.muscleGroup.isNotEmpty) {
+        subtitleParts.add(_formatToken(exercise.muscleGroup));
+      }
+      subtitleParts.add('${planned.restSeconds}s rest');
+      final subtitle = subtitleParts.join(' · ');
+
+      entries.add(
+        AssignmentEntry(
+          id: exerciseId,
+          orderLabel: (i + 1).toString().padLeft(2, '0'),
+          title: displayName,
+          subtitle: subtitle,
+          note: _exerciseNotes[exerciseId],
+          sets: sets,
+          completedSets: completedSets,
+          totalSets: totalSets,
+          lastPerformance: lastLabel,
+          primaryLabel: primaryLabel,
+          alternativeSelected: alternativeSelected,
+          needsCalibration: planned.needsCalibration,
+          onTap: () => _showExerciseInfo(exercise),
+          onSwap: hasAlternatives
+              ? () => ExerciseAlternativesBottomSheet.show(
+                    context,
+                    exerciseId: exerciseId,
+                    currentExerciseName: exercise.name,
+                  )
+              : null,
+          onAddSet: () => _handleAddSet(exerciseId, baseSets),
+          onAddNote: () => _handleEditNote(exerciseId, displayName),
+        ),
+      );
+    }
+    return entries;
+  }
+
   Future<void> _checkFirstVisit() async {
-    final prefs = await SharedPreferences.getInstance();
-    final hasSeenTutorial = prefs.getBool('has_seen_hud_tutorial') ?? false;
-    
+    final prefs = context.read<PreferencesService>();
+    final hasSeenTutorial =
+        prefs.getBool('has_seen_hud_tutorial', defaultValue: false);
+
     if (!hasSeenTutorial && mounted) {
       // Show tutorial after a brief delay
       Future.delayed(const Duration(milliseconds: 500), () {
@@ -126,61 +429,128 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
       });
     }
   }
-  
+
   Future<void> _dismissTutorial() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = context.read<PreferencesService>();
     await prefs.setBool('has_seen_hud_tutorial', true);
-    
+
     setState(() {
       _showTutorial = false;
     });
   }
 
   void _showExerciseInfo(Exercise exercise) {
-    HWLog.event('assignment_show_exercise_info', data: {'exercise': exercise.id});
+    HWLog.event('assignment_show_exercise_info',
+        data: {'exercise': exercise.id});
+    final routerContext = context;
+    final intel = ExerciseIntel.getIntelProfile(exercise.id);
+    final profile = context.read<ProfileProvider>();
+    final preferredUnit = profile.unit == Unit.kg ? HWUnit.kg : HWUnit.lb;
+    final summaryLines = _buildExerciseSummary(exercise, preferredUnit);
+    final formProtocol =
+        intel.formProtocol.take(3).map(_formatIntelLine).toList();
+    final failureSignals =
+        intel.commonFailures.take(2).map(_formatIntelLine).toList();
+    final abortDirective = _formatIntelLine(intel.abortConditions);
+
     showDialog(
       context: context,
-      builder: (context) => Dialog(
+      barrierColor: Colors.black.withValues(alpha: 0.75),
+      builder: (dialogCtx) => Dialog(
+        insetPadding: const EdgeInsets.all(HeavyweightTheme.spacingLg),
         backgroundColor: HeavyweightTheme.background,
-        child: Container(
-          padding: const EdgeInsets.all(HeavyweightTheme.spacingLg),
-          decoration: BoxDecoration(
-            border: Border.all(color: HeavyweightTheme.primary),
-            color: HeavyweightTheme.background,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                exercise.name.toUpperCase(),
-                style: HeavyweightTheme.h4,
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final screenSize = MediaQuery.of(context).size;
+            final maxWidth = screenSize.width < 420
+                ? screenSize.width - HeavyweightTheme.spacingLg * 2
+                : 360.0;
+            final maxHeight = screenSize.height.clamp(360.0, 520.0).toDouble();
+            return ConstrainedBox(
+              constraints: BoxConstraints(
+                maxWidth: maxWidth,
+                maxHeight: maxHeight,
               ),
-              const SizedBox(height: HeavyweightTheme.spacingMd),
-              Text(
-                'EXERCISE_INTEL:',
-                style: HeavyweightTheme.labelSmall.copyWith(
-                  color: HeavyweightTheme.textSecondary,
+              child: Container(
+                padding: const EdgeInsets.all(HeavyweightTheme.spacingLg),
+                decoration: BoxDecoration(
+                  border: Border.all(color: HeavyweightTheme.primary),
+                  color: HeavyweightTheme.background,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.max,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              exercise.name.toUpperCase(),
+                              style: HeavyweightTheme.h3,
+                            ),
+                            const SizedBox(height: HeavyweightTheme.spacingMd),
+                            _buildIntelSection(
+                              'TRAINING_DIRECTIVE',
+                              summaryLines,
+                              HeavyweightTheme.primary,
+                            ),
+                            const SizedBox(height: HeavyweightTheme.spacingLg),
+                            _buildIntelSection(
+                              'FORM_CHECKLIST',
+                              formProtocol,
+                              HeavyweightTheme.accent,
+                            ),
+                            if (failureSignals.isNotEmpty) ...[
+                              const SizedBox(
+                                  height: HeavyweightTheme.spacingLg),
+                              _buildIntelSection(
+                                'COMMON_FAILURES',
+                                failureSignals,
+                                Colors.amber.shade600,
+                              ),
+                            ],
+                            const SizedBox(height: HeavyweightTheme.spacingLg),
+                            _buildIntelNotice(
+                              'ABORT_CONDITIONS',
+                              abortDirective,
+                              HeavyweightTheme.error,
+                            ),
+                            const SizedBox(height: HeavyweightTheme.spacingLg),
+                            CommandButton(
+                              text: 'VIEW FULL INTEL',
+                              variant: ButtonVariant.secondary,
+                              onPressed: () {
+                                Navigator.of(dialogCtx, rootNavigator: true)
+                                    .pop();
+                                final router = GoRouter.of(routerContext);
+                                router.go(
+                                  '/exercise-intel',
+                                  extra: {
+                                    'exerciseId': exercise.id,
+                                    'exerciseName': exercise.name,
+                                  },
+                                );
+                              },
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: HeavyweightTheme.spacingMd),
+                    CommandButton(
+                      text: 'CLOSE',
+                      size: ButtonSize.medium,
+                      onPressed: () {
+                        Navigator.of(dialogCtx, rootNavigator: true).pop();
+                      },
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(height: HeavyweightTheme.spacingSm),
-              Text(
-                (exercise.description?.isNotEmpty ?? false)
-                    ? exercise.description! 
-                    : 'COMPOUND_MOVEMENT. FOCUS_ON_FORM. PROGRESSIVE_OVERLOAD.',
-                style: HeavyweightTheme.bodyMedium,
-              ),
-              const SizedBox(height: HeavyweightTheme.spacingMd),
-              CommandButton(
-                text: 'COMMAND: CLOSE',
-                variant: ButtonVariant.secondary,
-                semanticLabel: 'Close exercise information',
-                onPressed: () {
-                  Navigator.of(context, rootNavigator: true).pop();
-                },
-              ),
-            ],
-          ),
+            );
+          },
         ),
       ),
     );
@@ -188,149 +558,286 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
 
   @override
   Widget build(BuildContext context) {
-    HWLog.event('assignment_build');
+    if (!_assignmentBuildLogged) {
+      HWLog.event('assignment_build');
+      _assignmentBuildLogged = true;
+    }
     return Consumer<WorkoutViewModel>(
       builder: (context, viewModel, child) {
-        if (viewModel.isLoading) {
-          HWLog.event('assignment_state', data: {'state': 'loading'});
-          return HeavyweightScaffold(
-            title: 'ASSIGNMENT: LOADING',
-            showBackButton: false,
-            body: Center(
-              child: CircularProgressIndicator(
-                color: HeavyweightTheme.primary,
-              ),
-            ),
-          );
+        final workout = viewModel.todaysWorkout;
+
+        if (viewModel.error == 'AUTHENTICATION_REQUIRED') {
+          return _buildAuthRequired();
         }
-        
-        if (viewModel.error != null) {
-          HWLog.event('assignment_state', data: {'state': 'error', 'error': viewModel.error.toString()});
-          return _buildError(viewModel.error!);
-        }
-        
-        if (!viewModel.hasWorkout) {
-          HWLog.event('assignment_state', data: {'state': 'rest_day'});
-          return _buildRestDay();
-        }
-        
-        return Stack(
-          children: [
-            HeavyweightScaffold(
-              title: _getBodyPartFocus(viewModel.todaysWorkout),
+
+        if (workout == null) {
+          if (viewModel.isLoading) {
+            return HeavyweightScaffold(
+              title: 'ASSIGNMENT',
               subtitle: _getSubtitle(),
               showBackButton: false,
-              showNavigation: false,
-              body: _buildWorkoutContent(viewModel.todaysWorkout!),
-            ),
-            
-            // HUD Tutorial Overlay
-            if (_showTutorial)
-              _buildHudTutorialOverlay(),
-          ],
+              body: const Center(
+                child:
+                    CircularProgressIndicator(color: HeavyweightTheme.primary),
+              ),
+            );
+          }
+          return _buildRestDay();
+        }
+
+        if (!_primedLasts) {
+          Future.microtask(() => _primeLasts(workout.exercises));
+        }
+
+        final listView = RefreshIndicator(
+          color: HeavyweightTheme.primary,
+          backgroundColor: HeavyweightTheme.surface,
+          onRefresh: _refreshWorkout,
+          child: _buildAssignmentList(viewModel, workout),
+        );
+
+        return HeavyweightScaffold(
+          title: 'ASSIGNMENT',
+          subtitle: _getSubtitle(),
+          navIndex: 0,
+          showNavigation: true,
+          bodyPadding: const EdgeInsets.symmetric(
+            horizontal: HeavyweightTheme.spacingMd,
+          ),
+          body: Stack(
+            children: [
+              listView,
+              Positioned(
+                left: HeavyweightTheme.spacingLg,
+                right: HeavyweightTheme.spacingLg,
+                bottom: HeavyweightTheme.spacingLg +
+                    MediaQuery.of(context).padding.bottom,
+                child: CommandButton(
+                  text: 'BEGIN TRAINING',
+                  onPressed: () {
+                    final router = GoRouter.of(context);
+                    router.go('/daily-workout');
+                  },
+                ),
+              ),
+              IgnorePointer(
+                ignoring: !_showTutorial,
+                child: AnimatedOpacity(
+                  opacity: _showTutorial ? 1 : 0,
+                  duration: const Duration(milliseconds: 180),
+                  curve: Curves.linear,
+                  child: _buildHudTutorialOverlay(),
+                ),
+              ),
+            ],
+          ),
         );
       },
     );
   }
-  
-  Widget _buildWorkoutContent(DailyWorkout workout) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        // Collapsible system panel for meta info
-        _SystemPanel(
-          lastSessionText: _lastSessionText,
-          streakText: _streakText,
-        ),
-        // Headline: ASSIGNMENT: DAY
-        Padding(
-          padding: const EdgeInsets.only(bottom: HeavyweightTheme.spacingMd),
-          child: Text(
-            'ASSIGNMENT: ${workout.dayName.toUpperCase()}',
-            style: HeavyweightTheme.h1.copyWith(fontSize: 28),
-          ),
-        ),
-        
-        // Terminal-style exercise list
-        Text(
-          'PROTOCOL_SEQUENCE:',
-          style: HeavyweightTheme.labelMedium.copyWith(
-            color: HeavyweightTheme.primary,
-          ),
+
+  Widget _buildAssignmentList(
+      WorkoutViewModel viewModel, DailyWorkout workout) {
+    final profile = context.watch<ProfileProvider>();
+    final unit = profile.unit == Unit.kg ? HWUnit.kg : HWUnit.lb;
+    final exerciseViewModel = context.watch<ExerciseViewModel>();
+    final children = <Widget>[
+      if (_resumeAvailable) ...[
+        const SizedBox(height: HeavyweightTheme.spacingMd),
+        _buildResumeBanner(workout),
+      ],
+      const SizedBox(height: HeavyweightTheme.spacingMd),
+      _buildMandateHeader(_getBodyPartFocus(workout), workout.exercises.length),
+      const SizedBox(height: HeavyweightTheme.spacingLg),
+      Text(
+        'TRAINING_SEQUENCE:',
+        style: HeavyweightTheme.labelMedium
+            .copyWith(color: HeavyweightTheme.primary),
+      ),
+      const SizedBox(height: HeavyweightTheme.spacingMd),
+    ];
+
+    if (exerciseViewModel.error != null) {
+      children.addAll([
+        _buildAlternativesErrorBanner(
+          context,
+          exerciseViewModel.error!,
+          exerciseViewModel,
         ),
         const SizedBox(height: HeavyweightTheme.spacingMd),
-            
-        // Exercise assignments
-        Expanded(
-          child: ListView.builder(
-            itemCount: workout.exercises.length,
-            itemBuilder: (context, index) {
-              final exercise = workout.exercises[index];
-              return _buildTerminalExerciseEntry(
-                '${(index + 1).toString().padLeft(2, '0')}',
-                exercise.exercise.name.toUpperCase().replaceAll(' ', '_'),
-                exercise.prescribedWeight.toString(),
-                'KG',
-                '0/${exercise.targetSets}',
-                'LAST: --',
-                onTap: () => _showExerciseInfo(exercise.exercise),
-              );
-            },
+      ]);
+    }
+
+    final entries = _buildAssignmentEntries(workout, unit, exerciseViewModel);
+
+    if (entries.isEmpty) {
+      children.add(
+        Padding(
+          padding: const EdgeInsets.symmetric(
+            vertical: HeavyweightTheme.spacingLg,
+          ),
+          child: Text(
+            'NO EXERCISES AVAILABLE',
+            style: HeavyweightTheme.bodyMedium.copyWith(
+              color: HeavyweightTheme.textSecondary,
+              letterSpacing: 1.5,
+            ),
+            textAlign: TextAlign.center,
           ),
         ),
-        
-        const SizedBox(height: HeavyweightTheme.spacingXl),
-        
-        // Begin Protocol button  
-        CommandButton(
-          text: 'COMMAND: START_SESSION',
-          variant: ButtonVariant.primary,
-          semanticLabel: 'Start training session',
-          onPressed: () {
-            context.push('/daily-workout');
-          },
+      );
+    } else {
+      children.add(
+        WorkoutAssignmentList(
+          entries: entries,
+          padding: EdgeInsets.zero,
         ),
-        
+      );
+    }
+
+    children.add(const SizedBox(height: HeavyweightTheme.spacingXl));
+    if (viewModel.isLoading) {
+      children.addAll([
         const SizedBox(height: HeavyweightTheme.spacingLg),
-      ],
+        Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: const [
+              SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2,
+                  color: HeavyweightTheme.primary,
+                ),
+              ),
+              SizedBox(width: HeavyweightTheme.spacingSm),
+              Text('SYNCING…'),
+            ],
+          ),
+        ),
+      ]);
+    }
+    children.add(const SizedBox(
+      height: HeavyweightTheme.buttonHeight + HeavyweightTheme.spacingXxl,
+    ));
+
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: const EdgeInsets.symmetric(
+        vertical: HeavyweightTheme.spacingMd,
+      ),
+      children: children,
     );
   }
-  
-  Widget _buildError(String error) {
+
+  Widget _buildAlternativesErrorBanner(
+      BuildContext context, String error, ExerciseViewModel exerciseViewModel) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
+      decoration: BoxDecoration(
+        border: Border.all(color: HeavyweightTheme.danger),
+        color: HeavyweightTheme.danger.withValues(alpha: 0.1),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'ALTERNATIVE CONFIGURATION FAILED',
+            style: HeavyweightTheme.bodyMedium.copyWith(
+              color: HeavyweightTheme.danger,
+              letterSpacing: 1,
+            ),
+          ),
+          const SizedBox(height: HeavyweightTheme.spacingXs),
+          Text(
+            error.toUpperCase(),
+            style: HeavyweightTheme.bodySmall.copyWith(
+              color: HeavyweightTheme.textSecondary,
+            ),
+          ),
+          const SizedBox(height: HeavyweightTheme.spacingSm),
+          CommandButton(
+            text: 'RETRY LOADING ALTERNATIVES',
+            size: ButtonSize.small,
+            variant: ButtonVariant.secondary,
+            onPressed: () async {
+              await exerciseViewModel.initialize();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResumeBanner(DailyWorkout workout) {
+    return Container(
+      padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
+      decoration: BoxDecoration(
+        border:
+            Border.all(color: HeavyweightTheme.primary.withValues(alpha: 0.6)),
+        color: HeavyweightTheme.primary.withValues(alpha: 0.05),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text('TRAINING IN PROGRESS', style: HeavyweightTheme.labelMedium),
+          const SizedBox(height: HeavyweightTheme.spacingSm),
+          Text(
+            'Training paused. Resume to keep the mandate alive.',
+            style: HeavyweightTheme.bodySmall
+                .copyWith(color: HeavyweightTheme.textSecondary),
+          ),
+          const SizedBox(height: HeavyweightTheme.spacingSm),
+          CommandButton(
+            text: 'RESUME TRAINING',
+            size: ButtonSize.medium,
+            onPressed: () {
+              final router = GoRouter.of(context);
+              router.go('/protocol', extra: workout);
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAuthRequired() {
     return HeavyweightScaffold(
       showBackButton: false,
+      navIndex: 0,
+      showNavigation: true,
+      title: 'ASSIGNMENT',
+      subtitle: _getSubtitle(),
       body: SafeArea(
-        child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(HeavyweightTheme.spacingXl),
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              const Icon(
-                Icons.error_outline,
-                color: HeavyweightTheme.danger,
-                size: 48,
-                semanticLabel: 'Error',
-              ),
-              const SizedBox(height: HeavyweightTheme.spacingMd),
-              Text(
-                'ERROR',
-                style: HeavyweightTheme.h3.copyWith(
-                  color: HeavyweightTheme.danger,
-                  letterSpacing: 2,
-                ),
-              ),
+              const Icon(Icons.lock_outline,
+                  color: HeavyweightTheme.secondary, size: 48),
+              const SizedBox(height: HeavyweightTheme.spacingLg),
+              Text('AUTH REQUIRED',
+                  style: HeavyweightTheme.h3, textAlign: TextAlign.center),
               const SizedBox(height: HeavyweightTheme.spacingSm),
               Text(
-                error,
-                style: HeavyweightTheme.bodyMedium,
+                'AUTHENTICATE TO RETRIEVE CURRENT MANDATE.',
                 textAlign: TextAlign.center,
+                style: HeavyweightTheme.bodySmall
+                    .copyWith(color: HeavyweightTheme.textSecondary),
               ),
-              const SizedBox(height: HeavyweightTheme.spacingLg),
+              const SizedBox(height: HeavyweightTheme.spacingXl),
+              CommandButton(
+                text: 'SIGN IN',
+                onPressed: () => context.go('/auth'),
+              ),
+              const SizedBox(height: HeavyweightTheme.spacingMd),
               CommandButton(
                 text: 'RETRY',
-                semanticLabel: 'Retry loading workout',
-                onPressed: () {
-                  context.read<WorkoutViewModel>().initialize();
-                },
+                variant: ButtonVariant.secondary,
+                onPressed: () => context.read<WorkoutViewModel>().initialize(),
               ),
             ],
           ),
@@ -338,7 +845,7 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
       ),
     );
   }
-  
+
   Widget _buildRestDay() {
     return HeavyweightScaffold(
       showBackButton: false,
@@ -363,7 +870,7 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
               ),
               const SizedBox(height: HeavyweightTheme.spacingMd),
               Text(
-                'Recovery is mandatory.\nYour muscles grow during rest.',
+                'RECOVERY PROTOCOL ENFORCED.\nADAPTATION OCCURS DURING REST.',
                 textAlign: TextAlign.center,
                 style: HeavyweightTheme.bodyMedium.copyWith(
                   color: HeavyweightTheme.textSecondary,
@@ -384,172 +891,57 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
       ),
     );
   }
-  
-  Widget _buildTerminalExerciseEntry(String number, String exercise, String weight, String unit, String progress, String lastPerformance, {VoidCallback? onTap}) {
-    return RepaintBoundary(
-      child: GestureDetector(
-        onTap: onTap,
-        child: Container(
-          margin: const EdgeInsets.only(bottom: HeavyweightTheme.spacingXs),
-          padding: const EdgeInsets.all(HeavyweightTheme.spacingXs),
-          decoration: BoxDecoration(
-            border: Border.all(color: HeavyweightTheme.textSecondary, width: 1),
-            color: onTap != null ? HeavyweightTheme.surface : HeavyweightTheme.background,
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-          // Exercise line with ASCII-style formatting
-          Row(
-            children: [
-              Text(
-                '[$number]',
-                style: HeavyweightTheme.bodyMedium.copyWith(
-                  color: HeavyweightTheme.primary,
-                ),
-              ),
-              const SizedBox(width: HeavyweightTheme.spacingSm),
-              Expanded(
-                child: Text(
-                  exercise,
-                  style: HeavyweightTheme.h4,
-                ),
-              ),
-              Builder(builder: (_) {
-                final parts = progress.split('/');
-                int done = 0;
-                int total = 0;
-                if (parts.length == 2) {
-                  done = int.tryParse(parts[0]) ?? 0;
-                  total = int.tryParse(parts[1]) ?? 0;
-                }
-                final symbols = List.generate(total, (i) => i < done ? '■' : '□').join('');
-                return Text(
-                  symbols.isEmpty ? '[$progress]' : symbols,
-                  style: HeavyweightTheme.bodyMedium.copyWith(
-                    color: HeavyweightTheme.textSecondary,
-                  ),
-                );
-              }),
-            ],
-          ),
-          
-          const SizedBox(height: HeavyweightTheme.spacingSm),
-          
-          // Terminal-style data display
-          Row(
-            children: [
-              Text(
-                '├─ LOAD: ',
-                style: HeavyweightTheme.bodySmall.copyWith(
-                  color: HeavyweightTheme.textSecondary,
-                ),
-              ),
-              Text(
-                '$weight $unit',
-                style: HeavyweightTheme.bodyMedium.copyWith(
-                  color: HeavyweightTheme.primary,
-                ),
-              ),
-            ],
-          ),
-          
-          Row(
-            children: [
-              Text(
-                '├─ STATUS: ',
-                style: HeavyweightTheme.bodySmall.copyWith(
-                  color: HeavyweightTheme.textSecondary,
-                ),
-              ),
-              Text(
-                'READY',
-                style: HeavyweightTheme.bodyMedium.copyWith(
-                  color: HeavyweightTheme.accent,
-                ),
-              ),
-            ],
-          ),
-          
-          Row(
-            children: [
-              Text(
-                '└─ LAST: ',
-                style: HeavyweightTheme.bodySmall.copyWith(
-                  color: HeavyweightTheme.textSecondary,
-                ),
-              ),
-              Text(
-                lastPerformance,
-                style: HeavyweightTheme.bodySmall.copyWith(
-                  color: HeavyweightTheme.textSecondary,
-                ),
-              ),
-            ],
-          ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-  
+
   Widget _buildHudTutorialOverlay() {
     return Container(
-      color: HeavyweightTheme.background.withOpacity(0.85),
+      color: HeavyweightTheme.background.withValues(alpha: 0.85),
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(HeavyweightTheme.spacingLg),
-          child: Column(
-            children: [
-              const SizedBox(height: HeavyweightTheme.spacingXl),
-              
-              // Tutorial content
-              Expanded(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // HUD label
-                    Text(
-                      'HUD_ORIENTATION',
-                      style: HeavyweightTheme.h3,
-                    ),
-                    
-                    const SizedBox(height: HeavyweightTheme.spacingXxl),
-                    
-                    // Interface elements
-                    Container(
-                      padding: const EdgeInsets.all(HeavyweightTheme.spacingXl),
-                      decoration: BoxDecoration(
-                        border: Border.all(color: HeavyweightTheme.primary.withOpacity(0.3)),
-                      ),
-                      child: Column(
-                        children: [
-                          _buildHudLabel('[1] YOUR WORKOUT', 'Today\'s assigned training protocol'),
-                          const SizedBox(height: HeavyweightTheme.spacingLg),
-                          _buildHudLabel('[2] YOUR LOGBOOK', 'Access via bottom navigation'),
-                          const SizedBox(height: HeavyweightTheme.spacingLg),
-                          _buildHudLabel('[3] YOUR PROFILE', 'Settings & system configuration'),
-                        ],
-                      ),
-                    ),
-                  ],
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(HeavyweightTheme.spacingLg),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                const SizedBox(height: HeavyweightTheme.spacingXl),
+                Text(
+                  'HUD_ORIENTATION',
+                  style: HeavyweightTheme.h3,
                 ),
-              ),
-              
-              // Dismiss button
-              CommandButton(
-                text: 'INTERFACE_UNDERSTOOD',
-                semanticLabel: 'Dismiss tutorial',
-                onPressed: _dismissTutorial,
-              ),
-            ],
+                const SizedBox(height: HeavyweightTheme.spacingXxl),
+                Container(
+                  padding: const EdgeInsets.all(HeavyweightTheme.spacingXl),
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: HeavyweightTheme.primary.withValues(alpha: 0.3),
+                    ),
+                  ),
+                  child: Column(
+                    children: [
+                      _buildHudLabel('[1] YOUR WORKOUT',
+                          'TODAYS ASSIGNED TRAINING PROTOCOL'),
+                      const SizedBox(height: HeavyweightTheme.spacingLg),
+                      _buildHudLabel(
+                          '[2] YOUR LOGBOOK', 'ACCESS VIA BOTTOM NAVIGATION'),
+                      const SizedBox(height: HeavyweightTheme.spacingLg),
+                      _buildHudLabel('[3] YOUR PROFILE',
+                          'SYSTEM SETTINGS AND CONFIGURATION'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: HeavyweightTheme.spacingXl),
+                CommandButton(
+                  text: 'INTERFACE_UNDERSTOOD',
+                  semanticLabel: 'Dismiss tutorial',
+                  onPressed: _dismissTutorial,
+                ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
-  
+
   Widget _buildHudLabel(String label, String description) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -574,72 +966,111 @@ class _AssignmentScreenState extends State<AssignmentScreen> {
       ],
     );
   }
-}
 
-class _SystemPanel extends StatefulWidget {
-  final String lastSessionText;
-  final String streakText;
-  const _SystemPanel({super.key, required this.lastSessionText, required this.streakText});
+  List<String> _buildExerciseSummary(Exercise exercise, HWUnit unit) {
+    final weight = formatWeightForUnit(exercise.prescribedWeight, unit);
+    final unitLabel = unit == HWUnit.kg ? 'KG' : 'LB';
+    return [
+      'TARGET_MUSCLE: ${_formatToken(exercise.muscleGroup)}',
+      'TRAINING TARGET: ${exercise.targetReps} REPS @ $weight $unitLabel',
+      'REST_BETWEEN_SETS: ${_formatRest(exercise.restSeconds)}',
+    ];
+  }
 
-  @override
-  State<_SystemPanel> createState() => _SystemPanelState();
-}
+  String _formatToken(String value) {
+    return value.toUpperCase().replaceAll(RegExp(r'[^A-Z0-9]+'), '_');
+  }
 
-class _SystemPanelState extends State<_SystemPanel> {
-  bool _expanded = false;
+  String _formatRest(int seconds) {
+    final minutes = seconds ~/ 60;
+    final remainingSeconds = seconds % 60;
+    final minutePart = minutes > 0 ? '$minutes MIN' : '';
+    final secondPart = remainingSeconds > 0
+        ? '${remainingSeconds.toString().padLeft(2, '0')} SEC'
+        : '';
+    if (minutePart.isNotEmpty && secondPart.isNotEmpty) {
+      return '$minutePart $secondPart';
+    }
+    return minutePart.isNotEmpty ? minutePart : secondPart;
+  }
 
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        border: Border.all(color: HeavyweightTheme.secondary),
-      ),
-      margin: const EdgeInsets.only(bottom: HeavyweightTheme.spacingMd),
-      child: InkWell(
-        onTap: () => setState(() => _expanded = !_expanded),
-        child: Padding(
-          padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'SYSTEM_PANEL',
-                    style: HeavyweightTheme.labelMedium,
-                  ),
-                  Icon(
-                    _expanded ? Icons.expand_less : Icons.expand_more,
-                    color: HeavyweightTheme.textSecondary,
-                  ),
-                ],
-              ),
-              if (_expanded) ...[
-                const SizedBox(height: HeavyweightTheme.spacingSm),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Expanded(
-                      child: Text(
-                        'LAST_SESSION: ${widget.lastSessionText}',
-                        style: HeavyweightTheme.bodySmall.copyWith(color: HeavyweightTheme.textSecondary),
-                      ),
-                    ),
-                    Expanded(
-                      child: Text(
-                        'STREAK: ${widget.streakText}',
-                        style: HeavyweightTheme.bodySmall.copyWith(color: HeavyweightTheme.textSecondary),
-                        textAlign: TextAlign.end,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
-            ],
+  String _formatIntelLine(String line) {
+    return line.trim().toUpperCase();
+  }
+
+  Widget _buildIntelSection(String title, List<String> lines, Color accent) {
+    if (lines.isEmpty) {
+      return const SizedBox.shrink();
+    }
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: HeavyweightTheme.bodyMedium.copyWith(
+            color: accent,
+            letterSpacing: 1.5,
           ),
         ),
-      ),
+        const SizedBox(height: HeavyweightTheme.spacingSm),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
+          decoration: BoxDecoration(
+            border: Border.all(color: accent.withValues(alpha: 0.4)),
+            color: HeavyweightTheme.surface,
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: lines
+                .map(
+                  (line) => Padding(
+                    padding: const EdgeInsets.only(
+                        bottom: HeavyweightTheme.spacingSm),
+                    child: Text(
+                      line,
+                      style: HeavyweightTheme.bodySmall.copyWith(
+                        color: HeavyweightTheme.primary,
+                        height: 1.4,
+                      ),
+                    ),
+                  ),
+                )
+                .toList(),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildIntelNotice(String title, String body, Color accent) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: HeavyweightTheme.bodyMedium.copyWith(
+            color: accent,
+            letterSpacing: 1.5,
+          ),
+        ),
+        const SizedBox(height: HeavyweightTheme.spacingSm),
+        Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
+          decoration: BoxDecoration(
+            border: Border.all(color: accent.withValues(alpha: 0.4)),
+            color: HeavyweightTheme.surface,
+          ),
+          child: Text(
+            body,
+            style: HeavyweightTheme.bodySmall.copyWith(
+              color: accent,
+              height: 1.4,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }

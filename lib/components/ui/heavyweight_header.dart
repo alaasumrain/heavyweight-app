@@ -30,26 +30,23 @@ class HeavyweightHeader extends StatelessWidget {
             // Back button on the left
             if (showBackButton)
               IconButton(
-                icon: const Icon(Icons.arrow_back, color: HeavyweightTheme.primary),
+                icon: const Icon(Icons.arrow_back,
+                    color: HeavyweightTheme.primary),
                 onPressed: () {
-                  try {
-                    if (context.canPop()) {
-                      context.pop();
-                    } else if (fallbackRoute != null) {
-                      context.go(fallbackRoute!);
-                    }
-                  } catch (_) {
-                    if (fallbackRoute != null) {
-                      context.go(fallbackRoute!);
-                    }
+                  final router = GoRouter.of(context);
+                  if (router.canPop()) {
+                    router.pop();
+                  } else if (fallbackRoute != null) {
+                    router.go(fallbackRoute!);
                   }
                 },
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
               )
             else
-              const SizedBox(width: 48), // Maintain alignment when no back button
-            
+              const SizedBox(
+                  width: 48), // Maintain alignment when no back button
+
             // Title in the center with improved styling
             Expanded(
               child: Text(
@@ -62,7 +59,7 @@ class HeavyweightHeader extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
               ),
             ),
-            
+
             // Actions or spacer on the right
             if (actions != null && actions!.isNotEmpty)
               Row(children: actions!)
@@ -70,7 +67,7 @@ class HeavyweightHeader extends StatelessWidget {
               const SizedBox(width: 48), // Balance the back button space
           ],
         ),
-        
+
         // Subtitle - show title parameter as subtitle, or subtitle if provided
         if (title != null || subtitle != null) ...[
           const SizedBox(height: HeavyweightTheme.spacingSm),

@@ -10,7 +10,7 @@ class SelectorWheel extends StatefulWidget {
   final Function(int) onChanged;
   final String suffix;
   final String? semanticLabel;
-  
+
   const SelectorWheel({
     super.key,
     required this.value,
@@ -20,7 +20,7 @@ class SelectorWheel extends StatefulWidget {
     this.suffix = '',
     this.semanticLabel,
   });
-  
+
   @override
   State<SelectorWheel> createState() => _SelectorWheelState();
 }
@@ -30,13 +30,13 @@ class _SelectorWheelState extends State<SelectorWheel> {
   bool _isIncrementing = false;
   bool _isDecrementing = false;
   int _counter = 0;
-  
+
   @override
   void dispose() {
     _cancelTimer();
     super.dispose();
   }
-  
+
   void _cancelTimer() {
     _timer?.cancel();
     _timer = null;
@@ -44,26 +44,26 @@ class _SelectorWheelState extends State<SelectorWheel> {
     _isDecrementing = false;
     _counter = 0;
   }
-  
+
   void _startIncrement() {
     if (widget.value >= widget.max) return;
-    
+
     _isIncrementing = true;
     _counter = 0;
-    
+
     // First increment immediately
     widget.onChanged(widget.value + 1);
-    
+
     // Start timer for continuous increments
     _timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
       if (!_isIncrementing || widget.value >= widget.max) {
         _cancelTimer();
         return;
       }
-      
+
       _counter++;
       widget.onChanged(widget.value + 1);
-      
+
       // Speed up after 10 increments
       if (_counter > 10 && timer.tick % 2 == 0) {
         // Skip every other tick to speed up
@@ -71,26 +71,26 @@ class _SelectorWheelState extends State<SelectorWheel> {
       }
     });
   }
-  
+
   void _startDecrement() {
     if (widget.value <= widget.min) return;
-    
+
     _isDecrementing = true;
     _counter = 0;
-    
+
     // First decrement immediately
     widget.onChanged(widget.value - 1);
-    
+
     // Start timer for continuous decrements
     _timer = Timer.periodic(const Duration(milliseconds: 100), (timer) {
       if (!_isDecrementing || widget.value <= widget.min) {
         _cancelTimer();
         return;
       }
-      
+
       _counter++;
       widget.onChanged(widget.value - 1);
-      
+
       // Speed up after 10 decrements
       if (_counter > 10 && timer.tick % 2 == 0) {
         // Skip every other tick to speed up
@@ -98,7 +98,7 @@ class _SelectorWheelState extends State<SelectorWheel> {
       }
     });
   }
-  
+
   void _handleSingleDecrement() {
     if (widget.value > widget.min) {
       try {
@@ -109,7 +109,7 @@ class _SelectorWheelState extends State<SelectorWheel> {
       }
     }
   }
-  
+
   void _handleSingleIncrement() {
     if (widget.value < widget.max) {
       try {
@@ -120,7 +120,7 @@ class _SelectorWheelState extends State<SelectorWheel> {
       }
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     return Semantics(
@@ -132,51 +132,53 @@ class _SelectorWheelState extends State<SelectorWheel> {
           Semantics(
             button: true,
             enabled: widget.value > widget.min,
-            label: 'Decrease ${widget.suffix.isEmpty ? 'value' : widget.suffix}',
+            label:
+                'Decrease ${widget.suffix.isEmpty ? 'value' : widget.suffix}',
             child: InkWell(
               onTap: widget.value > widget.min ? _handleSingleDecrement : null,
-              onLongPress: widget.value > widget.min ? () {
-                Future.delayed(const Duration(milliseconds: 300), () {
-                  if (mounted) _startDecrement();
-                });
-              } : null,
+              onLongPress: widget.value > widget.min
+                  ? () {
+                      Future.delayed(const Duration(milliseconds: 300), () {
+                        if (mounted) _startDecrement();
+                      });
+                    }
+                  : null,
               child: Container(
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: widget.value > widget.min 
-                        ? HeavyweightTheme.primary 
+                    color: widget.value > widget.min
+                        ? HeavyweightTheme.primary
                         : HeavyweightTheme.textDisabled,
                   ),
-                  color: widget.value > widget.min 
-                      ? (_isDecrementing 
-                          ? HeavyweightTheme.primary.withValues(alpha: 0.1) 
+                  color: widget.value > widget.min
+                      ? (_isDecrementing
+                          ? HeavyweightTheme.primary.withValues(alpha: 0.1)
                           : Colors.transparent)
                       : HeavyweightTheme.surface,
                 ),
                 child: Icon(
                   Icons.remove,
-                  color: widget.value > widget.min 
-                      ? HeavyweightTheme.primary 
+                  color: widget.value > widget.min
+                      ? HeavyweightTheme.primary
                       : HeavyweightTheme.textDisabled,
                   size: 24,
                 ),
               ),
             ),
           ),
-          
+
           const SizedBox(width: HeavyweightTheme.spacingMd),
-          
+
           // Value display
           Semantics(
             value: '${widget.value} ${widget.suffix}',
             child: Container(
               width: 120,
               padding: const EdgeInsets.symmetric(
-                horizontal: HeavyweightTheme.spacingMd, 
-                vertical: HeavyweightTheme.spacingSm
-              ),
+                  horizontal: HeavyweightTheme.spacingMd,
+                  vertical: HeavyweightTheme.spacingSm),
               decoration: BoxDecoration(
                 border: Border.all(color: HeavyweightTheme.primary, width: 2),
                 color: HeavyweightTheme.primary.withValues(alpha: 0.05),
@@ -190,40 +192,43 @@ class _SelectorWheelState extends State<SelectorWheel> {
               ),
             ),
           ),
-          
+
           const SizedBox(width: HeavyweightTheme.spacingMd),
-          
+
           // Right arrow (plus)
           Semantics(
             button: true,
             enabled: widget.value < widget.max,
-            label: 'Increase ${widget.suffix.isEmpty ? 'value' : widget.suffix}',
+            label:
+                'Increase ${widget.suffix.isEmpty ? 'value' : widget.suffix}',
             child: InkWell(
               onTap: widget.value < widget.max ? _handleSingleIncrement : null,
-              onLongPress: widget.value < widget.max ? () {
-                Future.delayed(const Duration(milliseconds: 300), () {
-                  if (mounted) _startIncrement();
-                });
-              } : null,
+              onLongPress: widget.value < widget.max
+                  ? () {
+                      Future.delayed(const Duration(milliseconds: 300), () {
+                        if (mounted) _startIncrement();
+                      });
+                    }
+                  : null,
               child: Container(
                 width: 48,
                 height: 48,
                 decoration: BoxDecoration(
                   border: Border.all(
-                    color: widget.value < widget.max 
-                        ? HeavyweightTheme.primary 
+                    color: widget.value < widget.max
+                        ? HeavyweightTheme.primary
                         : HeavyweightTheme.textDisabled,
                   ),
                   color: widget.value < widget.max
-                      ? (_isIncrementing 
-                          ? HeavyweightTheme.primary.withValues(alpha: 0.1) 
+                      ? (_isIncrementing
+                          ? HeavyweightTheme.primary.withValues(alpha: 0.1)
                           : Colors.transparent)
                       : HeavyweightTheme.surface,
                 ),
                 child: Icon(
                   Icons.add,
-                  color: widget.value < widget.max 
-                      ? HeavyweightTheme.primary 
+                  color: widget.value < widget.max
+                      ? HeavyweightTheme.primary
                       : HeavyweightTheme.textDisabled,
                   size: 24,
                 ),

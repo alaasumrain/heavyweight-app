@@ -11,7 +11,7 @@ import '../../components/ui/toast.dart';
 import '../../core/logging.dart';
 
 class AuthScreen extends StatefulWidget {
-  const AuthScreen({Key? key}) : super(key: key);
+  const AuthScreen({super.key});
 
   @override
   State<AuthScreen> createState() => _AuthScreenState();
@@ -23,7 +23,7 @@ class _AuthScreenState extends State<AuthScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   final _authService = AuthService();
-  
+
   @override
   void initState() {
     super.initState();
@@ -54,7 +54,7 @@ class _AuthScreenState extends State<AuthScreen> {
       }
       return;
     }
-    
+
     if (!AuthService.isValidEmail(_emailController.text)) {
       _showError('INVALID_EMAIL. CHECK_FORMAT.');
       if (mounted) {
@@ -64,7 +64,7 @@ class _AuthScreenState extends State<AuthScreen> {
       }
       return;
     }
-    
+
     if (!_isLogin && !AuthService.isValidPassword(_passwordController.text)) {
       _showError(AuthService.getPasswordFeedback(_passwordController.text));
       if (mounted) {
@@ -74,7 +74,7 @@ class _AuthScreenState extends State<AuthScreen> {
       }
       return;
     }
-    
+
     bool success;
     if (_isLogin) {
       success = await _authService.signInWithEmail(
@@ -87,34 +87,38 @@ class _AuthScreenState extends State<AuthScreen> {
         password: _passwordController.text,
       );
     }
-    
-    if (success && mounted) {
+
+    if (!mounted) {
+      return;
+    }
+
+    if (success) {
       // Notify AppState of auth change
       final appState = context.read<AppStateProvider>().appState;
       appState.onAuthStateChanged();
-      
+
       // Navigate to app shell (Assignment tab)
       HWLog.event('auth_success_navigate', data: {'to': '/app?tab=0'});
-      context.go('/app?tab=0');
-    } else if (mounted && _authService.error != null) {
+      GoRouter.of(context).go('/app?tab=0');
+    } else if (_authService.error != null) {
       HWLog.event('auth_failed', data: {'error': _authService.error!});
       _showError(_authService.error!);
     }
-    
-    if (mounted) {
-      setState(() {
-        _isLoading = false;
-      });
-    }
+
+    setState(() {
+      _isLoading = false;
+    });
   }
-  
+
   void _showError(String message) {
-    HeavyweightToast.show(context, message: message, variant: ToastVariant.error);
+    HeavyweightToast.show(context,
+        message: message, variant: ToastVariant.error);
   }
 
   @override
   Widget build(BuildContext context) {
-    HWLog.event('auth_screen_build', data: {'mode': _isLogin ? 'login' : 'signup'});
+    HWLog.event('auth_screen_build',
+        data: {'mode': _isLogin ? 'login' : 'signup'});
     return HeavyweightScaffold(
       title: 'AUTH',
       subtitle: _isLogin ? 'LOGIN' : 'SIGNUP',
@@ -135,13 +139,18 @@ class _AuthScreenState extends State<AuthScreen> {
                       child: GestureDetector(
                         onTap: () => setState(() => _isLogin = true),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: HeavyweightTheme.spacingMd),
-                          color: _isLogin ? HeavyweightTheme.primary : Colors.transparent,
+                          padding: const EdgeInsets.symmetric(
+                              vertical: HeavyweightTheme.spacingMd),
+                          color: _isLogin
+                              ? HeavyweightTheme.primary
+                              : Colors.transparent,
                           child: Text(
                             'LOGIN',
                             textAlign: TextAlign.center,
                             style: HeavyweightTheme.bodyMedium.copyWith(
-                              color: _isLogin ? HeavyweightTheme.background : HeavyweightTheme.primary,
+                              color: _isLogin
+                                  ? HeavyweightTheme.background
+                                  : HeavyweightTheme.primary,
                             ),
                           ),
                         ),
@@ -151,13 +160,18 @@ class _AuthScreenState extends State<AuthScreen> {
                       child: GestureDetector(
                         onTap: () => setState(() => _isLogin = false),
                         child: Container(
-                          padding: const EdgeInsets.symmetric(vertical: HeavyweightTheme.spacingMd),
-                          color: !_isLogin ? HeavyweightTheme.primary : Colors.transparent,
+                          padding: const EdgeInsets.symmetric(
+                              vertical: HeavyweightTheme.spacingMd),
+                          color: !_isLogin
+                              ? HeavyweightTheme.primary
+                              : Colors.transparent,
                           child: Text(
                             'SIGNUP',
                             textAlign: TextAlign.center,
                             style: HeavyweightTheme.bodyMedium.copyWith(
-                              color: !_isLogin ? HeavyweightTheme.background : HeavyweightTheme.primary,
+                              color: !_isLogin
+                                  ? HeavyweightTheme.background
+                                  : HeavyweightTheme.primary,
                             ),
                           ),
                         ),
@@ -166,9 +180,9 @@ class _AuthScreenState extends State<AuthScreen> {
                   ],
                 ),
               ),
-              
+
               const SizedBox(height: HeavyweightTheme.spacingLg),
-              
+
               // Email field
               TextField(
                 controller: _emailController,
@@ -184,14 +198,15 @@ class _AuthScreenState extends State<AuthScreen> {
                   ),
                   focusedBorder: const OutlineInputBorder(
                     borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide(color: HeavyweightTheme.primary, width: 2),
+                    borderSide:
+                        BorderSide(color: HeavyweightTheme.primary, width: 2),
                   ),
                 ),
                 keyboardType: TextInputType.emailAddress,
               ),
-              
+
               const SizedBox(height: HeavyweightTheme.spacingMd),
-              
+
               // Password field
               TextField(
                 controller: _passwordController,
@@ -208,13 +223,14 @@ class _AuthScreenState extends State<AuthScreen> {
                   ),
                   focusedBorder: const OutlineInputBorder(
                     borderRadius: BorderRadius.zero,
-                    borderSide: BorderSide(color: HeavyweightTheme.primary, width: 2),
+                    borderSide:
+                        BorderSide(color: HeavyweightTheme.primary, width: 2),
                   ),
                 ),
               ),
-              
+
               const SizedBox(height: HeavyweightTheme.spacingLg),
-              
+
               // Profile summary (for signup only)
               if (!_isLogin) ...[
                 Consumer<ProfileProvider>(
@@ -222,15 +238,28 @@ class _AuthScreenState extends State<AuthScreen> {
                     if (!provider.isComplete) {
                       // Show which fields are missing
                       final missing = <String>[];
-                      if (provider.experience == null) missing.add('EXPERIENCE');
-                      if (provider.frequency == null) missing.add('FREQUENCY');
-                      if (provider.age == null) missing.add('AGE');
-                      if (provider.weight == null) missing.add('WEIGHT');
-                      if (provider.height == null) missing.add('HEIGHT');
-                      if (provider.objective == null) missing.add('OBJECTIVE');
-                      
+                      if (provider.experience == null) {
+                        missing.add('EXPERIENCE');
+                      }
+                      if (provider.frequency == null) {
+                        missing.add('FREQUENCY');
+                      }
+                      if (provider.age == null) {
+                        missing.add('AGE');
+                      }
+                      if (provider.weight == null) {
+                        missing.add('WEIGHT');
+                      }
+                      if (provider.height == null) {
+                        missing.add('HEIGHT');
+                      }
+                      if (provider.objective == null) {
+                        missing.add('OBJECTIVE');
+                      }
+
                       return Container(
-                        padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
+                        padding:
+                            const EdgeInsets.all(HeavyweightTheme.spacingMd),
                         decoration: BoxDecoration(
                           border: Border.all(color: HeavyweightTheme.error),
                           color: HeavyweightTheme.errorSurface,
@@ -250,7 +279,7 @@ class _AuthScreenState extends State<AuthScreen> {
                             ),
                             const SizedBox(height: HeavyweightTheme.spacingSm),
                             GestureDetector(
-                              onTap: () => context.go('/profile'),
+                              onTap: () => GoRouter.of(context).go('/profile'),
                               child: Text(
                                 'TAP TO COMPLETE →',
                                 textAlign: TextAlign.center,
@@ -261,7 +290,7 @@ class _AuthScreenState extends State<AuthScreen> {
                         ),
                       );
                     }
-                    
+
                     return Container(
                       padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
                       decoration: BoxDecoration(
@@ -286,11 +315,11 @@ class _AuthScreenState extends State<AuthScreen> {
                     );
                   },
                 ),
-              const SizedBox(height: HeavyweightTheme.spacingLg),
+                const SizedBox(height: HeavyweightTheme.spacingLg),
               ],
-              
+
               const SizedBox(height: HeavyweightTheme.spacingXl),
-              
+
               // Action button
               ListenableBuilder(
                 listenable: _authService,
@@ -299,11 +328,13 @@ class _AuthScreenState extends State<AuthScreen> {
                     text: _isLogin ? 'LOGIN' : 'CREATE ACCOUNT',
                     variant: ButtonVariant.primary,
                     isLoading: _authService.isLoading || _isLoading,
-                    onPressed: (_authService.isLoading || _isLoading) ? null : _handleAuth,
+                    onPressed: (_authService.isLoading || _isLoading)
+                        ? null
+                        : _handleAuth,
                   );
                 },
               ),
-              
+
               if (_isLogin) ...[
                 const SizedBox(height: HeavyweightTheme.spacingMd),
                 CommandButton(
@@ -314,18 +345,20 @@ class _AuthScreenState extends State<AuthScreen> {
                       _showError('EMAIL_REQUIRED_FOR_RESET');
                       return;
                     }
-                    
+
                     if (!AuthService.isValidEmail(_emailController.text)) {
                       _showError('INVALID_EMAIL. CHECK_FORMAT.');
                       return;
                     }
-                    
-                    final success = await _authService.resetPassword(_emailController.text);
-                    
+
+                    final messenger = ScaffoldMessenger.of(context);
+                    final success =
+                        await _authService.resetPassword(_emailController.text);
+
                     if (!mounted) return;
-                    
+
                     if (success) {
-                      ScaffoldMessenger.of(context).showSnackBar(
+                      messenger.showSnackBar(
                         const SnackBar(
                           backgroundColor: HeavyweightTheme.primary,
                           content: Text(

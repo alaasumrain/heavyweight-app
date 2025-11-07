@@ -6,15 +6,15 @@ import '../../../components/ui/command_button.dart';
 import '../../../components/ui/selector_wheel.dart';
 import '../../../providers/profile_provider.dart';
 import '../../../providers/app_state_provider.dart';
-import '../../../nav.dart';
 import '../../../components/layout/heavyweight_scaffold.dart';
 import '../../../core/logging.dart';
 
 class TrainingFrequencyScreen extends StatefulWidget {
-  const TrainingFrequencyScreen({Key? key}) : super(key: key);
+  const TrainingFrequencyScreen({super.key});
 
   @override
-  State<TrainingFrequencyScreen> createState() => _TrainingFrequencyScreenState();
+  State<TrainingFrequencyScreen> createState() =>
+      _TrainingFrequencyScreenState();
 }
 
 class _TrainingFrequencyScreenState extends State<TrainingFrequencyScreen> {
@@ -33,7 +33,7 @@ class _TrainingFrequencyScreenState extends State<TrainingFrequencyScreen> {
   Widget build(BuildContext context) {
     final state = GoRouterState.of(context);
     final isEditMode = state.uri.queryParameters['edit'] == '1';
-    
+
     return HeavyweightScaffold(
       title: 'FREQUENCY CALIBRATION',
       showBackButton: isEditMode,
@@ -50,69 +50,77 @@ class _TrainingFrequencyScreenState extends State<TrainingFrequencyScreen> {
                 style: HeavyweightTheme.bodyMedium,
               ),
               const SizedBox(height: HeavyweightTheme.spacingXl),
-              
+
               // Frequency selector
               Consumer<ProfileProvider>(
                 builder: (context, provider, child) {
                   return Column(
                     children: [
-                        SelectorWheel(
-                          value: provider.frequency ?? 3,
-                          min: 3,
-                          max: 6,
-                          suffix: 'DAYS',
-                          onChanged: (v) {
-                            HWLog.event('profile_frequency_select', data: {'value': v});
-                            provider.setFrequency(v);
-                          },
+                      SelectorWheel(
+                        value: provider.frequency ?? 3,
+                        min: 3,
+                        max: 6,
+                        suffix: 'DAYS',
+                        onChanged: (v) {
+                          HWLog.event('profile_frequency_select',
+                              data: {'value': v});
+                          provider.setFrequency(v);
+                        },
+                      ),
+                      const SizedBox(height: HeavyweightTheme.spacingXl),
+                      Container(
+                        padding:
+                            const EdgeInsets.all(HeavyweightTheme.spacingMd),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: HeavyweightTheme.secondary),
                         ),
-                        const SizedBox(height: HeavyweightTheme.spacingXl),
-                        Container(
-                          padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
-                          decoration: BoxDecoration(
-                            border: Border.all(color: HeavyweightTheme.secondary),
-                          ),
-                          child: Column(
-                            children: [
-                              Text(
-                                'FREQUENCY: ${(provider.frequency ?? 3)}_DAYS',
-                                style: HeavyweightTheme.labelMedium,
-                              ),
-                              const SizedBox(height: HeavyweightTheme.spacingSm),
-                              Text(
-                                _getFrequencyDescription(provider.frequency ?? 3),
-                                textAlign: TextAlign.center,
-                                style: HeavyweightTheme.bodySmall.copyWith(color: HeavyweightTheme.textSecondary),
-                              ),
-                            ],
-                          ),
+                        child: Column(
+                          children: [
+                            Text(
+                              'FREQUENCY: ${(provider.frequency ?? 3)}_DAYS',
+                              style: HeavyweightTheme.labelMedium,
+                            ),
+                            const SizedBox(height: HeavyweightTheme.spacingSm),
+                            Text(
+                              _getFrequencyDescription(provider.frequency ?? 3),
+                              textAlign: TextAlign.center,
+                              style: HeavyweightTheme.bodySmall.copyWith(
+                                  color: HeavyweightTheme.textSecondary),
+                            ),
+                          ],
                         ),
-                      ],
-                    );
+                      ),
+                    ],
+                  );
                 },
               ),
-              
+
               const SizedBox(height: HeavyweightTheme.spacingXl),
-              
+
               // Continue button
               Consumer<ProfileProvider>(
                 builder: (context, provider, child) {
                   return CommandButton(
-                    text: 'COMMAND: CONFIRM',
+                    text: 'CONTINUE',
                     variant: ButtonVariant.primary,
                     isDisabled: provider.frequency == null,
                     onPressed: provider.frequency != null
                         ? () async {
                             HWLog.event('profile_frequency_continue');
                             // Mark frequency as set in AppState
-                            final appState = context.read<AppStateProvider>().appState;
-                            await appState.setFrequency(provider.frequency.toString());
-                            
+                            final appState =
+                                context.read<AppStateProvider>().appState;
+                            await appState
+                                .setFrequency(provider.frequency.toString());
+
                             if (!context.mounted) return;
                             if (isEditMode) {
-                              context.go('/profile');
+                              context.pop();
                             } else {
-                              context.go('/profile/units');
+                              // After frequency, next step is rest days
+                              HWLog.event(
+                                  'profile_frequency_navigate_to_rest_days');
+                              GoRouter.of(context).go('/profile/rest-days');
                             }
                           }
                         : null,
@@ -125,7 +133,7 @@ class _TrainingFrequencyScreenState extends State<TrainingFrequencyScreen> {
       ),
     );
   }
-  
+
   String _getFrequencyDescription(int days) {
     switch (days) {
       case 3:

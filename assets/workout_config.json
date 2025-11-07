@@ -106,6 +106,112 @@
         }
       ]
     },
+    "arms": {
+      "hammer_curls": [
+        {
+          "id": "hammer_curls",
+          "name": "Hammer Curls",
+          "muscleGroup": "Arms",
+          "prescribedWeight": 20.0,
+          "description": "Neutral grip dumbbell curls - Forearm and brachialis",
+          "difficulty": "intermediate"
+        },
+        {
+          "id": "rope_hammer_curls",
+          "name": "Rope Hammer Curls",
+          "muscleGroup": "Arms",
+          "prescribedWeight": 25.0,
+          "description": "Cable rope hammer curls - Constant tension",
+          "difficulty": "intermediate"
+        },
+        {
+          "id": "alternating_curls",
+          "name": "Alternating DB Curls",
+          "muscleGroup": "Arms",
+          "prescribedWeight": 18.0,
+          "description": "Alternating dumbbell curls - Classic pump",
+          "difficulty": "beginner"
+        }
+      ],
+      "preacher_curls": [
+        {
+          "id": "preacher_curls",
+          "name": "Preacher Curls",
+          "muscleGroup": "Arms",
+          "prescribedWeight": 30.0,
+          "description": "Barbell preacher curls - Bicep isolation",
+          "difficulty": "intermediate"
+        },
+        {
+          "id": "ez_preacher_curl",
+          "name": "EZ Bar Preacher Curl",
+          "muscleGroup": "Arms",
+          "prescribedWeight": 28.0,
+          "description": "EZ bar preacher curl - Wrist friendly",
+          "difficulty": "beginner"
+        },
+        {
+          "id": "cable_preacher_curl",
+          "name": "Cable Preacher Curl",
+          "muscleGroup": "Arms",
+          "prescribedWeight": 25.0,
+          "description": "Cable preacher curl - Continuous tension",
+          "difficulty": "intermediate"
+        }
+      ],
+      "tricep_pushdowns": [
+        {
+          "id": "tricep_pushdowns",
+          "name": "Tricep Pushdowns",
+          "muscleGroup": "Arms",
+          "prescribedWeight": 35.0,
+          "description": "Cable tricep pushdowns - Lockout strength",
+          "difficulty": "beginner"
+        },
+        {
+          "id": "rope_pushdown",
+          "name": "Rope Pushdown",
+          "muscleGroup": "Arms",
+          "prescribedWeight": 32.0,
+          "description": "Rope pushdown - Long head emphasis",
+          "difficulty": "intermediate"
+        },
+        {
+          "id": "vbar_pushdown",
+          "name": "V-Bar Pushdown",
+          "muscleGroup": "Arms",
+          "prescribedWeight": 38.0,
+          "description": "V-bar pushdown - Heavy lockout work",
+          "difficulty": "intermediate"
+        }
+      ],
+      "overhead_tricep_extension": [
+        {
+          "id": "overhead_tricep_extension",
+          "name": "Overhead Tricep Extension",
+          "muscleGroup": "Arms",
+          "prescribedWeight": 20.0,
+          "description": "DB overhead extension - Long head stretch",
+          "difficulty": "beginner"
+        },
+        {
+          "id": "ez_overhead_extension",
+          "name": "EZ Bar Overhead Extension",
+          "muscleGroup": "Arms",
+          "prescribedWeight": 25.0,
+          "description": "EZ bar overhead extension - Heavy triceps",
+          "difficulty": "intermediate"
+        },
+        {
+          "id": "skull_crushers",
+          "name": "Skull Crushers",
+          "muscleGroup": "Arms",
+          "prescribedWeight": 30.0,
+          "description": "Lying tricep extensions - Lockout builder",
+          "difficulty": "advanced"
+        }
+      ]
+    },
     "back": {
       "deadlift": [
         {
@@ -184,6 +290,84 @@
           "description": "Underhand chin-ups - Bicep emphasis",
           "difficulty": "intermediate"
         }
+      ],
+      "lat_pulldown": [
+        {
+          "id": "lat_pulldown",
+          "name": "Lat Pulldown",
+          "muscleGroup": "Back",
+          "prescribedWeight": 45.0,
+          "description": "Wide-grip pulldown - Lats focus",
+          "difficulty": "beginner"
+        },
+        {
+          "id": "close_grip_pulldown",
+          "name": "Close-Grip Pulldown",
+          "muscleGroup": "Back",
+          "prescribedWeight": 50.0,
+          "description": "Close grip pulldown - Lower lats",
+          "difficulty": "intermediate"
+        },
+        {
+          "id": "pull_over",
+          "name": "Straight Arm Pulldown",
+          "muscleGroup": "Back",
+          "prescribedWeight": 25.0,
+          "description": "Straight arm pulldown - Isolation",
+          "difficulty": "intermediate"
+        }
+      ],
+      "single_arm_lat_pulldown": [
+        {
+          "id": "single_arm_lat_pulldown",
+          "name": "Single Arm Lat Pulldown",
+          "muscleGroup": "Back",
+          "prescribedWeight": 20.0,
+          "description": "Unilateral lat pulldown - Imbalance fix",
+          "difficulty": "beginner"
+        },
+        {
+          "id": "kneeling_single_pulldown",
+          "name": "Kneeling Single Arm Pulldown",
+          "muscleGroup": "Back",
+          "prescribedWeight": 18.0,
+          "description": "Half-kneeling pulldown - Core engagement",
+          "difficulty": "intermediate"
+        },
+        {
+          "id": "single_arm_pull_over",
+          "name": "Single Arm Pullover",
+          "muscleGroup": "Back",
+          "prescribedWeight": 15.0,
+          "description": "DB pullover - Lat stretch",
+          "difficulty": "advanced"
+        }
+      ],
+      "face_pulls": [
+        {
+          "id": "face_pulls",
+          "name": "Face Pulls",
+          "muscleGroup": "Back/Shoulders",
+          "prescribedWeight": 20.0,
+          "description": "Cable face pulls - Rear delt builder",
+          "difficulty": "beginner"
+        },
+        {
+          "id": "band_face_pull",
+          "name": "Band Face Pull",
+          "muscleGroup": "Back/Shoulders",
+          "prescribedWeight": 0.0,
+          "description": "Band face pulls - Warm-up staple",
+          "difficulty": "beginner"
+        },
+        {
+          "id": "high_row",
+          "name": "High Cable Row",
+          "muscleGroup": "Back/Shoulders",
+          "prescribedWeight": 35.0,
+          "description": "High row - Upper back focus",
+          "difficulty": "intermediate"
+        }
       ]
     },
     "legs": {
@@ -212,6 +396,162 @@
           "description": "Goblet squat - Perfect form teacher",
           "difficulty": "beginner"
         }
+      ],
+      "leg_press": [
+        {
+          "id": "leg_press",
+          "name": "Leg Press",
+          "muscleGroup": "Legs",
+          "prescribedWeight": 120.0,
+          "description": "Leg press - Heavy quad loading",
+          "difficulty": "beginner"
+        },
+        {
+          "id": "single_leg_press",
+          "name": "Single Leg Press",
+          "muscleGroup": "Legs",
+          "prescribedWeight": 70.0,
+          "description": "Single leg press - Imbalance correction",
+          "difficulty": "intermediate"
+        },
+        {
+          "id": "hacksquat",
+          "name": "Hack Squat",
+          "muscleGroup": "Legs",
+          "prescribedWeight": 80.0,
+          "description": "Hack squat machine - Locked-in quad focus",
+          "difficulty": "advanced"
+        }
+      ],
+      "leg_extensions": [
+        {
+          "id": "leg_extensions",
+          "name": "Leg Extensions",
+          "muscleGroup": "Legs",
+          "prescribedWeight": 35.0,
+          "description": "Leg extension - Quad isolation",
+          "difficulty": "beginner"
+        },
+        {
+          "id": "single_leg_extension",
+          "name": "Single Leg Extension",
+          "muscleGroup": "Legs",
+          "prescribedWeight": 20.0,
+          "description": "Single leg extension - Address imbalances",
+          "difficulty": "intermediate"
+        },
+        {
+          "id": "sissy_squat",
+          "name": "Sissy Squat",
+          "muscleGroup": "Legs",
+          "prescribedWeight": 0.0,
+          "description": "Sissy squat - Brutal quad finisher",
+          "difficulty": "advanced"
+        }
+      ],
+      "hamstring_curls": [
+        {
+          "id": "hamstring_curls",
+          "name": "Hamstring Curls",
+          "muscleGroup": "Legs",
+          "prescribedWeight": 35.0,
+          "description": "Leg curl machine - Hamstring isolation",
+          "difficulty": "beginner"
+        },
+        {
+          "id": "single_leg_curl",
+          "name": "Single Leg Curl",
+          "muscleGroup": "Legs",
+          "prescribedWeight": 25.0,
+          "description": "Single leg curl - Unilateral strength",
+          "difficulty": "intermediate"
+        },
+        {
+          "id": "nordic_curl",
+          "name": "Nordic Curl",
+          "muscleGroup": "Legs",
+          "prescribedWeight": 0.0,
+          "description": "Nordic curl - Advanced eccentric strength",
+          "difficulty": "advanced"
+        }
+      ],
+      "calf_raises": [
+        {
+          "id": "calf_raises",
+          "name": "Calf Raises",
+          "muscleGroup": "Legs",
+          "prescribedWeight": 40.0,
+          "description": "Standing calf raises - Gastrocnemius focus",
+          "difficulty": "beginner"
+        },
+        {
+          "id": "seated_calf_raise",
+          "name": "Seated Calf Raise",
+          "muscleGroup": "Legs",
+          "prescribedWeight": 35.0,
+          "description": "Seated calf raise - Soleus activation",
+          "difficulty": "intermediate"
+        },
+        {
+          "id": "leg_press_calf",
+          "name": "Leg Press Calf Raise",
+          "muscleGroup": "Legs",
+          "prescribedWeight": 100.0,
+          "description": "Leg press calf raise - Heavy loading",
+          "difficulty": "advanced"
+        }
+      ],
+      "rdls": [
+        {
+          "id": "rdls",
+          "name": "RDLs",
+          "muscleGroup": "Legs/Back",
+          "prescribedWeight": 70.0,
+          "description": "Romanian deadlifts - Posterior chain",
+          "difficulty": "intermediate"
+        },
+        {
+          "id": "db_rdl",
+          "name": "Dumbbell RDL",
+          "muscleGroup": "Legs/Back",
+          "prescribedWeight": 30.0,
+          "description": "DB RDL - Controlled hinge",
+          "difficulty": "beginner"
+        },
+        {
+          "id": "trap_bar_rdl",
+          "name": "Trap Bar RDL",
+          "muscleGroup": "Legs/Back",
+          "prescribedWeight": 80.0,
+          "description": "Trap bar RDL - Neutral grip hinge",
+          "difficulty": "intermediate"
+        }
+      ],
+      "hip_thrusts": [
+        {
+          "id": "hip_thrusts",
+          "name": "Hip Thrusts",
+          "muscleGroup": "Glutes",
+          "prescribedWeight": 80.0,
+          "description": "Barbell hip thrusts - Glute power",
+          "difficulty": "intermediate"
+        },
+        {
+          "id": "smith_hip_thrust",
+          "name": "Smith Machine Hip Thrust",
+          "muscleGroup": "Glutes",
+          "prescribedWeight": 70.0,
+          "description": "Smith hip thrust - Guided resistance",
+          "difficulty": "beginner"
+        },
+        {
+          "id": "glute_bridge",
+          "name": "Barbell Glute Bridge",
+          "muscleGroup": "Glutes",
+          "prescribedWeight": 60.0,
+          "description": "Glute bridge - Short ROM power",
+          "difficulty": "intermediate"
+        }
       ]
     },
     "shoulders": {
@@ -238,6 +578,84 @@
           "muscleGroup": "Shoulders",
           "prescribedWeight": 15.0,
           "description": "Arnold press - Full ROM shoulder builder",
+          "difficulty": "intermediate"
+        }
+      ],
+      "lateral_raises": [
+        {
+          "id": "lateral_raises",
+          "name": "Lateral Raises",
+          "muscleGroup": "Shoulders",
+          "prescribedWeight": 12.5,
+          "description": "DB lateral raises - Medial delt isolation",
+          "difficulty": "beginner"
+        },
+        {
+          "id": "cable_lateral_raise",
+          "name": "Cable Lateral Raise",
+          "muscleGroup": "Shoulders",
+          "prescribedWeight": 10.0,
+          "description": "Cable lateral raise - Constant tension",
+          "difficulty": "intermediate"
+        },
+        {
+          "id": "machine_lateral_raise",
+          "name": "Machine Lateral Raise",
+          "muscleGroup": "Shoulders",
+          "prescribedWeight": 20.0,
+          "description": "Machine lateral raise - Guided movement",
+          "difficulty": "beginner"
+        }
+      ],
+      "front_raises": [
+        {
+          "id": "front_raises",
+          "name": "Front Raises",
+          "muscleGroup": "Shoulders",
+          "prescribedWeight": 12.5,
+          "description": "DB front raises - Anterior delt focus",
+          "difficulty": "beginner"
+        },
+        {
+          "id": "plate_raise",
+          "name": "Plate Raise",
+          "muscleGroup": "Shoulders",
+          "prescribedWeight": 15.0,
+          "description": "Plate raises - Continuous tension",
+          "difficulty": "intermediate"
+        },
+        {
+          "id": "cable_front_raise",
+          "name": "Cable Front Raise",
+          "muscleGroup": "Shoulders",
+          "prescribedWeight": 10.0,
+          "description": "Cable front raises - Controlled anterior work",
+          "difficulty": "intermediate"
+        }
+      ],
+      "shrugs": [
+        {
+          "id": "shrugs",
+          "name": "Shrugs",
+          "muscleGroup": "Shoulders/Traps",
+          "prescribedWeight": 40.0,
+          "description": "DB or barbell shrugs - Trap overload",
+          "difficulty": "beginner"
+        },
+        {
+          "id": "trap_bar_shrug",
+          "name": "Trap Bar Shrug",
+          "muscleGroup": "Shoulders/Traps",
+          "prescribedWeight": 60.0,
+          "description": "Trap bar shrugs - Heavy loading",
+          "difficulty": "intermediate"
+        },
+        {
+          "id": "machine_shrug",
+          "name": "Machine Shrug",
+          "muscleGroup": "Shoulders/Traps",
+          "prescribedWeight": 70.0,
+          "description": "Machine shrugs - Controlled trap work",
           "difficulty": "intermediate"
         }
       ]

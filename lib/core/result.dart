@@ -2,13 +2,13 @@
 /// Provides type-safe error handling for async operations
 sealed class Result<T> {
   const Result();
-  
+
   /// Create a successful result
   static Result<T> success<T>(T value) => Ok<T>(value);
-  
-  /// Create an error result  
+
+  /// Create an error result
   static Result<T> failure<T>(Exception error) => Error<T>(error);
-  
+
   /// Transform the result value if successful
   Result<R> map<R>(R Function(T value) transform) {
     return switch (this) {
@@ -16,15 +16,16 @@ sealed class Result<T> {
       Error<T>(error: final error) => Error(error),
     };
   }
-  
+
   /// Chain async operations
-  Future<Result<R>> flatMap<R>(Future<Result<R>> Function(T value) transform) async {
+  Future<Result<R>> flatMap<R>(
+      Future<Result<R>> Function(T value) transform) async {
     return switch (this) {
       Ok<T>(value: final value) => await transform(value),
       Error<T>(error: final error) => Error(error),
     };
   }
-  
+
   /// Get value or default
   T getOrElse(T defaultValue) {
     return switch (this) {
@@ -32,7 +33,7 @@ sealed class Result<T> {
       Error<T>() => defaultValue,
     };
   }
-  
+
   /// Get value or null
   T? getOrNull() {
     return switch (this) {
@@ -40,13 +41,13 @@ sealed class Result<T> {
       Error<T>() => null,
     };
   }
-  
+
   /// Check if result is successful
   bool get isSuccess => this is Ok<T>;
-  
+
   /// Check if result is error
   bool get isError => this is Error<T>;
-  
+
   /// Get error if exists
   Exception? get error {
     return switch (this) {
@@ -54,7 +55,7 @@ sealed class Result<T> {
       Error<T>(error: final error) => error,
     };
   }
-  
+
   /// Execute action based on result type
   R when<R>({
     required R Function(T value) success,
@@ -71,32 +72,32 @@ sealed class Result<T> {
 final class Ok<T> extends Result<T> {
   final T value;
   const Ok(this.value);
-  
+
   @override
   bool operator ==(Object other) =>
-      identical(this, other) || 
-      (other is Ok<T> && other.value == value);
-  
+      identical(this, other) || (other is Ok<T> && other.value == value);
+
   @override
   int get hashCode => value.hashCode;
-  
+
   @override
   String toString() => 'Ok($value)';
 }
 
 /// Error result containing an exception
 final class Error<T> extends Result<T> {
+  @override
   final Exception error;
+
   const Error(this.error);
-  
+
   @override
   bool operator ==(Object other) =>
-      identical(this, other) ||
-      (other is Error<T> && other.error == error);
-  
+      identical(this, other) || (other is Error<T> && other.error == error);
+
   @override
   int get hashCode => error.hashCode;
-  
+
   @override
   String toString() => 'Error($error)';
 }
@@ -123,7 +124,7 @@ extension FunctionResult on Function {
       return Error(e is Exception ? e : Exception(e.toString()));
     }
   }
-  
+
   /// Wrap an async function to return Result
   static Future<Result<R>> wrapAsync<R>(Future<R> Function() fn) async {
     try {
@@ -140,24 +141,34 @@ class HeavyweightException implements Exception {
   final String message;
   final String? code;
   final dynamic details;
-  
+
   const HeavyweightException(this.message, {this.code, this.details});
-  
+
   @override
-  String toString() => 'HeavyweightException: $message${code != null ? ' (code: $code)' : ''}';
+  String toString() =>
+      'HeavyweightException: $message${code != null ? ' (code: $code)' : ''}';
 }
 
 class NetworkException extends HeavyweightException {
-  const NetworkException(String message, {String? code, dynamic details})
-      : super(message, code: code, details: details);
+  const NetworkException(
+    super.message, {
+    super.code,
+    super.details,
+  });
 }
 
 class ValidationException extends HeavyweightException {
-  const ValidationException(String message, {String? code, dynamic details})
-      : super(message, code: code, details: details);
+  const ValidationException(
+    super.message, {
+    super.code,
+    super.details,
+  });
 }
 
 class DataException extends HeavyweightException {
-  const DataException(String message, {String? code, dynamic details})
-      : super(message, code: code, details: details);
+  const DataException(
+    super.message, {
+    super.code,
+    super.details,
+  });
 }

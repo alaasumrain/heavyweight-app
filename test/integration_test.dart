@@ -1,17 +1,8 @@
-import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-
-import 'package:heavyweight_app/main.dart';
-import 'package:heavyweight_app/providers/profile_provider.dart';
-import 'package:heavyweight_app/providers/workout_engine_provider.dart';
-import 'package:heavyweight_app/providers/repository_provider.dart';
-import 'package:heavyweight_app/providers/app_state_provider.dart';
-import 'package:heavyweight_app/core/auth_service.dart';
+import 'package:flutter_test/flutter_test.dart';
 
 void main() {
   group('Heavyweight App Integration Tests', () {
-    
     testWidgets('App initializes without errors', (WidgetTester tester) async {
       // Test basic app startup
       await tester.pumpWidget(
@@ -21,11 +12,12 @@ void main() {
           ),
         ),
       );
-      
+
       expect(find.text('App Test'), findsOneWidget);
     });
 
-    testWidgets('Authentication flow components exist', (WidgetTester tester) async {
+    testWidgets('Authentication flow components exist',
+        (WidgetTester tester) async {
       // Test that auth components can be created
       await tester.pumpWidget(
         MaterialApp(
@@ -51,13 +43,14 @@ void main() {
           ),
         ),
       );
-      
+
       expect(find.byKey(Key('email_field')), findsOneWidget);
       expect(find.byKey(Key('password_field')), findsOneWidget);
       expect(find.byKey(Key('login_button')), findsOneWidget);
     });
 
-    testWidgets('Command button renders correctly', (WidgetTester tester) async {
+    testWidgets('Command button renders correctly',
+        (WidgetTester tester) async {
       // Test custom CommandButton component
       await tester.pumpWidget(
         MaterialApp(
@@ -84,14 +77,15 @@ void main() {
           ),
         ),
       );
-      
+
       expect(find.text('TEST COMMAND'), findsOneWidget);
     });
 
-    testWidgets('Rep logger components can be created', (WidgetTester tester) async {
+    testWidgets('Rep logger components can be created',
+        (WidgetTester tester) async {
       // Test rep logging interface
       int repValue = 5;
-      
+
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -119,7 +113,8 @@ void main() {
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
                           IconButton(
-                            onPressed: () => repValue = repValue > 0 ? repValue - 1 : 0,
+                            onPressed: () =>
+                                repValue = repValue > 0 ? repValue - 1 : 0,
                             icon: Icon(Icons.remove_circle_outline),
                             color: Colors.white,
                             iconSize: 48,
@@ -142,7 +137,8 @@ void main() {
                             ),
                           ),
                           IconButton(
-                            onPressed: () => repValue = repValue < 30 ? repValue + 1 : 30,
+                            onPressed: () =>
+                                repValue = repValue < 30 ? repValue + 1 : 30,
                             icon: Icon(Icons.add_circle_outline),
                             color: Colors.white,
                             iconSize: 48,
@@ -157,14 +153,15 @@ void main() {
           ),
         ),
       );
-      
+
       expect(find.text('REPS LOGGED'), findsOneWidget);
       expect(find.text('5'), findsOneWidget);
       expect(find.byIcon(Icons.remove_circle_outline), findsOneWidget);
       expect(find.byIcon(Icons.add_circle_outline), findsOneWidget);
     });
 
-    testWidgets('Workout engine models can be instantiated', (WidgetTester tester) async {
+    testWidgets('Workout engine models can be instantiated',
+        (WidgetTester tester) async {
       // Test core models
       await tester.pumpWidget(
         MaterialApp(
@@ -183,7 +180,7 @@ void main() {
                     }
                   ]
                 };
-                
+
                 return Column(
                   children: [
                     Text('Workout: ${workoutData['dayName']}'),
@@ -195,7 +192,7 @@ void main() {
           ),
         ),
       );
-      
+
       expect(find.text('Workout: CHEST'), findsOneWidget);
       expect(find.text('Exercises: 1'), findsOneWidget);
     });
@@ -203,7 +200,7 @@ void main() {
     testWidgets('Navigation components render', (WidgetTester tester) async {
       // Test bottom navigation
       int selectedIndex = 0;
-      
+
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(
@@ -233,7 +230,7 @@ void main() {
           ),
         ),
       );
-      
+
       expect(find.text('ASSIGNMENT'), findsOneWidget);
       expect(find.text('LOGBOOK'), findsOneWidget);
       expect(find.text('PROFILE'), findsOneWidget);
@@ -279,7 +276,7 @@ void main() {
           ),
         ),
       );
-      
+
       expect(find.text('PRIMARY TEXT'), findsOneWidget);
       expect(find.text('SECONDARY TEXT'), findsOneWidget);
     });
@@ -327,7 +324,7 @@ void main() {
           ),
         ),
       );
-      
+
       expect(find.text('ERROR'), findsOneWidget);
       expect(find.text('Something went wrong'), findsOneWidget);
       expect(find.text('RETRY'), findsOneWidget);

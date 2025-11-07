@@ -10,19 +10,18 @@ import '../../components/layout/heavyweight_scaffold.dart';
 import '../../components/ui/command_button.dart';
 import '../../core/logging.dart';
 
-
 /// Session Complete Screen - Final judgment of the workout
 /// Shows mandate satisfaction/violation with brutal honesty
 class SessionCompleteScreen extends StatefulWidget {
   final List<SetData> sessionSets;
   final bool mandateSatisfied;
-  
+
   const SessionCompleteScreen({
     super.key,
     required this.sessionSets,
     required this.mandateSatisfied,
   });
-  
+
   static Widget withProvider({
     required List<SetData> sessionSets,
     required bool mandateSatisfied,
@@ -34,7 +33,7 @@ class SessionCompleteScreen extends StatefulWidget {
       ),
     );
   }
-  
+
   @override
   State<SessionCompleteScreen> createState() => _SessionCompleteScreenState();
 }
@@ -43,16 +42,16 @@ class _SessionCompleteScreenState extends State<SessionCompleteScreen>
     with SingleTickerProviderStateMixin {
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-  
+
   @override
   void initState() {
     super.initState();
-    
+
     _animationController = AnimationController(
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
-    
+
     _fadeAnimation = Tween<double>(
       begin: 0.0,
       end: 1.0,
@@ -60,7 +59,7 @@ class _SessionCompleteScreenState extends State<SessionCompleteScreen>
       parent: _animationController,
       curve: Curves.easeInOut,
     ));
-    
+
     // Trigger haptic feedback based on mandate satisfaction
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (widget.mandateSatisfied) {
@@ -69,22 +68,22 @@ class _SessionCompleteScreenState extends State<SessionCompleteScreen>
         HapticFeedback.heavyImpact(); // Failure feedback
       }
       _animationController.forward();
-      
+
       // Process workout results to refresh mandate
       _processWorkoutResults();
     });
   }
-  
+
   @override
   void dispose() {
     _animationController.dispose();
     super.dispose();
   }
-  
+
   /// Process workout results and refresh mandate
   Future<void> _processWorkoutResults() async {
     if (widget.sessionSets.isEmpty) return;
-    
+
     try {
       final viewModel = context.read<WorkoutViewModel>();
       await viewModel.processWorkoutResults(widget.sessionSets);
@@ -92,24 +91,25 @@ class _SessionCompleteScreenState extends State<SessionCompleteScreen>
       // Silently handle errors - the UI has already shown the session results
     }
   }
-  
+
   // Calculate session statistics
   SessionStats get _stats {
     if (widget.sessionSets.isEmpty) {
       return SessionStats.empty();
     }
-    
+
     final totalSets = widget.sessionSets.length;
     final mandateSets = widget.sessionSets.where((s) => s.metMandate).length;
     final failureSets = widget.sessionSets.where((s) => s.isFailure).length;
-    final exceededSets = widget.sessionSets.where((s) => s.exceededMandate).length;
+    final exceededSets =
+        widget.sessionSets.where((s) => s.exceededMandate).length;
     final adherencePercent = ((mandateSets / totalSets) * 100).round();
-    
+
     final totalVolume = widget.sessionSets.fold<double>(
       0,
       (sum, set) => sum + (set.weight * set.actualReps),
     );
-    
+
     return SessionStats(
       totalSets: totalSets,
       mandateSets: mandateSets,
@@ -119,12 +119,12 @@ class _SessionCompleteScreenState extends State<SessionCompleteScreen>
       totalVolume: totalVolume,
     );
   }
-  
+
   @override
   Widget build(BuildContext context) {
     HWLog.screen('Training/SessionComplete');
     final stats = _stats;
-    
+
     return HeavyweightScaffold(
       body: FadeTransition(
         opacity: _fadeAnimation,
@@ -159,7 +159,7 @@ class _SessionCompleteScreenState extends State<SessionCompleteScreen>
       ),
     );
   }
-  
+
   Widget _buildMandateJudgment() {
     return Column(
       children: [
@@ -168,16 +168,22 @@ class _SessionCompleteScreenState extends State<SessionCompleteScreen>
           padding: const EdgeInsets.all(HeavyweightTheme.spacingLg),
           decoration: BoxDecoration(
             border: Border.all(
-              color: widget.mandateSatisfied ? HeavyweightTheme.primary : HeavyweightTheme.error,
+              color: widget.mandateSatisfied
+                  ? HeavyweightTheme.primary
+                  : HeavyweightTheme.error,
               width: 3,
             ),
           ),
           child: Column(
             children: [
               Text(
-                widget.mandateSatisfied ? 'IN RANGE' : 'OUT OF RANGE',
+                widget.mandateSatisfied
+                    ? 'MANDATE IN RANGE'
+                    : 'MANDATE BREACHED',
                 style: TextStyle(
-                  color: widget.mandateSatisfied ? HeavyweightTheme.primary : HeavyweightTheme.error,
+                  color: widget.mandateSatisfied
+                      ? HeavyweightTheme.primary
+                      : HeavyweightTheme.error,
                   fontSize: 24,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 4,
@@ -185,9 +191,13 @@ class _SessionCompleteScreenState extends State<SessionCompleteScreen>
               ),
               const SizedBox(height: HeavyweightTheme.spacingSm),
               Text(
-                widget.mandateSatisfied ? 'LOCKED' : 'ADJUST REQUIRED',
+                widget.mandateSatisfied
+                    ? 'MANDATE CONFIRMED'
+                    : 'LOAD ADJUSTMENT ORDERED',
                 style: TextStyle(
-                  color: widget.mandateSatisfied ? HeavyweightTheme.primary : HeavyweightTheme.error,
+                  color: widget.mandateSatisfied
+                      ? HeavyweightTheme.primary
+                      : HeavyweightTheme.error,
                   fontSize: 32,
                   fontWeight: FontWeight.bold,
                   letterSpacing: 4,
@@ -196,14 +206,14 @@ class _SessionCompleteScreenState extends State<SessionCompleteScreen>
             ],
           ),
         ),
-        
+
         const SizedBox(height: HeavyweightTheme.spacingMd),
-        
+
         // Judgment explanation
         Text(
           widget.mandateSatisfied
-              ? 'THE SYSTEM ACKNOWLEDGES YOUR ADHERENCE'
-              : 'THE SYSTEM RECORDS YOUR FAILURE',
+              ? 'THE SYSTEM ACKNOWLEDGES COMPLIANCE'
+              : 'THE SYSTEM RECORDS DEVIATION',
           style: TextStyle(
             color: HeavyweightTheme.textSecondary,
             fontSize: 14,
@@ -214,7 +224,7 @@ class _SessionCompleteScreenState extends State<SessionCompleteScreen>
       ],
     );
   }
-  
+
   Widget _buildSessionStats(SessionStats stats) {
     return Container(
       padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
@@ -234,22 +244,24 @@ class _SessionCompleteScreenState extends State<SessionCompleteScreen>
             ),
           ),
           const SizedBox(height: HeavyweightTheme.spacingMd),
-          
           _buildStatRow('TOTAL_SETS', '${stats.totalSets}'),
-          _buildStatRow('IN_RANGE_SETS', '${stats.mandateSets}', 
-                       color: HeavyweightTheme.primary),
-          _buildStatRow('FAILURE_SETS', '${stats.failureSets}', 
-                       color: stats.failureSets > 0 ? HeavyweightTheme.error : null),
-          _buildStatRow('EXCEEDED_SETS', '${stats.exceededSets}', 
-                       color: stats.exceededSets > 0 ? HeavyweightTheme.warning : null),
-          _buildStatRow('ADHERENCE', '${stats.adherencePercent}%', 
-                       color: stats.adherencePercent >= 70 ? HeavyweightTheme.primary : HeavyweightTheme.error),
-          _buildStatRow('TOTAL_VOLUME', '${stats.totalVolume.toStringAsFixed(1)}KG'),
+          _buildStatRow('IN_RANGE_SETS', '${stats.mandateSets}',
+              color: HeavyweightTheme.primary),
+          _buildStatRow('FAILURE_SETS', '${stats.failureSets}',
+              color: stats.failureSets > 0 ? HeavyweightTheme.error : null),
+          _buildStatRow('EXCEEDED_SETS', '${stats.exceededSets}',
+              color: stats.exceededSets > 0 ? HeavyweightTheme.warning : null),
+          _buildStatRow('ADHERENCE', '${stats.adherencePercent}%',
+              color: stats.adherencePercent >= 70
+                  ? HeavyweightTheme.primary
+                  : HeavyweightTheme.error),
+          _buildStatRow(
+              'TOTAL_VOLUME', '${stats.totalVolume.toStringAsFixed(1)}KG'),
         ],
       ),
     );
   }
-  
+
   Widget _buildStatRow(String label, String value, {Color? color}) {
     return Padding(
       padding: const EdgeInsets.only(bottom: HeavyweightTheme.spacingSm),
@@ -277,7 +289,7 @@ class _SessionCompleteScreenState extends State<SessionCompleteScreen>
       ),
     );
   }
-  
+
   Widget _buildNextSessionPreview() {
     return Container(
       padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
@@ -298,18 +310,29 @@ class _SessionCompleteScreenState extends State<SessionCompleteScreen>
           ),
           const SizedBox(height: HeavyweightTheme.spacingSm),
           Text(
-            widget.mandateSatisfied 
-                ? 'WEIGHTS WILL BE INCREASED'
-                : 'WEIGHTS WILL BE DECREASED',
+            widget.mandateSatisfied
+                ? 'LOAD WILL TREND UPWARD'
+                : 'LOAD WILL BE REDUCED',
             style: TextStyle(
-              color: widget.mandateSatisfied ? HeavyweightTheme.primary : HeavyweightTheme.error,
+              color: widget.mandateSatisfied
+                  ? HeavyweightTheme.primary
+                  : HeavyweightTheme.error,
               fontSize: 12,
               letterSpacing: 1,
             ),
           ),
           const SizedBox(height: HeavyweightTheme.spacingXs),
           Text(
-            'REST 48-72 HOURS MINIMUM',
+            'REST 48-72 HOURS. REPORT BACK READY.',
+            style: TextStyle(
+              color: HeavyweightTheme.textSecondary,
+              fontSize: 12,
+              letterSpacing: 1,
+            ),
+          ),
+          const SizedBox(height: HeavyweightTheme.spacingXs),
+          Text(
+            'RETURN TO ASSIGNMENT FOR NEXT ORDERS.',
             style: TextStyle(
               color: HeavyweightTheme.textSecondary,
               fontSize: 12,
@@ -320,30 +343,32 @@ class _SessionCompleteScreenState extends State<SessionCompleteScreen>
       ),
     );
   }
-  
+
   Widget _buildActionButtons() {
     return Column(
       children: [
         // Primary action - View Log
         CommandButton(
-          text: 'VIEW_TRAINING_LOG',
+          text: 'OPEN_LOGBOOK',
           variant: ButtonVariant.primary,
           semanticLabel: 'View your complete training log',
           onPressed: () {
-            HWLog.event('session_complete_action', data: {'action': 'view_log'});
+            HWLog.event('session_complete_action',
+                data: {'action': 'view_log'});
             context.go('/app?tab=1');
           },
         ),
-        
+
         const SizedBox(height: HeavyweightTheme.spacingMd),
-        
+
         // Secondary action - Return to Assignment
         CommandButton(
           text: 'RETURN_TO_ASSIGNMENT',
           variant: ButtonVariant.secondary,
           semanticLabel: 'Return to workout assignment screen',
           onPressed: () {
-            HWLog.event('session_complete_action', data: {'action': 'return_assignment'});
+            HWLog.event('session_complete_action',
+                data: {'action': 'return_assignment'});
             context.go('/app?tab=0');
           },
         ),
@@ -360,7 +385,7 @@ class SessionStats {
   final int exceededSets;
   final int adherencePercent;
   final double totalVolume;
-  
+
   const SessionStats({
     required this.totalSets,
     required this.mandateSets,
@@ -369,7 +394,7 @@ class SessionStats {
     required this.adherencePercent,
     required this.totalVolume,
   });
-  
+
   factory SessionStats.empty() {
     return const SessionStats(
       totalSets: 0,

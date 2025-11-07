@@ -6,7 +6,6 @@ import '../../../components/ui/command_button.dart';
 import '../../../components/ui/radio_selector.dart';
 import '../../../providers/app_state_provider.dart';
 import '../../../providers/profile_provider.dart';
-import '../../../nav.dart';
 import '../../../components/layout/heavyweight_scaffold.dart';
 import '../../../core/logging.dart';
 
@@ -37,7 +36,7 @@ class _UnitPreferenceScreenState extends State<UnitPreferenceScreen> {
     HWLog.screen('Onboarding/Profile/Units');
     final state = GoRouterState.of(context);
     final isEditMode = state.uri.queryParameters['edit'] == '1';
-    
+
     return HeavyweightScaffold(
       title: 'MEASUREMENT PROTOCOL',
       showBackButton: isEditMode,
@@ -54,53 +53,55 @@ class _UnitPreferenceScreenState extends State<UnitPreferenceScreen> {
                 style: HeavyweightTheme.bodyMedium,
               ),
               const SizedBox(height: HeavyweightTheme.spacingXl),
-              
+
               // Unit options
               Consumer<ProfileProvider>(
-                  builder: (context, provider, _) {
-                    _selectedUnit ??= provider.unit;
-                    return RadioSelector<Unit>(
-                      options: const [
-                        RadioOption(
-                          value: Unit.kg,
-                          label: 'KILOGRAMS (KG) - Metric load standard',
-                        ),
-                        RadioOption(
-                          value: Unit.lb,
-                          label: 'POUNDS (LB) - Imperial load standard',
-                        ),
-                      ],
-                      selectedValue: _selectedUnit,
-                      onChanged: (unit) {
-                        HWLog.event('profile_units_select', data: {'value': unit?.name ?? 'null'});
-                        setState(() {
-                          _selectedUnit = unit;
-                        });
-                        if (unit != null) provider.setUnit(unit);
-                      },
-                    );
-                  },
-                ),
-              
+                builder: (context, provider, _) {
+                  _selectedUnit ??= provider.unit;
+                  return RadioSelector<Unit>(
+                    options: const [
+                      RadioOption(
+                        value: Unit.kg,
+                        label: 'KILOGRAMS (KG) - Metric load standard',
+                      ),
+                      RadioOption(
+                        value: Unit.lb,
+                        label: 'POUNDS (LB) - Imperial load standard',
+                      ),
+                    ],
+                    selectedValue: _selectedUnit,
+                    onChanged: (unit) {
+                      HWLog.event('profile_units_select',
+                          data: {'value': unit.name});
+                      setState(() {
+                        _selectedUnit = unit;
+                      });
+                      provider.setUnit(unit);
+                    },
+                  );
+                },
+              ),
+
               const SizedBox(height: HeavyweightTheme.spacingXl),
-              
+
               // Continue button
               CommandButton(
-                text: 'COMMAND: CONFIRM',
+                text: 'CONTINUE',
                 variant: ButtonVariant.primary,
                 isDisabled: _selectedUnit == null,
                 onPressed: _selectedUnit != null
                     ? () async {
                         HWLog.event('profile_units_continue');
                         // Persist unit preference in AppState as well
-                        final appState = context.read<AppStateProvider>().appState;
+                        final appState =
+                            context.read<AppStateProvider>().appState;
                         await appState.setUnitPreference(_selectedUnit!.name);
 
                         if (!context.mounted) return;
                         if (isEditMode) {
-                          context.go('/profile');
+                          context.pop();
                         } else {
-                          context.go('/profile/stats');
+                          GoRouter.of(context).go('/profile/stats');
                         }
                       }
                     : null,

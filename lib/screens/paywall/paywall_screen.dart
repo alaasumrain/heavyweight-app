@@ -6,17 +6,14 @@ import '../../core/theme/heavyweight_theme.dart';
 /// Paywall screen for subscription management
 /// Shows when free trial expires or premium features accessed
 class PaywallScreen extends StatelessWidget {
-  const PaywallScreen({Key? key}) : super(key: key);
+  const PaywallScreen({super.key});
 
   @override
   Widget build(BuildContext context) {
     return HeavyweightScaffold(
       title: 'TRIAL_EXPIRED',
-      
       body: Column(
         children: [
-          
-          
           // Benefits
           Expanded(
             child: Column(
@@ -46,7 +43,7 @@ class PaywallScreen extends StatelessWidget {
               ],
             ),
           ),
-          
+
           // Action buttons
           CommandButton(
             text: 'COMMAND: VIEW_PLANS',
@@ -55,9 +52,9 @@ class PaywallScreen extends StatelessWidget {
               // context.push('/subscription-plans');
             },
           ),
-          
+
           const SizedBox(height: HeavyweightTheme.spacingMd),
-          
+
           CommandButton(
             text: 'COMMAND: RESTORE_PURCHASE',
             variant: ButtonVariant.secondary,
@@ -65,7 +62,7 @@ class PaywallScreen extends StatelessWidget {
               // TODO: Implement restore purchase
             },
           ),
-          
+
           const SizedBox(height: HeavyweightTheme.spacingXl),
         ],
       ),

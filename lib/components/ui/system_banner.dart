@@ -3,7 +3,7 @@ import '../../core/theme/heavyweight_theme.dart';
 
 class SystemBanner extends StatelessWidget {
   const SystemBanner({super.key});
-  
+
   @override
   Widget build(BuildContext context) {
     return Container(

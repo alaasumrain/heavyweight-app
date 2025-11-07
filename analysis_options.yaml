@@ -33,3 +33,7 @@ analyzer:
   exclude:
     - lib/custom_code/**
     - lib/flutter_flow/custom_functions.dart
+    - final_polish.dart
+    - fix_*.dart
+    - immediate_improvements.dart
+    - quick_test.dart

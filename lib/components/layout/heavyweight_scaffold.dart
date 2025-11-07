@@ -1,7 +1,7 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import '../ui/navigation_bar.dart';
 import '../ui/heavyweight_header.dart';
+import '../navigation/heavyweight_shell_scope.dart';
 import '../../core/theme/heavyweight_theme.dart';
 import '../../core/logging.dart';
 
@@ -17,9 +17,11 @@ class HeavyweightScaffold extends StatelessWidget {
   final String? fallbackRoute;
   final Widget? floatingActionButton;
   final List<Widget>? actions;
-  
+  final FloatingActionButtonLocation? floatingActionButtonLocation;
+  final EdgeInsetsGeometry? bodyPadding;
+
   const HeavyweightScaffold({
-    Key? key,
+    super.key,
     this.title,
     this.subtitle,
     required this.body,
@@ -28,51 +30,82 @@ class HeavyweightScaffold extends StatelessWidget {
     this.showBackButton = true,
     this.fallbackRoute = '/',
     this.floatingActionButton,
+    this.floatingActionButtonLocation,
+    this.bodyPadding,
     this.actions,
-  }) : super(key: key);
-  
+  });
+
   @override
   Widget build(BuildContext context) {
     // Quiet build; avoid verbose logging in production
 
     try {
+      final shellScope = HeavyweightShellScope.maybeOf(context);
+      final shouldShowNavigation = showNavigation &&
+          navIndex != null &&
+          shellScope?.hasShellNavigation != true;
+
       final scaffold = Scaffold(
         backgroundColor: HeavyweightTheme.background,
-        // Add explicit key so we can see rebuilds distinctly in logs
-        key: ValueKey('HWScaffold_${title ?? 'untitled'}'),
         body: SafeArea(
           child: Column(
             children: [
-            // Header section - always show HEAVYWEIGHT header
-            Padding(
-              padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
-              child: HeavyweightHeader(
-                title: title, // This will be shown as subtitle
-                subtitle: subtitle,
-                showBackButton: showBackButton,
-                fallbackRoute: fallbackRoute,
-                actions: actions,
-              ),
-            ),
-            
-            // Body content with reduced horizontal padding
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: HeavyweightTheme.spacingMd, // Reduced from spacingLg
+              // Header section - always show HEAVYWEIGHT header
+              Padding(
+                padding: const EdgeInsets.all(HeavyweightTheme.spacingMd),
+                child: HeavyweightHeader(
+                  title: title, // This will be shown as subtitle
+                  subtitle: subtitle,
+                  showBackButton: showBackButton,
+                  fallbackRoute: fallbackRoute,
+                  actions: actions,
                 ),
-                child: body,
               ),
-            ),
-          ],
+
+              // Body content adapts across breakpoints
+              Expanded(
+                child: LayoutBuilder(
+                  builder: (context, constraints) {
+                    final hasCustomPadding = bodyPadding != null;
+                    final resolvedPadding = bodyPadding ?? EdgeInsets.symmetric(
+                      horizontal: constraints.maxWidth >= HeavyweightTheme.breakpointTablet
+                          ? HeavyweightTheme.spacingXl
+                          : HeavyweightTheme.spacingMd,
+                    );
+
+                    Widget content = Padding(
+                      padding: resolvedPadding,
+                      child: body,
+                    );
+
+                    final shouldConstrainWidth = !hasCustomPadding &&
+                        constraints.maxWidth >= HeavyweightTheme.breakpointTablet;
+
+                    if (shouldConstrainWidth) {
+                      const maxWidth = HeavyweightTheme.contentMaxWidth;
+                      content = Align(
+                        alignment: Alignment.topCenter,
+                        child: ConstrainedBox(
+                          constraints: BoxConstraints(maxWidth: maxWidth),
+                          child: content,
+                        ),
+                      );
+                    }
+
+                    return content;
+                  },
+                ),
+              ),
+            ],
+          ),
         ),
-        ),
-        bottomNavigationBar: showNavigation && navIndex != null
+        bottomNavigationBar: shouldShowNavigation
             ? HeavyweightNavigationBar(currentIndex: navIndex!)
             : null,
         floatingActionButton: floatingActionButton,
+        floatingActionButtonLocation: floatingActionButtonLocation,
       );
-      
+
       return scaffold;
     } catch (e) {
       // Fallback UI in case of errors
@@ -113,9 +146,3 @@ class HeavyweightScaffold extends StatelessWidget {
     }
   }
 }
-
-
-
-
-
-

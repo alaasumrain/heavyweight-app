@@ -21,6 +21,7 @@ class HWLog {
     _lastPrint[key] = now;
     return true;
   }
+
   static void _print(Map<String, Object?> payload) {
     if (!kDebugMode) return;
     try {

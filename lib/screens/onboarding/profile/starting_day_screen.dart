@@ -10,14 +10,14 @@ import '../../../core/logging.dart';
 
 enum StartingDay {
   chest,
-  back, 
+  back,
   arms,
   shoulders,
   legs,
 }
 
 class StartingDayScreen extends StatefulWidget {
-  const StartingDayScreen({Key? key}) : super(key: key);
+  const StartingDayScreen({super.key});
 
   @override
   State<StartingDayScreen> createState() => _StartingDayScreenState();
@@ -41,7 +41,7 @@ class _StartingDayScreenState extends State<StartingDayScreen> {
           child: Column(
             children: [
               const SizedBox(height: HeavyweightTheme.spacingSm),
-              
+
               // Header
               Text(
                 'WHICH MUSCLE GROUP DO YOU\nWANT TO FOCUS ON FIRST?',
@@ -49,7 +49,7 @@ class _StartingDayScreenState extends State<StartingDayScreen> {
                 style: HeavyweightTheme.bodyMedium,
               ),
               const SizedBox(height: HeavyweightTheme.spacingSm),
-              
+
               Text(
                 'The system will start your protocol here\nand rotate through the full 5-day cycle.',
                 textAlign: TextAlign.center,
@@ -58,7 +58,7 @@ class _StartingDayScreenState extends State<StartingDayScreen> {
                 ),
               ),
               const SizedBox(height: HeavyweightTheme.spacingMd),
-              
+
               // Starting day options
               RadioSelector<StartingDay>(
                 options: const [
@@ -85,33 +85,36 @@ class _StartingDayScreenState extends State<StartingDayScreen> {
                 ],
                 selectedValue: selectedDay,
                 onChanged: (val) {
-                  HWLog.event('profile_starting_day_select', data: {'value': val.name});
+                  HWLog.event('profile_starting_day_select',
+                      data: {'value': val.name});
                   setState(() {
                     selectedDay = val;
                   });
                 },
               ),
-              
+
               const SizedBox(height: HeavyweightTheme.spacingXl),
-              
+
               // Continue button
               CommandButton(
-                text: 'COMMAND: CONFIRM',
+                text: 'CONTINUE',
                 variant: ButtonVariant.primary,
                 isDisabled: selectedDay == null,
                 onPressed: selectedDay != null
                     ? () async {
                         HWLog.event('profile_starting_day_continue');
                         // Save starting day to AppState
-                        final appState = context.read<AppStateProvider>().appState;
-                        await appState.setPreferredStartingDay(selectedDay!.name);
-                        
+                        final appState =
+                            context.read<AppStateProvider>().appState;
+                        await appState
+                            .setPreferredStartingDay(selectedDay!.name);
+
                         if (!context.mounted) return;
                         if (isEditMode) {
-                          context.go('/profile');
+                          context.pop();
                         } else {
                           final nextRoute = appState.nextRoute;
-                          context.go(nextRoute);
+                          GoRouter.of(context).go(nextRoute);
                         }
                       }
                     : null,

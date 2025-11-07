@@ -3,6 +3,17 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'auth_service.dart';
 import 'logging.dart';
 
+/// Debug information for onboarding route decisions
+class NextRouteDebug {
+  final List<String> unmetRequirements;
+  final String? nextRoute;
+
+  const NextRouteDebug({
+    required this.unmetRequirements,
+    required this.nextRoute,
+  });
+}
+
 /// Centralized application state management
 /// Tracks user progress through onboarding flow and determines routing
 class AppState extends ChangeNotifier {
@@ -59,12 +70,14 @@ class AppState extends ChangeNotifier {
     if (parts.isEmpty) return null;
     return int.tryParse(parts[0]);
   }
+
   double? get _weightKgParsed {
     if (_physicalStats == null) return null;
     final parts = _physicalStats!.split(',');
     if (parts.length < 2) return null;
     return double.tryParse(parts[1]);
   }
+
   int? get _heightCmParsed {
     if (_physicalStats == null) return null;
     final parts = _physicalStats!.split(',');
@@ -73,7 +86,8 @@ class AppState extends ChangeNotifier {
   }
 
   bool get _hasUnits => _unitPreference != null;
-  bool get _hasStats => _ageParsed != null && _weightKgParsed != null && _heightCmParsed != null;
+  bool get _hasStats =>
+      _ageParsed != null && _weightKgParsed != null && _heightCmParsed != null;
   bool get _hasRestDays => _restDays != null;
   int get _daysPerWeek => 7 - (_restDays?.length ?? 7);
   bool get _hasSessionDuration => (_sessionDurationMin ?? 0) > 0;
@@ -81,12 +95,12 @@ class AppState extends ChangeNotifier {
 
   /// Check if minimal profile is complete (for basic app usage)
   bool get isMinimalProfileComplete {
-    return _trainingExperience != null && 
-           _trainingFrequency != null && 
-           _unitPreference != null &&
-           _physicalStats != null &&
-           _trainingObjective != null &&
-           _preferredStartingDay != null;
+    return _trainingExperience != null &&
+        _trainingFrequency != null &&
+        _unitPreference != null &&
+        _physicalStats != null &&
+        _trainingObjective != null &&
+        _preferredStartingDay != null;
   }
 
   /// Get the next route in the complete onboarding flow
@@ -127,27 +141,38 @@ class AppState extends ChangeNotifier {
   NextRouteDebug nextOnboardingRouteDebug() {
     final unmet = <String>[];
     String? nr;
-    if (!_hasUnits) { unmet.add('units'); nr ??= '/profile/units'; }
-    if (!_hasStats) { unmet.add('stats'); nr ??= '/profile/stats'; }
+    if (!_hasUnits) {
+      unmet.add('units');
+      nr ??= '/profile/units';
+    }
+    if (!_hasStats) {
+      unmet.add('stats');
+      nr ??= '/profile/stats';
+    }
     final freq = int.tryParse(_trainingFrequency ?? '') ?? 0;
-    if (freq < 3 || freq > 6) { unmet.add('frequency(3-6)'); nr ??= '/profile/frequency'; }
-    if (!_hasRestDays) { unmet.add('rest-days'); nr ??= '/profile/rest-days'; }
-    if (_daysPerWeek < 3 || _daysPerWeek > 6) { unmet.add('days/week(3-6)'); nr ??= '/profile/frequency'; }
-    if (!_hasSessionDuration) { unmet.add('duration'); nr ??= '/profile/duration'; }
-    if (!_hasManifesto) { unmet.add('manifesto'); nr ??= '/manifesto'; }
+    if (freq < 3 || freq > 6) {
+      unmet.add('frequency(3-6)');
+      nr ??= '/profile/frequency';
+    }
+    if (!_hasRestDays) {
+      unmet.add('rest-days');
+      nr ??= '/profile/rest-days';
+    }
+    if (_daysPerWeek < 3 || _daysPerWeek > 6) {
+      unmet.add('days/week(3-6)');
+      nr ??= '/profile/frequency';
+    }
+    if (!_hasSessionDuration) {
+      unmet.add('duration');
+      nr ??= '/profile/duration';
+    }
+    if (!_hasManifesto) {
+      unmet.add('manifesto');
+      nr ??= '/manifesto';
+    }
     return NextRouteDebug(
       nextRoute: nr,
-      fields: {
-        'unitPreference': _unitPreference,
-        'age': _ageParsed,
-        'weightKg': _weightKgParsed,
-        'heightCm': _heightCmParsed,
-        'restDays': _restDays,
-        'daysPerWeek': _daysPerWeek,
-        'sessionDurationMin': _sessionDurationMin,
-        'manifestoCommitted': _manifestoCommitted,
-      },
-      unmet: unmet,
+      unmetRequirements: unmet,
     );
   }
 
@@ -209,14 +234,17 @@ class AppState extends ChangeNotifier {
       'unitPreference': _unitPreference,
       'physicalStats': _physicalStats,
       'trainingObjective': _trainingObjective,
-      'hasBaseline': _baselineBenchKg != null || _baselineSquatKg != null || _baselineDeadKg != null,
+      'hasBaseline': _baselineBenchKg != null ||
+          _baselineSquatKg != null ||
+          _baselineDeadKg != null,
       'restDays': _restDays?.join(',') ?? 'none',
       'sessionDurationMin': _sessionDurationMin ?? 0,
     });
   }
 
   /// Save optional baseline lifts (in KG internally)
-  Future<void> setBaseline({double? benchKg, double? squatKg, double? deadKg}) async {
+  Future<void> setBaseline(
+      {double? benchKg, double? squatKg, double? deadKg}) async {
     final prefs = await SharedPreferences.getInstance();
     if (benchKg != null && benchKg > 0) {
       _baselineBenchKg = benchKg;
@@ -237,14 +265,14 @@ class AppState extends ChangeNotifier {
   Future<void> _checkAuthState() async {
     // Get existing auth service instance (already initialized in main.dart)
     final authService = AuthService();
-    
+
     // Check authentication status
     _isAuthenticated = authService.isAuthenticated;
     HWLog.event('auth_state', data: {
       'phase': 'initial',
       'isAuthenticated': _isAuthenticated,
     });
-    
+
     // Listen to auth changes
     authService.addListener(() {
       _isAuthenticated = authService.isAuthenticated;
@@ -364,7 +392,6 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-
   /// Reset all state (for testing or logout)
   Future<void> reset() async {
     _legalAccepted = false;
@@ -376,7 +403,7 @@ class AppState extends ChangeNotifier {
     _trainingObjective = null;
     _preferredStartingDay = null;
     _isAuthenticated = false;
-    
+
     final prefs = await SharedPreferences.getInstance();
     await prefs.clear();
     notifyListeners();

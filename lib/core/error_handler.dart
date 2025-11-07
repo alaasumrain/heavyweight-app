@@ -6,7 +6,8 @@ import 'logging.dart';
 /// Global error handling system for HEAVYWEIGHT app
 /// Provides consistent error handling across the entire application
 class HeavyweightErrorHandler {
-  static final HeavyweightErrorHandler _instance = HeavyweightErrorHandler._internal();
+  static final HeavyweightErrorHandler _instance =
+      HeavyweightErrorHandler._internal();
   factory HeavyweightErrorHandler() => _instance;
   HeavyweightErrorHandler._internal();
 
@@ -33,7 +34,8 @@ class HeavyweightErrorHandler {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.error_outline, color: HeavyweightTheme.danger, size: 48),
+              const Icon(Icons.error_outline,
+                  color: HeavyweightTheme.danger, size: 48),
               const SizedBox(height: 12),
               const Text(
                 'SYSTEM_FAULT',
@@ -74,49 +76,56 @@ class HeavyweightErrorHandler {
       'error': error.toString(),
       'stackPresent': stack != null,
     });
-    
-    // TODO: Send to crash reporting service in production
+
+    // Basic crash reporting - log to console in debug, could integrate Firebase Crashlytics in production
+    if (kDebugMode) {
+      debugPrint('🔥 CRASH: $error');
+      if (stack != null) debugPrint('Stack: $stack');
+    }
+    // Note: Firebase Crashlytics integration can be added when needed:
     // FirebaseCrashlytics.instance.recordError(error, stack);
   }
 
   /// Handle specific error types with user-friendly messages
   static String getErrorMessage(Object error) {
-    if (error.toString().contains('network') || 
+    if (error.toString().contains('network') ||
         error.toString().contains('connection') ||
         error.toString().contains('timeout')) {
       return 'CONNECTION_LOST. CHECK_NETWORK.';
     }
-    
-    if (error.toString().contains('auth') || 
+
+    if (error.toString().contains('auth') ||
         error.toString().contains('permission') ||
         error.toString().contains('unauthorized')) {
       return 'AUTHENTICATION_FAILED. RETRY_LOGIN.';
     }
-    
+
     if (error.toString().contains('validation') ||
         error.toString().contains('invalid')) {
       return 'INPUT_INVALID. CHECK_DATA.';
     }
-    
+
     if (error.toString().contains('storage') ||
         error.toString().contains('database')) {
       return 'DATA_SYNC_FAILED. CACHED_LOCALLY.';
     }
-    
+
     // Generic error
     return 'SYSTEM_FAULT. RETRY_OPERATION.';
   }
 
   /// Show error to user with consistent styling
-  static void showError(BuildContext context, Object error, {VoidCallback? onRetry}) {
+  static void showError(BuildContext context, Object error,
+      {VoidCallback? onRetry}) {
     final message = getErrorMessage(error);
-    
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         backgroundColor: HeavyweightTheme.danger,
         content: Row(
           children: [
-            const Icon(Icons.error_outline, color: HeavyweightTheme.primary, size: 20),
+            const Icon(Icons.error_outline,
+                color: HeavyweightTheme.primary, size: 20),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -179,7 +188,7 @@ class _ErrorBoundaryState extends State<ErrorBoundary> {
     if (_error != null) {
       return widget.errorBuilder?.call(_error!) ?? _buildDefaultError();
     }
-    
+
     return widget.child;
   }
 
@@ -249,19 +258,19 @@ mixin ErrorHandlingMixin<T extends StatefulWidget> on State<T> {
       return await operation();
     } catch (error, stack) {
       HeavyweightErrorHandler._logError(
-        errorContext ?? 'Operation', 
-        error, 
+        errorContext ?? 'Operation',
+        error,
         stack,
       );
-      
+
       if (mounted) {
         HeavyweightErrorHandler.showError(
-          context, 
-          error, 
+          context,
+          error,
           onRetry: onRetry,
         );
       }
-      
+
       return null;
     }
   }

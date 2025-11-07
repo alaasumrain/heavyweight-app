@@ -24,68 +24,70 @@ class ProfileScreen extends StatelessWidget {
               children: [
                 // Profile Status
                 _buildProfileStatus(profileProvider),
-                
+
                 const SizedBox(height: HeavyweightTheme.spacingXl),
-                
+
                 // Profile Information
                 _buildProfileSection('TRAINING PROFILE', [
                   _buildProfileItem(
                     'Experience Level',
                     _getExperienceText(profileProvider.experience),
-                    () => context.go('/profile/experience?edit=1'),
+                    () => context.push('/profile/experience?edit=1'),
                   ),
                   _buildProfileItem(
                     'Training Frequency',
-                    profileProvider.frequency != null 
+                    profileProvider.frequency != null
                         ? '${profileProvider.frequency} days/week'
                         : 'Not set',
-                    () => context.go('/profile/frequency?edit=1'),
+                    () => context.push('/profile/frequency?edit=1'),
                   ),
                   _buildProfileItem(
                     'Training Objective',
                     _getObjectiveText(profileProvider.objective),
-                    () => context.go('/profile/objective?edit=1'),
+                    () => context.push('/profile/objective?edit=1'),
                   ),
                 ]),
-                
+
                 const SizedBox(height: HeavyweightTheme.spacingXl),
-                
+
                 // Physical Stats
                 _buildProfileSection('PHYSICAL STATS', [
                   _buildProfileItem(
                     'Age',
-                    profileProvider.age != null 
+                    profileProvider.age != null
                         ? '${profileProvider.age} years'
                         : 'Not set',
-                    () => context.go('/profile/stats?edit=1'),
+                    () => context.push('/profile/stats?edit=1'),
                   ),
                   _buildProfileItem(
                     'Weight',
                     _getWeightText(profileProvider),
-                    () => context.go('/profile/stats?edit=1'),
+                    () => context.push('/profile/stats?edit=1'),
                   ),
                   _buildProfileItem(
                     'Height',
-                    profileProvider.height != null 
+                    profileProvider.height != null
                         ? '${profileProvider.height} cm'
                         : 'Not set',
-                    () => context.go('/profile/stats?edit=1'),
+                    () => context.push('/profile/stats?edit=1'),
                   ),
                 ]),
-                
+
                 const SizedBox(height: HeavyweightTheme.spacingXl),
-                
+
                 // Preferences
                 _buildProfileSection('PREFERENCES', [
                   _buildProfileItem(
                     'Units',
-                    profileProvider.unit == Unit.kg ? 'Metric (kg)' : 'Imperial (lb)',
-                    () => context.go('/profile/units?edit=1'),
+                    profileProvider.unit == Unit.kg
+                        ? 'Metric (kg)'
+                        : 'Imperial (lb)',
+                    () => context.push('/profile/units?edit=1'),
                   ),
                 ]),
-                
+
                 const SizedBox(height: HeavyweightTheme.spacingXxl),
-                
+
                 // Actions
                 _buildActionButtons(context, profileProvider),
               ],
@@ -193,13 +195,14 @@ class ProfileScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildActionButtons(BuildContext context, ProfileProvider profileProvider) {
+  Widget _buildActionButtons(
+      BuildContext context, ProfileProvider profileProvider) {
     return Column(
       children: [
         if (!profileProvider.isComplete)
           CommandButton(
             text: 'COMPLETE PROFILE',
-            onPressed: () => context.go('/profile/experience'),
+            onPressed: () => context.push('/profile/experience'),
             variant: ButtonVariant.primary,
           ),
         const SizedBox(height: HeavyweightTheme.spacingMd),
@@ -280,7 +283,7 @@ class ProfileScreen extends StatelessWidget {
 
   String _getWeightText(ProfileProvider profileProvider) {
     if (profileProvider.weight == null) return 'Not set';
-    
+
     final unit = profileProvider.unit == Unit.kg ? 'kg' : 'lb';
     return '${profileProvider.weight!.toStringAsFixed(1)} $unit';
   }

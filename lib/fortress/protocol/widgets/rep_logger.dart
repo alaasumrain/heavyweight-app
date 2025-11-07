@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-
+import '../../../core/logging.dart';
 
 /// Enhanced Rep Logger - Live feedback with context
 /// No limits, no validation - we need honest data, especially in failure
@@ -10,7 +10,7 @@ class RepLogger extends StatefulWidget {
   final int currentSet; // Which set number this is (1, 2, 3, etc.)
   final List<int>? previousSetReps; // Reps from previous sets for comparison
   final bool liveMode; // Enable real-time visual feedback
-  
+
   const RepLogger({
     super.key,
     required this.onRepsLogged,
@@ -19,7 +19,7 @@ class RepLogger extends StatefulWidget {
     this.previousSetReps,
     this.liveMode = true,
   });
-  
+
   @override
   State<RepLogger> createState() => _RepLoggerState();
 }
@@ -29,22 +29,26 @@ class _RepLoggerState extends State<RepLogger> with TickerProviderStateMixin {
   late TextEditingController _controller;
   late AnimationController _pulseController;
   late Animation<double> _pulseAnimation;
-  
-  // Visual zones for feedback - simplified
-  static const _failureZone = [0, 0];   // Only complete failure (0 reps)
-  
+
   @override
   void initState() {
     super.initState();
     _currentReps = widget.initialValue;
     _controller = TextEditingController(text: _currentReps.toString());
-    
+
+    HWLog.event('rep_logger_init', data: {
+      'initialValue': widget.initialValue,
+      'currentSet': widget.currentSet,
+      'hasPreviousSetReps': widget.previousSetReps != null,
+      'liveMode': widget.liveMode,
+    });
+
     // Animation for live mode feedback
     _pulseController = AnimationController(
       duration: const Duration(milliseconds: 800),
       vsync: this,
     );
-    
+
     _pulseAnimation = Tween<double>(
       begin: 1.0,
       end: 1.05,
@@ -53,14 +57,14 @@ class _RepLoggerState extends State<RepLogger> with TickerProviderStateMixin {
       curve: Curves.easeInOut,
     ));
   }
-  
+
   @override
   void dispose() {
     _controller.dispose();
     _pulseController.dispose();
     super.dispose();
   }
-  
+
   Color _getZoneColor() {
     if (_currentReps == 0) {
       return Colors.red.shade900; // Complete failure
@@ -76,7 +80,7 @@ class _RepLoggerState extends State<RepLogger> with TickerProviderStateMixin {
     if (reps > 50) return 50; // Reasonable maximum for safety
     return reps;
   }
-  
+
   String _getZoneText() {
     if (_currentReps == 0) {
       return 'COMPLETE FAILURE';
@@ -84,27 +88,27 @@ class _RepLoggerState extends State<RepLogger> with TickerProviderStateMixin {
       return 'REPS LOGGED';
     }
   }
-  
+
   /// Get previous set performance comparison
   String? _getPreviousSetComparison() {
     if (widget.previousSetReps == null || widget.previousSetReps!.isEmpty) {
       return null;
     }
-    
+
     final previousReps = widget.previousSetReps!.last;
     if (_currentReps > previousReps) {
       return 'IMPROVEMENT (+${_currentReps - previousReps})';
     } else if (_currentReps < previousReps) {
       return 'DECLINE (-${previousReps - _currentReps})';
     } else {
-      return 'CONSISTENT (=${_currentReps})';
+      return 'CONSISTENT (=$_currentReps)';
     }
   }
-  
+
   /// Start live mode animation based on zone
   void _triggerLiveFeedback() {
     if (!widget.liveMode) return;
-    
+
     if (_currentReps == 0) {
       // Complete failure - strong pulse
       _pulseController.repeat(reverse: true);
@@ -113,32 +117,42 @@ class _RepLoggerState extends State<RepLogger> with TickerProviderStateMixin {
       _pulseController.reset();
     }
   }
-  
+
   void _increment() {
     if (_currentReps < 30) {
       setState(() {
         _currentReps++;
         _controller.text = _currentReps.toString();
       });
+      HWLog.event('rep_logger_increment', data: {
+        'newValue': _currentReps,
+        'set': widget.currentSet,
+        'method': 'button',
+      });
       _triggerLiveFeedback();
     }
   }
-  
+
   void _decrement() {
     if (_currentReps > 0) {
       setState(() {
         _currentReps--;
         _controller.text = _currentReps.toString();
       });
+      HWLog.event('rep_logger_decrement', data: {
+        'newValue': _currentReps,
+        'set': widget.currentSet,
+        'method': 'button',
+      });
       _triggerLiveFeedback();
     }
   }
-  
+
   @override
   Widget build(BuildContext context) {
     final zoneColor = _getZoneColor();
     final comparison = _getPreviousSetComparison();
-    
+
     return Container(
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
@@ -160,7 +174,8 @@ class _RepLoggerState extends State<RepLogger> with TickerProviderStateMixin {
                   letterSpacing: 2,
                 ),
               ),
-              if (widget.previousSetReps != null && widget.previousSetReps!.isNotEmpty)
+              if (widget.previousSetReps != null &&
+                  widget.previousSetReps!.isNotEmpty)
                 Text(
                   'PREV: ${widget.previousSetReps!.map((r) => r.toString()).join(', ')}',
                   style: TextStyle(
@@ -172,7 +187,7 @@ class _RepLoggerState extends State<RepLogger> with TickerProviderStateMixin {
             ],
           ),
           const SizedBox(height: 16),
-          
+
           // Zone indicator with live feedback
           AnimatedBuilder(
             animation: _pulseAnimation,
@@ -191,7 +206,7 @@ class _RepLoggerState extends State<RepLogger> with TickerProviderStateMixin {
               );
             },
           ),
-          
+
           // Previous set comparison
           if (comparison != null) ...[
             const SizedBox(height: 8),
@@ -209,9 +224,9 @@ class _RepLoggerState extends State<RepLogger> with TickerProviderStateMixin {
               ),
             ),
           ],
-          
+
           const SizedBox(height: 20),
-          
+
           // Rep counter
           Row(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -223,7 +238,7 @@ class _RepLoggerState extends State<RepLogger> with TickerProviderStateMixin {
                 color: Colors.white,
                 iconSize: 48,
               ),
-              
+
               // Rep display/input
               Container(
                 width: 100,
@@ -261,7 +276,7 @@ class _RepLoggerState extends State<RepLogger> with TickerProviderStateMixin {
                   },
                 ),
               ),
-              
+
               // Increase button
               IconButton(
                 onPressed: _increment,
@@ -271,11 +286,11 @@ class _RepLoggerState extends State<RepLogger> with TickerProviderStateMixin {
               ),
             ],
           ),
-          
+
           const SizedBox(height: 20),
-          
+
           const SizedBox(height: 30),
-          
+
           // Log button
           ElevatedButton(
             onPressed: () {
@@ -285,7 +300,15 @@ class _RepLoggerState extends State<RepLogger> with TickerProviderStateMixin {
               } else {
                 HapticFeedback.lightImpact(); // Success - light haptic
               }
-              
+
+              HWLog.event('rep_logger_submit', data: {
+                'finalReps': _currentReps,
+                'set': widget.currentSet,
+                'initialValue': widget.initialValue,
+                'wasChanged': _currentReps != widget.initialValue,
+                'inMandate': _currentReps >= 4 && _currentReps <= 6,
+                'previousSetReps': widget.previousSetReps,
+              });
               widget.onRepsLogged(_currentReps);
             },
             style: ElevatedButton.styleFrom(
@@ -297,7 +320,7 @@ class _RepLoggerState extends State<RepLogger> with TickerProviderStateMixin {
               ),
             ),
             child: Text(
-              'LOG ${_currentReps} REPS',
+              'LOG $_currentReps REPS',
               style: const TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.bold,
@@ -305,9 +328,9 @@ class _RepLoggerState extends State<RepLogger> with TickerProviderStateMixin {
               ),
             ),
           ),
-          
+
           const SizedBox(height: 10),
-          
+
           // Truth reminder
           Text(
             'LOG THE TRUTH. THE SYSTEM NEEDS HONESTY.',
